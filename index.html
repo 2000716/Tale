@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <!-- 1. LANDINGSSIDE (For alle uinnloggede besokende) -->
+  <!-- 1. LANDINGSSIDE (For alle uinnloggede besøkende) -->
   <div id="landing-view" class="view active">
     <div class="landing-hero">
       <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347860/copy_of_tale_edited_gvs2so.png" alt="Tale Logo" class="landing-logo">
@@ -51,82 +51,34 @@
       </div>
     </header>
 
-    <!-- Innholdsområde -->
+    <!-- Innholdsområde (Fylles dynamisk fra Firestore) -->
     <main>
       <!-- Seksjon: Hjem -->
       <section id="home" class="page active">
         <div class="hero-banner">
-          <span class="badge">Anbefalt nå</span>
-          <h2>Exphil på 60 minutter</h2>
-          <p>Klar for eksamen? Hør den mest populære oppsummeringen.</p>
+          <span class="badge">Velkommen</span>
+          <h2>Ditt bibliotek på Tale</h2>
+          <p>Utforsk nye lydbøker, podkaster og radiokanaler nedenfor.</p>
         </div>
-
-        <div class="section-header"><h3>Fortsett å lytte</h3></div>
-        <div class="horizontal-scroll">
-          <div class="book-card" data-title="Exphil på 60 min" data-sub="Filosofi / Pensum" data-desc="En rask og effektiv gjennomgang av exphil-pensum for studenter." data-icon="📖">
-            <div class="book-cover">📖</div>
-            <div class="book-title">Exphil på 60 min</div>
-            <div class="book-author">Pensum</div>
-          </div>
-          <div class="book-card" data-title="NRK P3 Live" data-sub="Direkte Radio" data-desc="Direkte radiosending fra NRK P3 med musikk og underholdning." data-icon="📻">
-            <div class="book-cover radio-cover">📻</div>
-            <div class="book-title">NRK P3</div>
-            <div class="book-author">Direkte</div>
-          </div>
-        </div>
-
-        <div class="section-header"><h3>Mest populært akkurat nå</h3></div>
-        <div class="horizontal-scroll">
-          <div class="book-card" data-title="Henrik og Vasvári" data-sub="Podkast" data-desc="Ukentlige samtaler og god stemning med Henrik og Vasvári." data-icon="🎙️">
-            <div class="book-cover pod-cover">🎙️</div>
-            <div class="book-title">Henrik og Vasvári</div>
-            <div class="book-author">Underholdning</div>
-          </div>
-          <div class="book-card" data-title="Oppdatert" data-sub="NRK Podkast" data-desc="Dybdedykk i dagens viktigste nyhetssaker fra NRK." data-icon="📰">
-            <div class="book-cover pod-cover">📰</div>
-            <div class="book-title">Oppdatert</div>
-            <div class="book-author">Nyheter</div>
-          </div>
-        </div>
+        <div id="home-sections" class="dynamic-container"></div>
       </section>
 
       <!-- Seksjon: Lydbøker -->
       <section id="audiobooks" class="page">
         <h2>Lydbøker</h2>
-        <div class="section-header"><h3>Populære lydbøker</h3></div>
-        <div class="horizontal-scroll">
-          <div class="book-card" data-title="Exphil Introduksjon" data-sub="Lydbok" data-desc="Grundig introduksjon til filosofihistorie og vitenskapsteori." data-icon="📖">
-            <div class="book-cover">📖</div>
-            <div class="book-title">Exphil Introduksjon</div>
-            <div class="book-author">Filosofi</div>
-          </div>
-        </div>
+        <div id="audiobooks-sections" class="dynamic-container"></div>
       </section>
 
       <!-- Seksjon: Podcaster -->
       <section id="podcasts" class="page">
         <h2>Podcaster</h2>
-        <div class="section-header"><h3>Topplisten</h3></div>
-        <div class="horizontal-scroll">
-          <div class="book-card" data-title="Henrik og Vasvári" data-sub="Podkast" data-desc="Underholdning på sitt beste." data-icon="🎙️">
-            <div class="book-cover pod-cover">🎙️</div>
-            <div class="book-title">Henrik og Vasvári</div>
-            <div class="book-author">Underholdning</div>
-          </div>
-        </div>
+        <div id="podcasts-sections" class="dynamic-container"></div>
       </section>
 
       <!-- Seksjon: Radio -->
       <section id="radio" class="page">
         <h2>Direkte Radio</h2>
-        <div class="section-header"><h3>Norske kanaler</h3></div>
-        <div class="horizontal-scroll">
-          <div class="book-card" data-title="NRK P1" data-sub="Radio" data-desc="Norges største radiokanal med nyheter, distrikt og musikk." data-icon="📻">
-            <div class="book-cover radio-cover">📻</div>
-            <div class="book-title">NRK P1</div>
-            <div class="book-author">Nyheter & Distrikt</div>
-          </div>
-        </div>
+        <div id="radio-sections" class="dynamic-container"></div>
       </section>
 
       <!-- Seksjon: Konto / Profilside -->
@@ -140,7 +92,7 @@
       </section>
     </main>
 
-    <!-- INFORMASJONSSIDE OVERLAY (Når du trykker på et kort) -->
+    <!-- INFORMASJONSSIDE OVERLAY -->
     <div id="details-page" class="modal">
       <button id="details-close-btn" class="close-btn">✕</button>
       <div class="details-content">
@@ -152,7 +104,7 @@
       </div>
     </div>
 
-    <!-- FULLSKJERM SPILLER (Storytel-stil) -->
+    <!-- FULLSKJERM SPILLER -->
     <div id="fullscreen-player" class="modal">
       <button id="player-close-btn" class="close-btn">↓ Minimer</button>
       <div class="player-full-content">
@@ -160,7 +112,6 @@
         <h2 id="full-title">Tittel</h2>
         <p id="full-sub">Undertittel</p>
 
-        <!-- Spolelinje -->
         <div class="progress-container">
           <span id="current-time">0:00</span>
           <input type="range" id="progress-bar" value="0" min="0" max="100">
@@ -175,7 +126,7 @@
       </div>
     </div>
 
-    <!-- Mini-spillerstripe nederst over menyen -->
+    <!-- Mini-spillerstripe -->
     <div class="player hidden" id="audio-player-bar">
       <div class="player-left" id="open-full-player">
         <div class="player-cover-small" id="mini-player-cover">🎧</div>
