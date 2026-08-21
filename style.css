@@ -6,12 +6,18 @@
   --bar-bg: #0b112c;
   --card-bg: #131b3e;
   --bar-border: #1e293b;
-  --accent-blue: #AEC2F7;
-  --accent-hover: #8da9f2;
+  --accent-blue: #2563eb; /* Justert litt mørkere for bedre kontrast mot beige */
+  --accent-hover: #1d4ed8;
   --text-light: #ffffff;
   --text-muted: #94a3b8;
   --danger-red: #ef4444;
-  --error-red: #f87171;
+  --error-red: #dc2626;
+
+  /* Nye variabler for varm beige innholdsdel */
+  --bg-beige: #e8dfd1;        /* Varm, lun beige bakgrunn */
+  --card-beige: #dccfb8;      /* Litt mørkere beige for kort/elementer */
+  --text-dark: #1e1b18;       /* Mørk brun/grå tekst for god kontrast */
+  --text-muted-dark: #635b52; /* Dempet tone for undertekst/forfattere */
 }
 
 * {
@@ -23,7 +29,7 @@
 
 body {
   background-color: var(--bg-dark);
-  color: var(--text-light);
+  color: var(--text-dark);
   display: flex;
   justify-content: center;
 }
@@ -41,7 +47,8 @@ body {
   width: 100%;
   max-width: 480px;
   min-height: 100vh;
-  background-color: var(--bg-dark);
+  background-color: var(--bg-beige); /* Varm beige bakgrunn */
+  color: var(--text-dark);
   position: relative;
 }
 
@@ -54,6 +61,7 @@ main {
   flex: 1;
   padding: 1rem;
   padding-bottom: 140px;
+  background-color: var(--bg-beige);
 }
 
 .page {
@@ -71,7 +79,7 @@ main {
   width: 100%;
   padding: 0.9rem;
   background-color: var(--accent-blue);
-  color: var(--bar-bg);
+  color: var(--text-light);
   border: none;
   font-weight: bold;
   border-radius: 8px;
@@ -131,7 +139,7 @@ main {
   align-self: flex-end;
   background: none;
   border: none;
-  color: var(--text-muted);
+  color: var(--text-muted-dark);
   font-size: 0.95rem;
   font-weight: bold;
   cursor: pointer;
@@ -153,6 +161,7 @@ main {
   align-items: center;
   padding: 2rem;
   text-align: center;
+  background-color: var(--bg-beige);
 }
 
 .landing-logo, 
@@ -164,10 +173,11 @@ main {
 .landing-hero h1 {
   font-size: 1.6rem;
   margin-bottom: 0.5rem;
+  color: var(--text-dark);
 }
 
 .landing-hero p {
-  color: var(--text-muted);
+  color: var(--text-muted-dark);
   margin-bottom: 2rem;
 }
 
@@ -180,10 +190,10 @@ main {
 
 .auth-card {
   width: 100%;
-  background: var(--bar-bg);
+  background: var(--card-beige);
   padding: 1.5rem;
   border-radius: 16px;
-  border: 1px solid var(--bar-border);
+  border: 1px solid rgba(0,0,0,0.1);
 }
 
 .auth-card input {
@@ -191,9 +201,9 @@ main {
   padding: 0.9rem;
   margin: 0.4rem 0;
   border-radius: 8px;
-  border: 1px solid var(--bar-border);
-  background: var(--bg-dark);
-  color: var(--text-light);
+  border: 1px solid rgba(0,0,0,0.15);
+  background: #ffffff;
+  color: var(--text-dark);
 }
 
 /* ==========================================================================
@@ -209,6 +219,7 @@ main {
   top: 0;
   z-index: 10;
   border-bottom: 1px solid var(--bar-border);
+  color: var(--text-light);
 }
 
 .logo-img {
@@ -229,7 +240,7 @@ main {
 
 .profile-avatar {
   background: var(--accent-blue);
-  color: var(--bar-bg);
+  color: var(--text-light);
   border-radius: 50%;
   width: 20px;
   height: 20px;
@@ -243,16 +254,17 @@ main {
    6. HOVEDINNHOLD, BANNERE & KORT
    ========================================================================== */
 .hero-banner {
-  background: linear-gradient(135deg, #1e295d 0%, #0b112c 100%);
+  background: linear-gradient(135deg, #2c251e 0%, #1e1b18 100%);
+  color: var(--text-light);
   padding: 1.2rem;
   border-radius: 12px;
   margin-bottom: 1.5rem;
-  border: 1px solid var(--bar-border);
+  border: 1px solid rgba(0,0,0,0.1);
 }
 
 .badge {
   background: var(--accent-blue);
-  color: var(--bar-bg);
+  color: var(--text-light);
   font-size: 0.7rem;
   font-weight: bold;
   padding: 0.2rem 0.5rem;
@@ -261,6 +273,7 @@ main {
 
 .section-header {
   margin: 1.2rem 0 0.6rem 0;
+  color: var(--text-dark);
 }
 
 .horizontal-scroll {
@@ -285,13 +298,13 @@ main {
 .book-cover-img {
   width: 120px;
   height: 160px;
-  background: #1e2942;
+  background: var(--card-beige);
   border-radius: 8px;
   object-fit: cover;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 .book-title {
@@ -301,19 +314,21 @@ main {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text-dark);
 }
 
 .book-author {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-muted-dark);
 }
 
 .account-card {
-  background: var(--bar-bg);
+  background: var(--card-beige);
   padding: 1.5rem;
   border-radius: 12px;
-  border: 1px solid var(--bar-border);
+  border: 1px solid rgba(0,0,0,0.08);
   margin-top: 1rem;
+  color: var(--text-dark);
 }
 
 /* ==========================================================================
@@ -328,7 +343,8 @@ main {
   width: 100%;
   max-width: 480px;
   height: 100vh;
-  background: var(--bg-dark);
+  background: var(--bg-beige);
+  color: var(--text-dark);
   z-index: 100;
   padding: 2rem 1.5rem;
   flex-direction: column;
@@ -352,17 +368,18 @@ main {
   object-fit: cover;
   border-radius: 12px;
   margin-bottom: 1.5rem;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
 .details-sub {
   color: var(--accent-blue);
   margin-bottom: 1rem;
   font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .details-desc {
-  color: var(--text-muted);
+  color: var(--text-muted-dark);
   font-size: 0.9rem;
   line-height: 1.4;
   margin-bottom: 2rem;
@@ -384,7 +401,7 @@ main {
   object-fit: cover;
   border-radius: 16px;
   margin-bottom: 2rem;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 }
 
 .progress-container {
@@ -394,7 +411,7 @@ main {
   gap: 0.5rem;
   margin: 2rem 0;
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text-muted-dark);
 }
 
 .progress-container input {
@@ -410,8 +427,8 @@ main {
 
 .skip-btn {
   background: none;
-  border: 1px solid var(--bar-border);
-  color: var(--text-light);
+  border: 1px solid var(--text-muted-dark);
+  color: var(--text-dark);
   padding: 0.5rem 0.8rem;
   border-radius: 6px;
   cursor: pointer;
@@ -422,7 +439,7 @@ main {
   padding: 0.8rem 1.5rem;
   border-radius: 30px;
   background: var(--accent-blue);
-  color: var(--bar-bg);
+  color: var(--text-light);
   border: none;
   font-size: 1rem;
   font-weight: bold;
@@ -440,6 +457,7 @@ main {
   max-width: 480px;
   height: 60px;
   background-color: var(--bar-bg);
+  color: var(--text-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -476,6 +494,7 @@ main {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text-light);
 }
 
 .player-sub {
@@ -485,7 +504,7 @@ main {
 
 .player-controls button {
   background-color: var(--accent-blue);
-  color: var(--bar-bg);
+  color: var(--text-light);
   border: none;
   padding: 0.4rem 0.8rem;
   border-radius: 16px;
