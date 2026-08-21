@@ -2,22 +2,19 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <!-- Tillater zoom for bedre tilgjengelighet på alle enheter -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#050F11" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   
-  <!-- SEO og Meta for Tale/Radio -->
   <title>Tale</title>
   <meta name="description" content="Lytt til taler, undervisning og podkaster på Watch Nordic." />
 
-  <!-- Lenker og Ikoner -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347128/tALE_edited_gvs2so.png" />
+  <!-- FontAwesome for elegante ikoner -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   
-  <!-- Felles og modulspesifikke stilark -->
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="radio.css">
   <link rel="stylesheet" href="audiobooks.css">
@@ -25,7 +22,10 @@
 </head>
 <body>
 
-  <!-- 1. LANDINGSSIDE (Uinnloggede besøkende) -->
+  <!-- Skjult lyd-element for selve avspillingen -->
+  <audio id="global-audio" preload="metadata"></audio>
+
+  <!-- 1. LANDINGSSIDE (Mørkeblå) -->
   <div id="landing-view" class="view active">
     <div class="landing-hero">
       <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347860/copy_of_tale_edited_gvs2so.png" alt="Tale Logo" class="landing-logo">
@@ -38,9 +38,9 @@
     </div>
   </div>
 
-  <!-- 2. INNLOGGING / REGISTRERING -->
+  <!-- 2. INNLOGGING / REGISTRERING (Mørkeblå) -->
   <div id="auth-view" class="view">
-    <button id="auth-back-btn" class="back-btn">Tilbake</button>
+    <button id="auth-back-btn" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Tilbake</button>
     <div class="auth-card">
       <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347860/copy_of_tale_edited_gvs2so.png" alt="Tale Logo" class="auth-logo">
       <h2 id="auth-title">Logg inn</h2>
@@ -54,7 +54,7 @@
     </div>
   </div>
 
-  <!-- 3. HOVEDAPP (Innloggede brukere) -->
+  <!-- 3. HOVEDAPP -->
   <div id="app-view" class="view">
     
     <!-- Toppstripe -->
@@ -68,9 +68,8 @@
       </div>
     </header>
 
-    <!-- Innholdsområde -->
+    <!-- Innholdsområde (Varmhvit / Lys) -->
     <main>
-      <!-- Seksjon: Hjem -->
       <section id="home" class="page active">
         <div class="hero-banner">
           <span class="badge">Velkommen</span>
@@ -80,84 +79,80 @@
         <div id="home-sections" class="dynamic-container"></div>
       </section>
 
-      <!-- Seksjon: Lydbøker -->
       <section id="audiobooks" class="page">
         <h2>Lydbøker</h2>
         <div id="audiobooks-sections" class="dynamic-container"></div>
       </section>
 
-      <!-- Seksjon: Podcaster -->
       <section id="podcasts" class="page">
         <h2>Podcaster</h2>
         <div id="podcasts-sections" class="dynamic-container"></div>
       </section>
 
-      <!-- Seksjon: Radio -->
       <section id="radio" class="page">
         <h2>Direkte Radio</h2>
         <div id="radio-sections" class="dynamic-container"></div>
       </section>
 
-      <!-- Seksjon: Konto / Profilside -->
       <section id="account" class="page">
         <h2>Min Konto</h2>
         <div class="account-card">
           <p>Innlogget som:</p>
           <strong id="account-email-display">bruker@tale.no</strong>
-          <button id="logout-btn" class="btn-danger">Logg ut</button>
+          <button id="logout-btn" class="btn-danger"><i class="fa-solid fa-right-from-bracket"></i> Logg ut</button>
         </div>
       </section>
     </main>
 
     <!-- INFORMASJONSSIDE OVERLAY -->
     <div id="details-page" class="modal">
-      <button id="details-close-btn" class="close-btn">Lukk</button>
+      <button id="details-close-btn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
       <div class="details-content">
         <img id="details-cover-img" src="" alt="Omslag" class="details-cover-img hidden">
         <h2 id="details-title">Tittel</h2>
         <p id="details-sub" class="details-sub">Kategori</p>
         <p id="details-desc" class="details-desc">Beskrivelse...</p>
-        <button id="start-play-btn" class="btn-primary">Start lytting</button>
+        <button id="start-play-btn" class="btn-primary"><i class="fa-solid fa-play"></i> Start lytting</button>
       </div>
     </div>
 
     <!-- FULLSKJERM SPILLER -->
     <div id="fullscreen-player" class="modal">
-      <button id="player-close-btn" class="close-btn">Minimer</button>
+      <button id="player-close-btn" class="close-btn"><i class="fa-solid fa-chevron-down"></i></button>
       <div class="player-full-content">
-        <img id="full-cover-img" src="" alt="Omslag" class="full-cover-img hidden">
+        <img id="full-cover-img" src="" alt="Omslag" class="full-cover-img">
         <h2 id="full-title">Tittel</h2>
         <p id="full-sub">Undertittel</p>
 
         <div class="progress-container">
           <span id="current-time">0:00</span>
           <input type="range" id="progress-bar" value="0" min="0" max="100">
-          <span id="total-time">45:00</span>
+          <span id="total-time">0:00</span>
         </div>
 
         <div class="full-controls">
-          <button class="skip-btn">-15s</button>
-          <button id="full-play-btn" class="main-play-btn">Paus</button>
-          <button class="skip-btn">+15s</button>
+          <button id="skip-back-btn" class="skip-btn" title="-15 sekunder"><i class="fa-solid fa-rotate-left"></i> 15s</button>
+          <button id="full-play-btn" class="main-play-btn"><i class="fa-solid fa-play"></i></button>
+          <button id="skip-forward-btn" class="skip-btn" title="+15 sekunder">15s <i class="fa-solid fa-rotate-right"></i></button>
         </div>
       </div>
     </div>
 
-    <!-- MINI-SPILLERSTRIPE -->
+    <!-- MINI-SPILLERSTRIPE (Hvit rute med ikoner) -->
     <div class="player hidden" id="audio-player-bar">
       <div class="player-left" id="open-full-player">
-        <img id="mini-player-cover-img" src="" alt="Omslag" class="mini-cover-img hidden">
+        <img id="mini-player-cover-img" src="" alt="Omslag" class="mini-cover-img">
         <div class="player-info">
           <span id="mini-player-title" class="player-title">Ingen spilles</span>
           <span id="mini-player-sub" class="player-sub">Velg tittel</span>
         </div>
       </div>
       <div class="player-controls">
-        <button id="mini-play-btn">Spill</button>
+        <button id="mini-play-btn" class="icon-play-btn"><i class="fa-solid fa-play"></i></button>
       </div>
     </div>
 
-    <!-- BUNNMENY (Ren tekst uten emojis) -->
+    <!-- BUNNMENY -->
     <nav class="bottom-bar">
       <button class="nav-btn active" data-target="home">
         <span class="nav-text">Hjem</span>
@@ -175,10 +170,6 @@
 
   </div>
 
-  <!-- Skript-moduler -->
   <script type="module" src="app.js"></script>
-  <script type="module" src="radio.js"></script>
-  <script type="module" src="audiobooks.js"></script>
-  <script type="module" src="podcasts.js"></script>
 </body>
 </html>
