@@ -1,0 +1,210 @@
+:root {
+  --bg-color: #0f172a;
+  --card-bg: #1e293b;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Toppstripe (Header) */
+.top-bar {
+  background-color: var(--card-bg);
+  padding: 0.8rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #334155;
+  z-index: 30;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.5px;
+}
+
+/* Profil-knapp */
+.profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #0f172a;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  cursor: pointer;
+  border: 1px solid #334155;
+  transition: background-color 0.2s;
+}
+
+.profile-btn:hover {
+  background-color: #1e293b;
+}
+
+.profile-avatar {
+  width: 26px;
+  height: 26px;
+  background-color: var(--accent);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.profile-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Main Content Area */
+main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  padding-bottom: 130px; /* Plass til spiller + bunnmeny */
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Grid Layout */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.card {
+  background-color: var(--card-bg);
+  padding: 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  background-color: #253346;
+}
+
+.card-title {
+  font-weight: bold;
+  margin-top: 0.5rem;
+}
+
+.card-sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Lydspiller nederst (Ligger over bunnmenyen) */
+.player {
+  position: fixed;
+  bottom: 55px;
+  left: 0;
+  right: 0;
+  height: 55px;
+  background-color: #020617;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  border-top: 1px solid #334155;
+  z-index: 20;
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.player-title {
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.player-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.player-controls button {
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.4rem 1.1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.player-controls button:hover {
+  background-color: var(--accent-hover);
+}
+
+/* Bunnmeny */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 55px;
+  background-color: var(--card-bg);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid #334155;
+  z-index: 10;
+}
+
+.bottom-bar button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.bottom-bar button.active {
+  color: var(--accent);
+}
