@@ -45,14 +45,15 @@ body {
   z-index: 30;
 }
 
-/* Logo som bilde */
 .logo-container {
   display: flex;
   align-items: center;
+  max-height: 32px;
 }
 
 .logo-img {
-  height: 32px; /* Juster høyden slik at bildet passer fint inn */
+  height: 32px;
+  max-height: 32px;
   width: auto;
   object-fit: contain;
 }
