@@ -1,7 +1,7 @@
 :root {
   /* Toppstripe & Bunnmeny: Litt lysere, dyp blå med lilla undertone */
   --bar-bg: #151d3b;
-  --bar-border: #25325c;
+  --bar-border: #151d3b;
   
   /* Lilla aksentfarger */
   --accent-purple: #8b5cf6;
@@ -15,7 +15,7 @@
   /* Tekstfarger */
   --text-dark: #0f172a;
   --text-muted: #64748b;
-  --text-light: #f8fafc;
+  --text-light: #AEC2F7;
 }
 
 * {
