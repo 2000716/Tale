@@ -8,22 +8,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const playerTitle = document.getElementById("player-title");
   const playerSub = document.getElementById("player-sub");
 
-  // Navigasjon mellom sider via bunnmeny (SPA Logikk)
+  // Navigasjon via bunnmenyen
   navButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const targetPageId = button.getAttribute("data-target");
 
-      // Bytt aktiv side
       pages.forEach((page) => page.classList.remove("active"));
       document.getElementById(targetPageId).classList.add("active");
 
-      // Bytt aktiv knapp i bunnmenyen
       navButtons.forEach((btn) => btn.classList.remove("active"));
       button.classList.add("active");
     });
   });
 
-  // Velg og spill av innhold fra kort
+  // Velg og spill av innhold
   cards.forEach((card) => {
     card.addEventListener("click", () => {
       const title = card.getAttribute("data-title");
@@ -37,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Start / Pause avspilling
+  // Toggle Play / Pause
   playBtn.addEventListener("click", () => {
     if (playerTitle.innerText === "Ingen lyd valgt") return;
 
