@@ -30,10 +30,12 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Husk at brukeren er innlogget
+// Global Audio-spiller referanse
+let globalAudio = new Audio();
+
 setPersistence(auth, browserLocalPersistence);
 
-// 2. Visningsstyrer (Sider og Skjermer)
+// 2. Visningsstyrer
 function showView(viewId) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById(viewId)?.classList.add("active");
@@ -47,7 +49,6 @@ onAuthStateChanged(auth, (user) => {
     if (emailDisplay) emailDisplay.innerText = user.email;
     if (userAvatar) userAvatar.innerText = user.email.charAt(0).toUpperCase();
     
-    // Hent innhold fra Firestore når innlogget
     loadContentFromFirestore();
   } else {
     showView("landing-view");
@@ -97,7 +98,7 @@ if (authForm) {
 
 if (logoutBtn) logoutBtn.onclick = () => signOut(auth);
 
-// 4. Navigasjon i Meny (Bunnmeny og Profil)
+// 4. Navigasjon i Meny
 function switchPage(pageId) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
@@ -114,14 +115,13 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 const navAccountBtn = document.getElementById("nav-account-btn");
 if (navAccountBtn) navAccountBtn.onclick = () => switchPage("account");
 
-// 5. Sanntidshenting fra Firestore (CMS)
+// 5. Sanntidshenting fra Firestore
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
   
   onSnapshot(q, (snapshot) => {
     const pages = ["home", "audiobooks", "podcasts", "radio"];
     
-    // Tøm tidligere dynamisk innhold
     pages.forEach(p => {
       const container = document.getElementById(p);
       if (container) {
@@ -130,7 +130,6 @@ function loadContentFromFirestore() {
       }
     });
 
-    // Legg til nye seksjoner fra Firestore
     snapshot.forEach((doc) => {
       const sec = doc.data();
       const pageTarget = sec.page || "home";
@@ -142,11 +141,18 @@ function loadContentFromFirestore() {
 
         let itemsHTML = "";
         (sec.items || []).forEach(item => {
+          // Lagrer rssUrl og audioUrl som data-attributter!
           itemsHTML += `
-            <div class="book-card" data-title="${item.title}" data-sub="${item.sub}" data-desc="${item.desc}" data-icon="${item.icon}">
-              <div class="book-cover ${sec.page === 'podcasts' ? 'pod-cover' : sec.page === 'radio' ? 'radio-cover' : ''}">${item.icon}</div>
-              <div class="book-title">${item.title}</div>
-              <div class="book-author">${item.sub}</div>
+            <div class="book-card" 
+                 data-title="${item.title || ''}" 
+                 data-sub="${item.sub || ''}" 
+                 data-desc="${item.desc || ''}" 
+                 data-icon="${item.icon || '🎙️'}"
+                 data-rss="${item.rssUrl || item.rss || ''}"
+                 data-audio="${item.audioUrl || item.audio || ''}">
+              <div class="book-cover ${sec.page === 'podcasts' ? 'pod-cover' : sec.page === 'radio' ? 'radio-cover' : ''}">${item.icon || '🎙️'}</div>
+              <div class="book-title">${item.title || ''}</div>
+              <div class="book-author">${item.sub || ''}</div>
             </div>
           `;
         });
@@ -164,33 +170,59 @@ function loadContentFromFirestore() {
   });
 }
 
-// 6. Klikk på kort, Detaljside og Spiller
+// 6. Klikk på kort, RSS-henting og Spiller
 let selectedItem = {};
 
 function bindCardClickEvents() {
   document.querySelectorAll(".book-card").forEach(card => {
-    card.onclick = () => {
+    card.onclick = async () => {
       selectedItem = {
         title: card.dataset.title,
         sub: card.dataset.sub,
         desc: card.dataset.desc,
-        icon: card.dataset.icon
+        icon: card.dataset.icon,
+        rssUrl: card.dataset.rss,
+        audioUrl: card.dataset.audio
       };
 
       document.getElementById("details-title").innerText = selectedItem.title;
       document.getElementById("details-sub").innerText = selectedItem.sub;
-      document.getElementById("details-desc").innerText = selectedItem.desc;
-      document.getElementById("details-cover").innerText = selectedItem.icon;
+      document.getElementById("details-desc").innerText = selectedItem.desc || "Laster innhold...";
+
+      // Hvis dette er en RSS feed, hent den ferskeste episoden via rss2json
+      if (selectedItem.rssUrl) {
+        try {
+          const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(selectedItem.rssUrl)}`);
+          const data = await res.json();
+
+          if (data.status === 'ok' && data.items.length > 0) {
+            const firstEpisode = data.items[0];
+            // Finn mp3 lenken fra enclosure
+            if (firstEpisode.enclosure && firstEpisode.enclosure.link) {
+              selectedItem.audioUrl = firstEpisode.enclosure.link;
+            }
+            if (firstEpisode.description) {
+              const cleanDesc = firstEpisode.description.replace(/<[^>]*>?/gm, '');
+              document.getElementById("details-desc").innerText = cleanDesc;
+            }
+          }
+        } catch (err) {
+          console.error("Kunne ikke laste RSS-feed:", err);
+        }
+      }
 
       document.getElementById("details-page")?.classList.add("active");
     };
   });
 }
 
+// 7. Spiller-håndtering
 const detailsCloseBtn = document.getElementById("details-close-btn");
 const startPlayBtn = document.getElementById("start-play-btn");
 const openFullPlayer = document.getElementById("open-full-player");
 const playerCloseBtn = document.getElementById("player-close-btn");
+const miniPlayBtn = document.getElementById("mini-play-btn");
+const fullPlayBtn = document.getElementById("full-play-btn");
 
 if (detailsCloseBtn) detailsCloseBtn.onclick = () => document.getElementById("details-page")?.classList.remove("active");
 
@@ -198,16 +230,50 @@ if (startPlayBtn) {
   startPlayBtn.onclick = () => {
     document.getElementById("details-page")?.classList.remove("active");
     
+    if (selectedItem.audioUrl) {
+      globalAudio.src = selectedItem.audioUrl;
+      globalAudio.play();
+      if (miniPlayBtn) miniPlayBtn.innerText = "Paus";
+      if (fullPlayBtn) fullPlayBtn.innerText = "Paus";
+    }
+
     document.getElementById("mini-player-title").innerText = selectedItem.title;
     document.getElementById("mini-player-sub").innerText = selectedItem.sub;
-    document.getElementById("mini-player-cover").innerText = selectedItem.icon;
     document.getElementById("audio-player-bar")?.classList.remove("hidden");
 
     document.getElementById("full-title").innerText = selectedItem.title;
     document.getElementById("full-sub").innerText = selectedItem.sub;
-    document.getElementById("full-cover").innerText = selectedItem.icon;
 
     document.getElementById("fullscreen-player")?.classList.add("active");
+  };
+}
+
+if (miniPlayBtn) {
+  miniPlayBtn.onclick = (e) => {
+    e.stopPropagation(); // Unngå å åpne fullskjerm når man kun trykker play
+    if (globalAudio.paused) {
+      globalAudio.play();
+      miniPlayBtn.innerText = "Paus";
+      if (fullPlayBtn) fullPlayBtn.innerText = "Paus";
+    } else {
+      globalAudio.pause();
+      miniPlayBtn.innerText = "Spill";
+      if (fullPlayBtn) fullPlayBtn.innerText = "Spill";
+    }
+  };
+}
+
+if (fullPlayBtn) {
+  fullPlayBtn.onclick = () => {
+    if (globalAudio.paused) {
+      globalAudio.play();
+      fullPlayBtn.innerText = "Paus";
+      if (miniPlayBtn) miniPlayBtn.innerText = "Paus";
+    } else {
+      globalAudio.pause();
+      fullPlayBtn.innerText = "Spill";
+      if (miniPlayBtn) miniPlayBtn.innerText = "Spill";
+    }
   };
 }
 
