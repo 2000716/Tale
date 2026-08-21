@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tale – Radio, Podkast & Lydbøker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Toppstripe (Header) -->
+  <header class="top-bar">
+    <div class="logo">TALE</div>
+    <div class="profile-btn" id="profile-btn">
+      <span class="profile-avatar">M</span>
+      <span class="profile-name">Min Profil</span>
+    </div>
+  </header>
+
+  <!-- SPA Innhold -->
+  <main>
+    <!-- Hjem -->
+    <section id="home" class="page active">
+      <h1>Hjem</h1>
+      <p>Siste oppdateringer og populært innhold på Tale.</p>
+
+      <div class="grid">
+        <div class="card" data-title="NRK P3 Live" data-sub="Direkte Radio">
+          <div class="card-title">NRK P3</div>
+          <div class="card-sub">Direkte radio</div>
+        </div>
+        <div class="card" data-title="Oppdatert" data-sub="NRK Podkast">
+          <div class="card-title">Oppdatert</div>
+          <div class="card-sub">Nyhetspodkast</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lydbøker -->
+    <section id="audiobooks" class="page">
+      <h1>Lydbøker</h1>
+      <p>Skjønnlitteratur, sakprosa og pensum for studiene dine.</p>
+
+      <div class="grid">
+        <div class="card" data-title="Exphil på 60 minutter" data-sub="Pensum / Filosofi">
+          <div class="card-title">Exphil Introduksjon</div>
+          <div class="card-sub">Pensum / Lydbok</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Podcaster -->
+    <section id="podcasts" class="page">
+      <h1>Podcaster</h1>
+      <p>Abonner på dine favorittpodcaster.</p>
+
+      <div class="grid">
+        <div class="card" data-title="Henrik og Vasvári" data-sub="Underholdning">
+          <div class="card-title">Henrik og Vasvári</div>
+          <div class="card-sub">Underholdning</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Radio -->
+    <section id="radio" class="page">
+      <h1>Radio</h1>
+      <p>Hør på live-sendinger fra NRK og andre kanaler.</p>
+
+      <div class="grid">
+        <div class="card" data-title="NRK P1" data-sub="Direkte Radio">
+          <div class="card-title">NRK P1</div>
+          <div class="card-sub">Nyheter og distrikt</div>
+        </div>
+        <div class="card" data-title="NRK mP3" data-sub="Direkte Radio">
+          <div class="card-title">NRK mP3</div>
+          <div class="card-sub">Ny musikk</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Lydspiller nederst (over bunnmenyen) -->
+  <div class="player">
+    <div class="player-info">
+      <span id="player-title" class="player-title">Ingen lyd valgt</span>
+      <span id="player-sub" class="player-sub">Velg et kort over for å starte</span>
+    </div>
+    <div class="player-controls">
+      <button id="play-btn">PLAY</button>
+    </div>
+  </div>
+
+  <!-- Bunnmeny -->
+  <nav class="bottom-bar">
+    <button class="nav-btn active" data-target="home">Hjem</button>
+    <button class="nav-btn" data-target="audiobooks">Lydbøker</button>
+    <button class="nav-btn" data-target="podcasts">Podcaster</button>
+    <button class="nav-btn" data-target="radio">Radio</button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
