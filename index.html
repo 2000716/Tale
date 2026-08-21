@@ -3,110 +3,175 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tale – Radio, Podkast & Lydbøker</title>
+  <title>Tale – Lydbøker, Podkast & Radio</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- LANDINGS- OG INNLOGGINGSSIDE (Vises for uinnloggede) -->
+  <!-- LANDINGS- OG INNLOGGINGSSIDE -->
   <div id="landing-page" class="view active">
     <div class="landing-hero">
       <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347860/copy_of_tale_edited_gvs2so.png" alt="Tale Logo" class="landing-logo">
-      <h1>Velkommen til Tale</h1>
-      <p>Din samleplass for radio, podkaster og lydbøker.</p>
+      <h1>Ubegrenset lytting på Tale</h1>
+      <p>Tusenvis av lydbøker, podkaster og radio – samlet på én plass.</p>
     </div>
 
-    <!-- Innloggingsskjema -->
     <div class="auth-card">
       <h2 id="auth-title">Logg inn</h2>
       <form id="auth-form">
         <input type="email" id="auth-email" placeholder="E-post" required>
         <input type="password" id="auth-password" placeholder="Passord" required>
-        <button type="submit" id="auth-submit-btn" class="btn-primary">Logg inn</button>
+        <button type="submit" id="auth-submit-btn" class="btn-primary">Start lyttingen</button>
       </form>
       <p id="auth-error" class="error-msg"></p>
-      <button id="toggle-auth-mode" class="btn-link">Har du ikke konto? Registrer deg her</button>
+      <button id="toggle-auth-mode" class="btn-link">Ny hos Tale? Opprett konto</button>
     </div>
   </div>
 
-  <!-- HOVEDAPP (Vises kun når du er innlogget) -->
+  <!-- HOVEDAPP (Storytel/Fabel stil) -->
   <div id="app-view" class="view">
+    
     <!-- Toppstripe -->
     <header class="top-bar">
       <div class="logo-container">
         <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347860/copy_of_tale_edited_gvs2so.png" alt="Tale Logo" class="logo-img">
       </div>
-      <div class="profile-btn" id="profile-btn">
+      <div class="profile-btn" id="logout-btn">
         <span class="profile-avatar" id="user-avatar">U</span>
-        <span class="profile-name" id="logout-btn">Logg ut</span>
+        <span class="profile-name">Logg ut</span>
       </div>
     </header>
 
-    <!-- Innholdsområde -->
+    <!-- Innholdsområde med horisontale karuseller -->
     <main>
+      
+      <!-- Seksjon: Hjem -->
       <section id="home" class="page active">
-        <h1>Hjem</h1>
-        <p>Siste oppdateringer og populært innhold på Tale.</p>
-        <div class="grid">
-          <div class="card" data-title="NRK P3 Live" data-sub="Direkte Radio" data-audio="https://nrk-m3u-proxy.s3.amazonaws.com/p3.m3u8">
-            <div class="card-title">NRK P3</div>
-            <div class="card-sub">Direkte radio</div>
+        <div class="hero-banner">
+          <span class="badge">Anbefalt nå</span>
+          <h2>Exphil på 60 minutter</h2>
+          <p>Klar for eksamen? Hør den mest populære oppsummeringen.</p>
+        </div>
+
+        <div class="section-header">
+          <h3>Fortsett å lytte</h3>
+        </div>
+        <div class="horizontal-scroll">
+          <div class="book-card" data-title="Exphil på 60 min" data-sub="Filosofi / Pensum">
+            <div class="book-cover">📖</div>
+            <div class="book-title">Exphil på 60 min</div>
+            <div class="book-author">Pensum</div>
+          </div>
+          <div class="book-card" data-title="NRK P3 Live" data-sub="Direkte Radio">
+            <div class="book-cover radio-cover">📻</div>
+            <div class="book-title">NRK P3</div>
+            <div class="book-author">Direkte</div>
+          </div>
+        </div>
+
+        <div class="section-header">
+          <h3>Mest populært akkurat nå</h3>
+        </div>
+        <div class="horizontal-scroll">
+          <div class="book-card" data-title="Henrik og Vasvári" data-sub="Podkast">
+            <div class="book-cover pod-cover">🎙️</div>
+            <div class="book-title">Henrik og Vasvári</div>
+            <div class="book-author">Underholdning</div>
+          </div>
+          <div class="book-card" data-title="Oppdatert" data-sub="NRK Podkast">
+            <div class="book-cover pod-cover">📰</div>
+            <div class="book-title">Oppdatert</div>
+            <div class="book-author">Nyheter</div>
           </div>
         </div>
       </section>
 
+      <!-- Seksjon: Lydbøker -->
       <section id="audiobooks" class="page">
-        <h1>Lydbøker</h1>
-        <p>Skjønnlitteratur, sakprosa og pensum for studiene dine.</p>
-        <div class="grid">
-          <div class="card" data-title="Exphil på 60 min" data-sub="Pensum / Lydbok" data-audio="">
-            <div class="card-title">Exphil Introduksjon</div>
-            <div class="card-sub">Pensum / Lydbok</div>
+        <h2>Lydbøker</h2>
+        <div class="section-header">
+          <h3>Populære lydbøker</h3>
+        </div>
+        <div class="horizontal-scroll">
+          <div class="book-card" data-title="Exphil Introduksjon" data-sub="Lydbok">
+            <div class="book-cover">📖</div>
+            <div class="book-title">Exphil Introduksjon</div>
+            <div class="book-author">Filosofi</div>
           </div>
         </div>
       </section>
 
+      <!-- Seksjon: Podcaster -->
       <section id="podcasts" class="page">
-        <h1>Podcaster</h1>
-        <p>Abonner på dine favorittpodcaster.</p>
-        <div class="grid">
-          <div class="card" data-title="Henrik og Vasvári" data-sub="Underholdning" data-audio="">
-            <div class="card-title">Henrik og Vasvári</div>
-            <div class="card-sub">Underholdning</div>
+        <h2>Podcaster</h2>
+        <div class="section-header">
+          <h3>Topplisten</h3>
+        </div>
+        <div class="horizontal-scroll">
+          <div class="book-card" data-title="Henrik og Vasvári" data-sub="Podkast">
+            <div class="book-cover pod-cover">🎙️</div>
+            <div class="book-title">Henrik og Vasvári</div>
+            <div class="book-author">Underholdning</div>
           </div>
         </div>
       </section>
 
+      <!-- Seksjon: Radio -->
       <section id="radio" class="page">
-        <h1>Radio</h1>
-        <p>Hør på live-sendinger fra NRK og andre kanaler.</p>
-        <div class="grid">
-          <div class="card" data-title="NRK P1" data-sub="Direkte Radio" data-audio="">
-            <div class="card-title">NRK P1</div>
-            <div class="card-sub">Nyheter og distrikt</div>
+        <h2>Direkte Radio</h2>
+        <div class="section-header">
+          <h3>Norske kanaler</h3>
+        </div>
+        <div class="horizontal-scroll">
+          <div class="book-card" data-title="NRK P1" data-sub="Radio">
+            <div class="book-cover radio-cover">📻</div>
+            <div class="book-title">NRK P1</div>
+            <div class="book-author">Nyheter & Distrikt</div>
+          </div>
+          <div class="book-card" data-title="NRK mP3" data-sub="Radio">
+            <div class="book-cover radio-cover">🎶</div>
+            <div class="book-title">NRK mP3</div>
+            <div class="book-author">Ny Musikk</div>
           </div>
         </div>
       </section>
+
     </main>
 
-    <!-- Spillerstripe (Skjult helt til noe spilles av) -->
+    <!-- Minimerbar Spillerstripe -->
     <div class="player hidden" id="audio-player-bar">
-      <div class="player-info">
-        <span id="player-title" class="player-title">Ingen spilles</span>
-        <span id="player-sub" class="player-sub">Velg et kort</span>
+      <div class="player-left">
+        <div class="player-cover-small" id="player-cover">🎧</div>
+        <div class="player-info">
+          <span id="player-title" class="player-title">Ingen spilles</span>
+          <span id="player-sub" class="player-sub">Velg tittel</span>
+        </div>
       </div>
       <div class="player-controls">
-        <button id="play-btn">PLAY</button>
+        <button id="play-btn">▶</button>
       </div>
     </div>
 
     <!-- Bunnmeny -->
     <nav class="bottom-bar">
-      <button class="nav-btn active" data-target="home">Hjem</button>
-      <button class="nav-btn" data-target="audiobooks">Lydbøker</button>
-      <button class="nav-btn" data-target="podcasts">Podcaster</button>
-      <button class="nav-btn" data-target="radio">Radio</button>
+      <button class="nav-btn active" data-target="home">
+        <span class="nav-icon">🏠</span>
+        <span>Hjem</span>
+      </button>
+      <button class="nav-btn" data-target="audiobooks">
+        <span class="nav-icon">📚</span>
+        <span>Lydbøker</span>
+      </button>
+      <button class="nav-btn" data-target="podcasts">
+        <span class="nav-icon">🎙️</span>
+        <span>Podkaster</span>
+      </button>
+      <button class="nav-btn" data-target="radio">
+        <span class="nav-icon">📻</span>
+        <span>Radio</span>
+      </button>
     </nav>
+
   </div>
 
   <script type="module" src="app.js"></script>
