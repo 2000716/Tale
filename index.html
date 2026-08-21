@@ -10,16 +10,18 @@
 
   <!-- Toppstripe (Header) -->
   <header class="top-bar">
-    <div class="logo">TALE</div>
+    <div class="logo-container">
+      <!-- Erstatt 'logo.png' med filnavnet på din logo -->
+      <img src="logo.png" alt="Tale Logo" class="logo-img">
+    </div>
     <div class="profile-btn" id="profile-btn">
       <span class="profile-avatar">M</span>
       <span class="profile-name">Min Profil</span>
     </div>
   </header>
 
-  <!-- SPA Innhold -->
+  <!-- Innholdsområde (Hvit-beige) -->
   <main>
-    <!-- Hjem -->
     <section id="home" class="page active">
       <h1>Hjem</h1>
       <p>Siste oppdateringer og populært innhold på Tale.</p>
@@ -36,7 +38,6 @@
       </div>
     </section>
 
-    <!-- Lydbøker -->
     <section id="audiobooks" class="page">
       <h1>Lydbøker</h1>
       <p>Skjønnlitteratur, sakprosa og pensum for studiene dine.</p>
@@ -49,7 +50,6 @@
       </div>
     </section>
 
-    <!-- Podcaster -->
     <section id="podcasts" class="page">
       <h1>Podcaster</h1>
       <p>Abonner på dine favorittpodcaster.</p>
@@ -62,7 +62,6 @@
       </div>
     </section>
 
-    <!-- Radio -->
     <section id="radio" class="page">
       <h1>Radio</h1>
       <p>Hør på live-sendinger fra NRK og andre kanaler.</p>
@@ -80,7 +79,7 @@
     </section>
   </main>
 
-  <!-- Lydspiller nederst (over bunnmenyen) -->
+  <!-- Lydspiller nederst -->
   <div class="player">
     <div class="player-info">
       <span id="player-title" class="player-title">Ingen lyd valgt</span>
@@ -91,7 +90,7 @@
     </div>
   </div>
 
-  <!-- Bunnmeny -->
+  <!-- Bunnmeny (Samme farge som toppstripen) -->
   <nav class="bottom-bar">
     <button class="nav-btn active" data-target="home">Hjem</button>
     <button class="nav-btn" data-target="audiobooks">Lydbøker</button>
