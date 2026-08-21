@@ -1,11 +1,13 @@
 :root {
-  /* Toppstripe & Profil: Mørk blå med lilla undertone */
-  --topbar-bg: #0b112c;
-  --topbar-border: #1e295d;
-  --accent-purple: #7c3aed;
-  --accent-hover: #6d28d9;
+  /* Toppstripe & Bunnmeny: Litt lysere, dyp blå med lilla undertone */
+  --bar-bg: #151d3b;
+  --bar-border: #25325c;
+  
+  /* Lilla aksentfarger */
+  --accent-purple: #8b5cf6;
+  --accent-hover: #7c3aed;
 
-  /* Innhold: Hvit med litt beige (Warm Off-White) */
+  /* Innhold: Warm Off-White / Lys beige */
   --content-bg: #fdfbf7;
   --card-bg: #ffffff;
   --card-border: #e2e8f0;
@@ -32,22 +34,27 @@ body {
   overflow: hidden;
 }
 
-/* Toppstripe (Mørk blå-lilla) */
+/* Toppstripe */
 .top-bar {
-  background-color: var(--topbar-bg);
+  background-color: var(--bar-bg);
   padding: 0.8rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--topbar-border);
+  border-bottom: 1px solid var(--bar-border);
   z-index: 30;
 }
 
-.logo {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text-light);
-  letter-spacing: -0.5px;
+/* Logo som bilde */
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.logo-img {
+  height: 32px; /* Juster høyden slik at bildet passer fint inn */
+  width: auto;
+  object-fit: contain;
 }
 
 /* Profil-knapp i toppstripen */
@@ -59,7 +66,7 @@ body {
   padding: 0.35rem 0.75rem;
   border-radius: 20px;
   cursor: pointer;
-  border: 1px solid var(--topbar-border);
+  border: 1px solid var(--bar-border);
   transition: background-color 0.2s;
 }
 
@@ -148,20 +155,20 @@ p {
   color: var(--text-muted);
 }
 
-/* Lydspiller nederst (Mørk blå for god kontrast) */
+/* Lydspiller nederst */
 .player {
   position: fixed;
   bottom: 55px;
   left: 0;
   right: 0;
   height: 55px;
-  background-color: var(--topbar-bg);
+  background-color: #0b112c;
   color: var(--text-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 1.5rem;
-  border-top: 1px solid var(--topbar-border);
+  border-top: 1px solid var(--bar-border);
   z-index: 20;
 }
 
@@ -196,25 +203,25 @@ p {
   background-color: var(--accent-hover);
 }
 
-/* Bunnmeny */
+/* Bunnmeny (Samme farge som toppstripen) */
 .bottom-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   height: 55px;
-  background-color: #ffffff;
+  background-color: var(--bar-bg);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  border-top: 1px solid var(--card-border);
+  border-top: 1px solid var(--bar-border);
   z-index: 10;
 }
 
 .bottom-bar button {
   background: none;
   border: none;
-  color: var(--text-muted);
+  color: #94a3b8;
   font-size: 0.9rem;
   cursor: pointer;
   font-weight: 600;
