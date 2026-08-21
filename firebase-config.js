@@ -1,6 +1,7 @@
-// Importer Firebase-funksjoner via CDN (CDN trengs for vanlige HTML/JS-prosjekter)
+// Importer Firebase-funksjoner via CDN
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Din Firebase-konfigurasjon
 const firebaseConfig = {
@@ -15,6 +16,11 @@ const firebaseConfig = {
 
 // Initialiser Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+export const auth = getAuth(app);
+
+// Initialiser Analytics kun dersom nettsiden kjøres på en server/domene
+if (location.protocol.startsWith("http")) {
+  getAnalytics(app);
+}
 
 console.log("Firebase er koblet til Tale!");
