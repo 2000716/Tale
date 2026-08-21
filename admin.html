@@ -26,7 +26,6 @@
     
     button { background: #AEC2F7; color: #0b112c; padding: 0.8rem 1.2rem; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 1rem; width: 100%; transition: opacity 0.2s; }
     button:hover { opacity: 0.9; }
-    button:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
     
     .btn-delete { background: #ef4444; color: white; padding: 0.4rem 0.8rem; font-size: 0.8rem; width: auto; margin-top: 0; }
     .btn-delete:hover { background: #dc2626; }
@@ -34,6 +33,8 @@
     .section-list-item { display: flex; justify-content: space-between; align-items: center; background: #131b3e; padding: 1rem; border-radius: 8px; margin-bottom: 0.8rem; border: 1px solid #1e293b; }
     .status-msg { font-size: 0.85rem; color: #38bdf8; margin-top: 0.5rem; text-align: center; }
     .badge { display: inline-block; padding: 0.2rem 0.5rem; background: #1e293b; border-radius: 4px; font-size: 0.75rem; color: #AEC2F7; text-transform: uppercase; }
+    
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
@@ -44,7 +45,23 @@
       <p class="subtitle">Oversikt over kategorier, innhold og RSS-strømmer for Lydbøker, Podkaster og Radio</p>
     </header>
 
-    <div class="grid">
+    <!-- INNLOGGINGSSKJEMA -->
+    <div id="login-card" class="card" style="max-width: 400px; margin: 0 auto 2rem auto;">
+      <h3>Admin Innlogging</h3>
+      <form id="login-form">
+        <label>E-post</label>
+        <input type="email" id="login-email" placeholder="admin@dittdomene.no" required>
+        
+        <label>Passord</label>
+        <input type="password" id="login-password" placeholder="••••••••" required>
+        
+        <button type="submit">Logg inn</button>
+        <div id="login-msg" class="status-msg"></div>
+      </form>
+    </div>
+
+    <!-- ADMIN PANELS (SKJULT INTIL DU ER LOGGET INN) -->
+    <div id="admin-content" class="grid hidden">
       <!-- 1. OPPRETT KATEGORI / SEKSJON -->
       <div class="card">
         <h3>1. Opprett Kategori / Seksjon</h3>
@@ -119,6 +136,11 @@
       query, 
       orderBy 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { 
+      getAuth, 
+      signInWithEmailAndPassword, 
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDfJ3IXqeJUkCVcMnPt3ya37Co7Du-f1WU",
@@ -131,103 +153,137 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
 
-    const sectionsSelect = document.getElementById("item-section-select");
-    const sectionsList = document.getElementById("sections-list");
-    const statusMsg = document.getElementById("status-msg");
+    const loginCard = document.getElementById("login-card");
+    const adminContent = document.getElementById("admin-content");
+    const loginMsg = document.getElementById("login-msg");
 
-    // 1. Hent og vis alle seksjoner i sanntid
-    const q = query(collection(db, "sections"), orderBy("order", "asc"));
-    onSnapshot(q, (snapshot) => {
-      sectionsSelect.innerHTML = '<option value="">-- Velg Seksjon --</option>';
-      sectionsList.innerHTML = '';
-
-      if (snapshot.empty) {
-        sectionsList.innerHTML = '<p style="color: #94a3b8;">Ingen seksjoner opprettet ennå.</p>';
+    // Sjekk om brukeren allerede er innlogget
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        loginCard.classList.add("hidden");
+        adminContent.classList.remove("hidden");
+        loadDatabaseContent();
+      } else {
+        loginCard.classList.remove("hidden");
+        adminContent.classList.add("hidden");
       }
+    });
 
-      snapshot.forEach((docSnap) => {
-        const sec = docSnap.data();
-        const id = docSnap.id;
+    // Handtering av Innlogging
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
 
-        // Oppdater Dropdown
-        const opt = document.createElement("option");
-        opt.value = id;
-        opt.textContent = `${sec.title} (${sec.page})`;
-        sectionsSelect.appendChild(opt);
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        loginMsg.innerText = "Logget inn!";
+      } catch (err) {
+        loginMsg.innerText = "Feil ved innlogging: " + err.message;
+      }
+    });
 
-        // Vis i oversikten
-        const item = document.createElement("div");
-        item.className = "section-list-item";
-        
-        let itemsCount = sec.items ? sec.items.length : 0;
-        
-        item.innerHTML = `
-          <div>
-            <span class="badge">${sec.page}</span>
-            <strong style="margin-left: 0.5rem; font-size: 1.1rem;">${sec.title}</strong>
-            <br><small style="color: #94a3b8; display: inline-block; margin-top: 0.3rem;">Elementer: ${itemsCount} | Rekkefølge: ${sec.order}</small>
-          </div>
-          <button class="btn-delete" onclick="deleteSection('${id}')">Slett Seksjon</button>
-        `;
-        sectionsList.appendChild(item);
+    // Last inn databasen når brukeren er autentisert
+    function loadDatabaseContent() {
+      const sectionsSelect = document.getElementById("item-section-select");
+      const sectionsList = document.getElementById("sections-list");
+      const statusMsg = document.getElementById("status-msg");
+
+      // Hent og vis alle seksjoner i sanntid
+      const q = query(collection(db, "sections"), orderBy("order", "asc"));
+      onSnapshot(q, (snapshot) => {
+        sectionsSelect.innerHTML = '<option value="">-- Velg Seksjon --</option>';
+        sectionsList.innerHTML = '';
+
+        if (snapshot.empty) {
+          sectionsList.innerHTML = '<p style="color: #94a3b8;">Ingen seksjoner opprettet ennå.</p>';
+        }
+
+        snapshot.forEach((docSnap) => {
+          const sec = docSnap.data();
+          const id = docSnap.id;
+
+          // Oppdater Dropdown
+          const opt = document.createElement("option");
+          opt.value = id;
+          opt.textContent = `${sec.title} (${sec.page})`;
+          sectionsSelect.appendChild(opt);
+
+          // Vis i oversikten
+          const item = document.createElement("div");
+          item.className = "section-list-item";
+          
+          let itemsCount = sec.items ? sec.items.length : 0;
+          
+          item.innerHTML = `
+            <div>
+              <span class="badge">${sec.page}</span>
+              <strong style="margin-left: 0.5rem; font-size: 1.1rem;">${sec.title}</strong>
+              <br><small style="color: #94a3b8; display: inline-block; margin-top: 0.3rem;">Elementer: ${itemsCount} | Rekkefølge: ${sec.order}</small>
+            </div>
+            <button class="btn-delete" onclick="deleteSection('${id}')">Slett Seksjon</button>
+          `;
+          sectionsList.appendChild(item);
+        });
       });
-    });
 
-    // 2. Opprett ny seksjon
-    document.getElementById("add-section-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const title = document.getElementById("sec-title").value;
-      const page = document.getElementById("sec-page").value;
-      const order = parseInt(document.getElementById("sec-order").value);
+      // Opprett ny seksjon
+      document.getElementById("add-section-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const title = document.getElementById("sec-title").value;
+        const page = document.getElementById("sec-page").value;
+        const order = parseInt(document.getElementById("sec-order").value);
 
-      try {
-        await addDoc(collection(db, "sections"), {
-          title,
-          page,
-          order,
-          items: []
-        });
-        document.getElementById("sec-title").value = '';
-      } catch (err) {
-        alert("Feil ved opprettelse: " + err.message);
-      }
-    });
-
-    // 3. Legg til innhold/RSS
-    document.getElementById("add-item-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const sectionId = sectionsSelect.value;
-      if (!sectionId) return alert("Vennligst velg en seksjon først!");
-
-      statusMsg.innerText = "Lagrer...";
-
-      try {
-        const title = document.getElementById("item-title").value;
-        const sub = document.getElementById("item-sub").value;
-        const rssUrl = document.getElementById("item-rss").value;
-        const icon = document.getElementById("item-icon").value;
-        const desc = document.getElementById("item-desc").value;
-
-        const sectionRef = doc(db, "sections", sectionId);
-        await updateDoc(sectionRef, {
-          items: arrayUnion({
+        try {
+          await addDoc(collection(db, "sections"), {
             title,
-            sub,
-            rssUrl: rssUrl || "",
-            icon,
-            desc
-          })
-        });
+            page,
+            order,
+            items: []
+          });
+          document.getElementById("sec-title").value = '';
+        } catch (err) {
+          alert("Feil ved opprettelse: " + err.message);
+        }
+      });
 
-        statusMsg.innerText = "Innholdet ble lagret!";
-        document.getElementById("add-item-form").reset();
-      } catch (err) {
-        statusMsg.innerText = "Feil ved lagring: " + err.message;
-      } finally {
-        setTimeout(() => statusMsg.innerText = "", 3000);
-      }
-    });
+      // Legg til innhold/RSS
+      document.getElementById("add-item-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const sectionId = sectionsSelect.value;
+        if (!sectionId) return alert("Vennligst velg en seksjon først!");
+
+        statusMsg.innerText = "Lagrer...";
+
+        try {
+          const title = document.getElementById("item-title").value;
+          const sub = document.getElementById("item-sub").value;
+          const rssUrl = document.getElementById("item-rss").value;
+          const icon = document.getElementById("item-icon").value;
+          const desc = document.getElementById("item-desc").value;
+
+          const sectionRef = doc(db, "sections", sectionId);
+          await updateDoc(sectionRef, {
+            items: arrayUnion({
+              title,
+              sub,
+              rssUrl: rssUrl || "",
+              icon,
+              desc
+            })
+          });
+
+          statusMsg.innerText = "Innholdet ble lagret!";
+          document.getElementById("add-item-form").reset();
+        } catch (err) {
+          statusMsg.innerText = "Feil ved lagring: " + err.message;
+        } finally {
+          setTimeout(() => statusMsg.innerText = "", 3000);
+        }
+      });
+    }
 
     // Slett seksjon
     window.deleteSection = async (id) => {
