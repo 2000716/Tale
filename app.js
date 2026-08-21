@@ -13,31 +13,47 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// Sjekk innloggingsstatus
+// Sidenavigasjon (Bytte mellom Hovedvisninger)
+function showView(viewId) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById(viewId).classList.add("active");
+}
+
+// Sjekk status på bruker
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    document.getElementById("landing-page").classList.remove("active");
-    document.getElementById("app-view").classList.add("active");
+    showView("app-view");
+    document.getElementById("account-email-display").innerText = user.email;
     document.getElementById("user-avatar").innerText = user.email.charAt(0).toUpperCase();
   } else {
-    document.getElementById("landing-page").classList.add("active");
-    document.getElementById("app-view").classList.remove("active");
+    showView("landing-view");
   }
 });
 
-// Innlogging / Registrering
-let isSignUp = false;
-const authForm = document.getElementById("auth-form");
-const toggleAuthBtn = document.getElementById("toggle-auth-mode");
-
-toggleAuthBtn.addEventListener("click", () => {
-  isSignUp = !isSignUp;
-  document.getElementById("auth-title").innerText = isSignUp ? "Opprett konto" : "Logg inn";
-  document.getElementById("auth-submit-btn").innerText = isSignUp ? "Registrer deg" : "Start lyttingen";
-  toggleAuthBtn.innerText = isSignUp ? "Har du allerede konto? Logg inn" : "Ny hos Tale? Opprett konto";
+// Navigasjon: Landing / Auth
+document.getElementById("go-to-login-btn").addEventListener("click", () => {
+  setAuthMode(false);
+  showView("auth-view");
 });
 
-authForm.addEventListener("submit", async (e) => {
+document.getElementById("go-to-register-btn").addEventListener("click", () => {
+  setAuthMode(true);
+  showView("auth-view");
+});
+
+document.getElementById("auth-back-btn").addEventListener("click", () => showView("landing-view"));
+
+let isSignUp = false;
+function setAuthMode(signUp) {
+  isSignUp = signUp;
+  document.getElementById("auth-title").innerText = isSignUp ? "Opprett konto" : "Logg inn";
+  document.getElementById("toggle-auth-mode").innerText = isSignUp ? "Har du allerede konto? Logg inn" : "Har du ikke konto? Registrer deg";
+}
+
+document.getElementById("toggle-auth-mode").addEventListener("click", () => setAuthMode(!isSignUp));
+
+// Handlinger for innlogging/registrering
+document.getElementById("auth-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("auth-email").value;
   const password = document.getElementById("auth-password").value;
@@ -51,35 +67,75 @@ authForm.addEventListener("submit", async (e) => {
       await signInWithEmailAndPassword(auth, email, password);
     }
   } catch (err) {
-    errorMsg.innerText = "Klarte ikke å logge inn. Sjekk e-post og passord.";
+    errorMsg.innerText = "Feil ved innlogging/registrering.";
   }
 });
 
 document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
 
-// Tab-navigasjon
+// Intern Tab-navigasjon i Hovedapp (Hjem, Lydbøker, Podkaster, Radio, Konto)
+function switchPage(pageId) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  
+  document.getElementById(pageId).classList.add("active");
+  const activeBtn = document.querySelector(`.nav-btn[data-target="${pageId}"]`);
+  if (activeBtn) activeBtn.classList.add("active");
+}
+
 document.querySelectorAll(".nav-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-    
-    btn.classList.add("active");
-    document.getElementById(btn.dataset.target).classList.add("active");
+  btn.addEventListener("click", () => switchPage(btn.dataset.target));
+});
+
+document.getElementById("nav-account-btn").addEventListener("click", () => switchPage("account"));
+
+// Detaljside (Informasjon om boken/podkasten)
+let selectedItem = {};
+document.querySelectorAll(".book-card").forEach(card => {
+  card.addEventListener("click", () => {
+    selectedItem = {
+      title: card.dataset.title,
+      sub: card.dataset.sub,
+      desc: card.dataset.desc,
+      icon: card.dataset.icon
+    };
+
+    document.getElementById("details-title").innerText = selectedItem.title;
+    document.getElementById("details-sub").innerText = selectedItem.sub;
+    document.getElementById("details-desc").innerText = selectedItem.desc;
+    document.getElementById("details-cover").innerText = selectedItem.icon;
+
+    document.getElementById("details-page").classList.add("active");
   });
 });
 
-// Klikk på bok/podkast-kort for å starte avspilling
-const playerBar = document.getElementById("audio-player-bar");
-document.querySelectorAll(".book-card").forEach(card => {
-  card.addEventListener("click", () => {
-    const title = card.getAttribute("data-title");
-    const sub = card.getAttribute("data-sub");
-    const icon = card.querySelector(".book-cover").innerText;
-    
-    document.getElementById("player-title").innerText = title;
-    document.getElementById("player-sub").innerText = sub;
-    document.getElementById("player-cover").innerText = icon;
-    
-    playerBar.classList.remove("hidden");
-  });
+document.getElementById("details-close-btn").addEventListener("click", () => {
+  document.getElementById("details-page").classList.remove("active");
+});
+
+// Start avspilling og åpne fullskjerm-spiller
+document.getElementById("start-play-btn").addEventListener("click", () => {
+  document.getElementById("details-page").classList.remove("active");
+  
+  // Oppdater mini-spiller
+  document.getElementById("mini-player-title").innerText = selectedItem.title;
+  document.getElementById("mini-player-sub").innerText = selectedItem.sub;
+  document.getElementById("mini-player-cover").innerText = selectedItem.icon;
+  document.getElementById("audio-player-bar").classList.remove("hidden");
+
+  // Oppdater fullskjermspiller
+  document.getElementById("full-title").innerText = selectedItem.title;
+  document.getElementById("full-sub").innerText = selectedItem.sub;
+  document.getElementById("full-cover").innerText = selectedItem.icon;
+
+  document.getElementById("fullscreen-player").classList.add("active");
+});
+
+// Åpne fullskjerm ved trykk på mini-spiller
+document.getElementById("open-full-player").addEventListener("click", () => {
+  document.getElementById("fullscreen-player").classList.add("active");
+});
+
+document.getElementById("player-close-btn").addEventListener("click", () => {
+  document.getElementById("fullscreen-player").classList.remove("active");
 });
