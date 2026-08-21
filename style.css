@@ -1,237 +1,99 @@
 :root {
-  /* Hovedfarge for topp- og bunnmeny (Mørkeblå) */
   --bar-bg: #0b112c;
   --bar-border: #1e293b;
-  
-  /* Knapper og tekstfarge i meny/aksenter (#AEC2F7) */
   --accent-light-blue: #AEC2F7;
   --accent-hover: #8da9f2;
-
-  /* Innhold: Warm Off-White / Lys beige */
   --content-bg: #fdfbf7;
   --card-bg: #ffffff;
   --card-border: #e2e8f0;
-
-  /* Tekstfarger */
   --text-dark: #0f172a;
   --text-muted: #64748b;
   --text-light: #f8fafc;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+body { background-color: var(--bar-bg); color: var(--text-dark); }
 
-body {
-  background-color: var(--content-bg);
-  color: var(--text-dark);
+.view { display: none; }
+.view.active { display: block; }
+
+/* Landingsside og Innlogging */
+#landing-page {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* Toppstripe */
-.top-bar {
-  background-color: var(--bar-bg);
-  padding: 0.8rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--bar-border);
-  z-index: 30;
-}
-
-/* Logo som bilde */
-.logo-container {
-  display: flex;
-  align-items: center;
-}
-
-.logo-img {
-  height: 32px;
-  max-height: 32px;
-  width: auto;
-  object-fit: contain;
-}
-
-/* Profil-knapp i toppstripen */
-.profile-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  padding: 0.35rem 0.75rem;
-  border-radius: 20px;
-  cursor: pointer;
-  border: 1px solid var(--accent-light-blue);
-  transition: background-color 0.2s;
-}
-
-.profile-btn:hover {
-  background-color: rgba(174, 194, 247, 0.15);
-}
-
-.profile-avatar {
-  width: 26px;
-  height: 26px;
-  background-color: var(--accent-light-blue);
-  color: var(--bar-bg);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-
-.profile-name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--accent-light-blue);
-}
-
-/* Innholdsområde */
-main {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.5rem;
-  padding-bottom: 130px;
-  background-color: var(--content-bg);
-}
-
-.page {
-  display: none;
-}
-
-.page.active {
-  display: block;
-}
-
-h1 {
-  font-size: 1.8rem;
-  margin-bottom: 0.5rem;
-  color: var(--text-dark);
-}
-
-p {
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-/* Grid & Kort */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.card {
-  background-color: var(--card-bg);
-  padding: 1.25rem;
-  border-radius: 12px;
-  cursor: pointer;
-  border: 1px solid var(--card-border);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.06);
-}
-
-.card-title {
-  font-weight: bold;
-  margin-top: 0.5rem;
-  color: var(--text-dark);
-}
-
-.card-sub {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-/* Lydspiller nederst */
-.player {
-  position: fixed;
-  bottom: 55px;
-  left: 0;
-  right: 0;
-  height: 55px;
-  background-color: #060919;
-  color: var(--text-light);
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 1.5rem;
-  border-top: 1px solid var(--bar-border);
-  z-index: 20;
-}
-
-.player-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.player-title {
-  font-size: 0.85rem;
-  font-weight: bold;
+  padding: 2rem;
+  background-color: var(--bar-bg);
   color: var(--text-light);
+  text-align: center;
 }
 
-.player-sub {
-  font-size: 0.75rem;
-  color: #94a3b8;
+.landing-logo { max-height: 80px; margin-bottom: 1rem; }
+.auth-card {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 350px;
+  margin-top: 2rem;
+  border: 1px solid var(--bar-border);
 }
 
-.player-controls button {
+.auth-card input {
+  width: 100%;
+  padding: 0.8rem;
+  margin: 0.5rem 0;
+  border-radius: 6px;
+  border: 1px solid var(--bar-border);
+  background-color: #060919;
+  color: white;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.8rem;
+  margin-top: 1rem;
   background-color: var(--accent-light-blue);
   color: var(--bar-bg);
   border: none;
-  padding: 0.4rem 1.1rem;
-  border-radius: 20px;
-  cursor: pointer;
   font-weight: bold;
-  transition: background-color 0.2s;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.player-controls button:hover {
-  background-color: var(--accent-hover);
-}
-
-/* Bunnmeny */
-.bottom-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 55px;
-  background-color: var(--bar-bg);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  border-top: 1px solid var(--bar-border);
-  z-index: 10;
-}
-
-.bottom-bar button {
+.btn-link {
   background: none;
   border: none;
   color: var(--accent-light-blue);
-  opacity: 0.6;
-  font-size: 0.9rem;
+  margin-top: 1rem;
   cursor: pointer;
-  font-weight: 600;
-  transition: opacity 0.2s;
+  font-size: 0.85rem;
 }
 
-.bottom-bar button:hover,
-.bottom-bar button.active {
-  opacity: 1;
-  font-weight: bold;
-}
+.error-msg { color: #f87171; font-size: 0.85rem; margin-top: 0.5rem; }
+
+/* Hoved-app styling */
+#app-view { background-color: var(--content-bg); min-height: 100vh; position: relative; }
+.top-bar { background-color: var(--bar-bg); padding: 0.8rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+.logo-img { max-height: 40px; }
+.profile-btn { display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--accent-light-blue); padding: 0.3rem 0.6rem; border-radius: 20px; cursor: pointer; color: var(--accent-light-blue); }
+.profile-avatar { background: var(--accent-light-blue); color: var(--bar-bg); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; }
+
+main { padding: 1.5rem; padding-bottom: 120px; }
+.page { display: none; }
+.page.active { display: block; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; margin-top: 1rem; }
+.card { background: white; padding: 1rem; border-radius: 8px; border: 1px solid var(--card-border); cursor: pointer; }
+
+/* Spiller */
+.player { position: fixed; bottom: 55px; left: 0; right: 0; height: 55px; background-color: #060919; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; border-top: 1px solid var(--bar-border); }
+.player.hidden { display: none; }
+.player-controls button { background-color: var(--accent-light-blue); border: none; padding: 0.4rem 1rem; border-radius: 15px; font-weight: bold; cursor: pointer; }
+
+/* Bunnmeny */
+.bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 55px; background-color: var(--bar-bg); display: flex; justify-content: space-around; align-items: center; }
+.bottom-bar button { background: none; border: none; color: var(--accent-light-blue); opacity: 0.5; font-weight: bold; cursor: pointer; }
+.bottom-bar button.active { opacity: 1; }
