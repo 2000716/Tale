@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// Firebase-konfigurasjon
 const firebaseConfig = {
   apiKey: "AIzaSyDfJ3IXqeJUkCVcMnPt3ya37Co7Du-f1WU",
   authDomain: "tale-8cadc.firebaseapp.com",
@@ -14,7 +13,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// Sjekk om bruker er innlogget
+// Sjekk innloggingsstatus
 onAuthStateChanged(auth, (user) => {
   if (user) {
     document.getElementById("landing-page").classList.remove("active");
@@ -26,16 +25,16 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// Autentisering logic (Bytt mellom Logg inn / Registrer)
+// Innlogging / Registrering
 let isSignUp = false;
 const authForm = document.getElementById("auth-form");
 const toggleAuthBtn = document.getElementById("toggle-auth-mode");
 
 toggleAuthBtn.addEventListener("click", () => {
   isSignUp = !isSignUp;
-  document.getElementById("auth-title").innerText = isSignUp ? "Registrer deg" : "Logg inn";
-  document.getElementById("auth-submit-btn").innerText = isSignUp ? "Opprett konto" : "Logg inn";
-  toggleAuthBtn.innerText = isSignUp ? "Har du allerede konto? Logg inn" : "Har du ikke konto? Registrer deg her";
+  document.getElementById("auth-title").innerText = isSignUp ? "Opprett konto" : "Logg inn";
+  document.getElementById("auth-submit-btn").innerText = isSignUp ? "Registrer deg" : "Start lyttingen";
+  toggleAuthBtn.innerText = isSignUp ? "Har du allerede konto? Logg inn" : "Ny hos Tale? Opprett konto";
 });
 
 authForm.addEventListener("submit", async (e) => {
@@ -52,14 +51,13 @@ authForm.addEventListener("submit", async (e) => {
       await signInWithEmailAndPassword(auth, email, password);
     }
   } catch (err) {
-    errorMsg.innerText = "Feil ved innlogging/registrering. Sjekk opplysningene.";
+    errorMsg.innerText = "Klarte ikke å logge inn. Sjekk e-post og passord.";
   }
 });
 
-// Logg ut
 document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
 
-// Navigasjon
+// Tab-navigasjon
 document.querySelectorAll(".nav-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
@@ -70,17 +68,18 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
   });
 });
 
-// Spillerstyring
+// Klikk på bok/podkast-kort for å starte avspilling
 const playerBar = document.getElementById("audio-player-bar");
-document.querySelectorAll(".card").forEach(card => {
+document.querySelectorAll(".book-card").forEach(card => {
   card.addEventListener("click", () => {
     const title = card.getAttribute("data-title");
     const sub = card.getAttribute("data-sub");
+    const icon = card.querySelector(".book-cover").innerText;
     
     document.getElementById("player-title").innerText = title;
     document.getElementById("player-sub").innerText = sub;
+    document.getElementById("player-cover").innerText = icon;
     
-    // Vis spilleren når noe spilles
     playerBar.classList.remove("hidden");
   });
 });
