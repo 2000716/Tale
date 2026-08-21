@@ -1,11 +1,11 @@
 :root {
-  /* Toppstripe & Bunnmeny: Litt lysere, dyp blå med lilla undertone */
-  --bar-bg: #151d3b;
-  --bar-border: #151d3b;
+  /* Hovedfarge for topp- og bunnmeny (Mørkeblå) */
+  --bar-bg: #0b112c;
+  --bar-border: #1e293b;
   
-  /* Lilla aksentfarger */
-  --accent-purple: #8b5cf6;
-  --accent-hover: #7c3aed;
+  /* Knapper og tekstfarge i meny/aksenter (#AEC2F7) */
+  --accent-light-blue: #AEC2F7;
+  --accent-hover: #8da9f2;
 
   /* Innhold: Warm Off-White / Lys beige */
   --content-bg: #fdfbf7;
@@ -15,7 +15,7 @@
   /* Tekstfarger */
   --text-dark: #0f172a;
   --text-muted: #64748b;
-  --text-light: #AEC2F7;
+  --text-light: #f8fafc;
 }
 
 * {
@@ -45,10 +45,10 @@ body {
   z-index: 30;
 }
 
+/* Logo som bilde */
 .logo-container {
   display: flex;
   align-items: center;
-  max-height: 32px;
 }
 
 .logo-img {
@@ -63,23 +63,23 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.05);
   padding: 0.35rem 0.75rem;
   border-radius: 20px;
   cursor: pointer;
-  border: 1px solid var(--bar-border);
+  border: 1px solid var(--accent-light-blue);
   transition: background-color 0.2s;
 }
 
 .profile-btn:hover {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(174, 194, 247, 0.15);
 }
 
 .profile-avatar {
   width: 26px;
   height: 26px;
-  background-color: var(--accent-purple);
-  color: white;
+  background-color: var(--accent-light-blue);
+  color: var(--bar-bg);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -91,15 +91,15 @@ body {
 .profile-name {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-light);
+  color: var(--accent-light-blue);
 }
 
-/* Innholdsområde (Hvit-beige) */
+/* Innholdsområde */
 main {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
-  padding-bottom: 130px; /* Plass til spiller + bunnmeny */
+  padding-bottom: 130px;
   background-color: var(--content-bg);
 }
 
@@ -163,7 +163,7 @@ p {
   left: 0;
   right: 0;
   height: 55px;
-  background-color: #0b112c;
+  background-color: #060919;
   color: var(--text-light);
   display: flex;
   align-items: center;
@@ -190,8 +190,8 @@ p {
 }
 
 .player-controls button {
-  background-color: var(--accent-purple);
-  color: white;
+  background-color: var(--accent-light-blue);
+  color: var(--bar-bg);
   border: none;
   padding: 0.4rem 1.1rem;
   border-radius: 20px;
@@ -204,7 +204,7 @@ p {
   background-color: var(--accent-hover);
 }
 
-/* Bunnmeny (Samme farge som toppstripen) */
+/* Bunnmeny */
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -222,13 +222,16 @@ p {
 .bottom-bar button {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--accent-light-blue);
+  opacity: 0.6;
   font-size: 0.9rem;
   cursor: pointer;
   font-weight: 600;
-  transition: color 0.2s;
+  transition: opacity 0.2s;
 }
 
+.bottom-bar button:hover,
 .bottom-bar button.active {
-  color: var(--accent-purple);
+  opacity: 1;
+  font-weight: bold;
 }
