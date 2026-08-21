@@ -1,9 +1,25 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tale – Lydbøker, Podkast & Radio</title>
+  <meta charset="UTF-8" />
+  <!-- Tillater zoom for bedre tilgjengelighet på alle enheter -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#050F11" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  
+  <!-- Content Security Policy: Tilpasset strømming av lyd og tale -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; media-src 'self' https: blob: icedcast:; connect-src 'self' https: wss:; font-src 'self' https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none';" />
+  <meta name="referrer-policy" content="strict-origin-when-cross-origin" />
+  
+  <!-- SEO og Meta for Tale/Radio -->
+  <title>Tale</title>
+  <meta name="description" content="Lytt til taler, undervisning og podkaster på Watch Nordic." />
+
+  <!-- Lenker og Ikoner -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347128/tALE_edited_gvs2so.png" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   
   <!-- Felles og modulspesifikke stilark -->
   <link rel="stylesheet" href="style.css">
