@@ -16,7 +16,7 @@ import {
   orderBy 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// 1. Firebase-konfigurasjon
+// 1. Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyDfJ3IXqeJUkCVcMnPt3ya37Co7Du-f1WU",
   authDomain: "tale-8cadc.firebaseapp.com",
@@ -35,7 +35,7 @@ let isUserSeeking = false;
 
 setPersistence(auth, browserLocalPersistence);
 
-// 2. Visningsstyrer
+// 2. Visningsbehandling
 function showView(viewId) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById(viewId)?.classList.add("active");
@@ -55,7 +55,7 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// 3. Innlogging og Registrering
+// 3. Innlogging / Registrering
 const goToLoginBtn = document.getElementById("go-to-login-btn");
 const goToRegisterBtn = document.getElementById("go-to-register-btn");
 const authBackBtn = document.getElementById("auth-back-btn");
@@ -101,7 +101,7 @@ if (logoutBtn) logoutBtn.onclick = () => {
   signOut(auth);
 };
 
-// 4. Navigasjon i Meny
+// 4. Navigasjon
 function switchPage(pageId) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
@@ -118,12 +118,11 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 const navAccountBtn = document.getElementById("nav-account-btn");
 if (navAccountBtn) navAccountBtn.onclick = () => switchPage("account");
 
-// Hjelpefunksjon for å hente eller lage poster-bilde (ingen emojis)
-function getCoverMarkup(coverUrl, title) {
-  if (coverUrl && coverUrl.trim() !== '') {
-    return `<img src="${coverUrl}" alt="${title}" class="book-cover-img" loading="lazy">`;
+// Hjelpefunksjon for å bygge poster-bilde
+function buildCoverMarkup(src, title) {
+  if (src && src.trim() !== '') {
+    return `<img src="${src}" alt="${title}" class="book-cover-img" loading="lazy">`;
   }
-  // Generer en stilren bilde-poster dersom URL mangler
   const cleanTitle = title ? title.trim() : "Tale";
   return `
     <div class="generated-cover">
@@ -132,7 +131,7 @@ function getCoverMarkup(coverUrl, title) {
   `;
 }
 
-// 5. Sanntidshenting fra Firestore
+// 5. Last innhold fra Firestore & Automatisk hente bilde fra RSS
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
   
@@ -157,26 +156,34 @@ function loadContentFromFirestore() {
         sectionWrapper.className = "dynamic-section";
 
         let itemsHTML = "";
-        (sec.items || []).forEach(item => {
-          const coverUrl = item.cover || item.image || item.imageUrl || '';
+        (sec.items || []).forEach((item, index) => {
           const title = item.title || 'Innhold';
           const sub = item.sub || '';
+          const rssUrl = item.rssUrl || item.rss || '';
+          const manualCover = item.cover || item.image || item.imageUrl || '';
+          const cardId = `card-${doc.id}-${index}`;
 
           itemsHTML += `
             <div class="book-card" 
+                 id="${cardId}"
                  data-title="${title}" 
                  data-sub="${sub}" 
                  data-desc="${item.desc || ''}" 
-                 data-cover="${coverUrl}"
-                 data-rss="${item.rssUrl || item.rss || ''}"
+                 data-cover="${manualCover}"
+                 data-rss="${rssUrl}"
                  data-audio="${item.audioUrl || item.audio || ''}">
-              <div class="book-cover">
-                ${getCoverMarkup(coverUrl, title)}
+              <div class="book-cover" id="cover-${cardId}">
+                ${buildCoverMarkup(manualCover, title)}
               </div>
               <div class="book-title">${title}</div>
               <div class="book-author">${sub}</div>
             </div>
           `;
+
+          // Hvis RSS er registrert, hent cover-bilde direkte fra RSS i bakgrunnen
+          if (rssUrl) {
+            fetchRSSImageData(rssUrl, cardId, title);
+          }
         });
 
         sectionWrapper.innerHTML = `
@@ -192,7 +199,42 @@ function loadContentFromFirestore() {
   });
 }
 
-// 6. Klikk på kort & RSS-henting
+// Henter automatisk cover-bilde fra RSS-koden
+async function fetchRSSImageData(rssUrl, cardId, title) {
+  try {
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+    const data = await res.json();
+
+    if (data.status === 'ok') {
+      let imageUrl = "";
+
+      // 1. Sjekk feed-bilde
+      if (data.feed && data.feed.image) {
+        imageUrl = data.feed.image;
+      } 
+      // 2. Sjekk første episode sitt bilde/thumbnail
+      else if (data.items && data.items.length > 0) {
+        imageUrl = data.items[0].thumbnail || data.items[0].enclosure?.thumbnail || "";
+      }
+
+      if (imageUrl) {
+        // Oppdater kortet i HTML
+        const cardContainer = document.getElementById(cardId);
+        const coverContainer = document.getElementById(`cover-${cardId}`);
+        if (coverContainer) {
+          coverContainer.innerHTML = buildCoverMarkup(imageUrl, title);
+        }
+        if (cardContainer) {
+          cardContainer.dataset.cover = imageUrl;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Kunne ikke hente RSS-bilde for:", rssUrl, err);
+  }
+}
+
+// 6. Klikk på kort
 let selectedItem = {};
 
 function bindCardClickEvents() {
@@ -209,14 +251,14 @@ function bindCardClickEvents() {
 
       document.getElementById("details-title").innerText = selectedItem.title;
       document.getElementById("details-sub").innerText = selectedItem.sub;
-      document.getElementById("details-desc").innerText = selectedItem.desc || "Laster innhold...";
+      document.getElementById("details-desc").innerText = selectedItem.desc || "Laster inn...";
 
       const detailsCoverContainer = document.getElementById("details-cover-container");
       if (detailsCoverContainer) {
-        detailsCoverContainer.innerHTML = getCoverMarkup(selectedItem.cover, selectedItem.title);
+        detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
       }
 
-      // Hent ferskeste bilde og lydfil dersom RSS er oppgitt
+      // Hent nyeste episode og lydfil fra RSS om tilgjengelig
       if (selectedItem.rssUrl) {
         try {
           const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(selectedItem.rssUrl)}`);
@@ -227,10 +269,11 @@ function bindCardClickEvents() {
             if (firstEpisode.enclosure && firstEpisode.enclosure.link) {
               selectedItem.audioUrl = firstEpisode.enclosure.link;
             }
-            if (firstEpisode.thumbnail || (data.feed && data.feed.image)) {
-              selectedItem.cover = firstEpisode.thumbnail || data.feed.image;
+            const rssImg = data.feed?.image || firstEpisode.thumbnail;
+            if (rssImg) {
+              selectedItem.cover = rssImg;
               if (detailsCoverContainer) {
-                detailsCoverContainer.innerHTML = getCoverMarkup(selectedItem.cover, selectedItem.title);
+                detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
               }
             }
             if (firstEpisode.description) {
@@ -239,7 +282,7 @@ function bindCardClickEvents() {
             }
           }
         } catch (err) {
-          console.error("Kunne ikke laste RSS-feed:", err);
+          console.error("Feil ved RSS-henting:", err);
         }
       }
 
@@ -288,21 +331,19 @@ if (startPlayBtn) {
       updatePlayIcons(true);
     }
 
-    // Mini-spiller omslag
     document.getElementById("mini-player-title").innerText = selectedItem.title;
     document.getElementById("mini-player-sub").innerText = selectedItem.sub;
     const miniCoverContainer = document.getElementById("mini-cover-container");
     if (miniCoverContainer) {
-      miniCoverContainer.innerHTML = getCoverMarkup(selectedItem.cover, selectedItem.title);
+      miniCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
     }
     document.getElementById("audio-player-bar")?.classList.remove("hidden");
 
-    // Fullskjerm-spiller omslag
     document.getElementById("full-title").innerText = selectedItem.title;
     document.getElementById("full-sub").innerText = selectedItem.sub;
     const fullCoverContainer = document.getElementById("full-cover-container");
     if (fullCoverContainer) {
-      fullCoverContainer.innerHTML = getCoverMarkup(selectedItem.cover, selectedItem.title);
+      fullCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
     }
 
     document.getElementById("fullscreen-player")?.classList.add("active");
@@ -326,7 +367,6 @@ if (fullPlayBtn) fullPlayBtn.onclick = () => togglePlay();
 if (skipBackBtn) skipBackBtn.onclick = () => { if (globalAudio.src) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); };
 if (skipForwardBtn) skipForwardBtn.onclick = () => { if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
 
-// Tidslinje-logikk
 if (globalAudio) {
   globalAudio.ontimeupdate = () => {
     if (!isUserSeeking && globalAudio.duration) {
