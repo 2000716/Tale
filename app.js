@@ -104,7 +104,7 @@ onAuthStateChanged(auth, (user) => {
     const userAvatar = document.getElementById("user-avatar");
     if (emailDisplay) emailDisplay.innerText = user.email;
     if (userAvatar) userAvatar.innerText = user.email.charAt(0).toUpperCase();
-      
+       
     loadContentFromFirestore();
     loadUserHistory();
     restoreLastPage();
@@ -170,7 +170,7 @@ function switchPage(pageId) {
 
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-    
+     
   document.getElementById(pageId)?.classList.add("active");
   const activeBtn = document.querySelector(`.nav-btn[data-target="${pageId}"]`);
   if (activeBtn) activeBtn.classList.add("active");
@@ -286,10 +286,10 @@ function updateDetailPlayButtonState() {
 // 5. Last innhold fra Firestore & Automatisk hente bilde fra RSS
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
-    
+     
   onSnapshot(q, (snapshot) => {
     const pages = ["home", "audiobooks", "podcasts", "radio"];
-      
+     
     pages.forEach(p => {
       const container = document.getElementById(`${p}-sections`);
       if (container) container.innerHTML = "";
@@ -297,50 +297,53 @@ function loadContentFromFirestore() {
 
     snapshot.forEach((docSnap) => {
       const sec = docSnap.data();
-      const pageTarget = sec.page || "home";
-      const targetContainer = document.getElementById(`${pageTarget}-sections`);
+      const pagesArray = Array.isArray(sec.pages) ? sec.pages : [sec.page || "home"];
 
-      if (targetContainer) {
-        const sectionWrapper = document.createElement("div");
-        sectionWrapper.className = "dynamic-section";
+      pagesArray.forEach(pageTarget => {
+        const targetContainer = document.getElementById(`${pageTarget}-sections`);
 
-        let itemsHTML = "";
-        (sec.items || []).forEach((item, index) => {
-          const title = item.title || 'Innhold';
-          const sub = item.sub || '';
-          const rssUrl = item.rssUrl || item.rss || '';
-          const manualCover = item.cover || item.image || item.imageUrl || '';
-          const cardId = `card-${docSnap.id}-${index}`;
+        if (targetContainer) {
+          const sectionWrapper = document.createElement("div");
+          sectionWrapper.className = "dynamic-section";
 
-          itemsHTML += `
-            <div class="book-card" 
-                 id="${cardId}"
-                 data-title="${title}" 
-                 data-sub="${sub}" 
-                 data-desc="${item.desc || ''}" 
-                 data-cover="${manualCover}"
-                 data-rss="${rssUrl}"
-                 data-audio="${item.audioUrl || item.audio || ''}">
-              <div class="book-cover" id="cover-${cardId}">
-                ${buildCoverMarkup(manualCover, title)}
+          let itemsHTML = "";
+          (sec.items || []).forEach((item, index) => {
+            const title = item.title || 'Innhold';
+            const sub = item.sub || '';
+            const rssUrl = item.rssUrl || item.rss || '';
+            const manualCover = item.coverUrl || item.cover || item.image || '';
+            const cardId = `card-${docSnap.id}-${index}-${pageTarget}`;
+
+            itemsHTML += `
+              <div class="book-card" 
+                   id="${cardId}"
+                   data-title="${title}" 
+                   data-sub="${sub}" 
+                   data-desc="${item.desc || ''}" 
+                   data-cover="${manualCover}"
+                   data-rss="${rssUrl}"
+                   data-audio="${item.audioUrl || item.audio || ''}">
+                <div class="book-cover" id="cover-${cardId}">
+                  ${buildCoverMarkup(manualCover, title)}
+                </div>
+                <div class="book-title">${title}</div>
+                <div class="book-author">${sub}</div>
               </div>
-              <div class="book-title">${title}</div>
-              <div class="book-author">${sub}</div>
-            </div>
+            `;
+
+            if (rssUrl) {
+              fetchRSSImageData(rssUrl, cardId, title);
+            }
+          });
+
+          sectionWrapper.innerHTML = `
+            <div class="section-header"><h3>${sec.title}</h3></div>
+            <div class="horizontal-scroll">${itemsHTML}</div>
           `;
 
-          if (rssUrl) {
-            fetchRSSImageData(rssUrl, cardId, title);
-          }
-        });
-
-        sectionWrapper.innerHTML = `
-          <div class="section-header"><h3>${sec.title}</h3></div>
-          <div class="horizontal-scroll">${itemsHTML}</div>
-        `;
-
-        targetContainer.appendChild(sectionWrapper);
-      }
+          targetContainer.appendChild(sectionWrapper);
+        }
+      });
     });
 
     bindCardClickEvents();
@@ -378,6 +381,19 @@ async function fetchRSSImageData(rssUrl, cardId, title) {
   }
 }
 
+// --- NY: Apple / iTunes API Søk i appen ---
+window.searchPodcastsInApp = async function(searchTerm) {
+  try {
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&media=podcast&country=NO&limit=20`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.results || [];
+  } catch (err) {
+    console.error("Feil ved søk i Apple Podcast API:", err);
+    return [];
+  }
+};
+
 // Åpne Detaljside
 async function openDetailsView(item) {
   selectedItem = item;
@@ -390,7 +406,7 @@ async function openDetailsView(item) {
   if (dTitle) dTitle.innerText = selectedItem.title;
   if (dSub) dSub.innerText = selectedItem.sub;
   if (dDesc) dDesc.innerText = selectedItem.desc || "Laster inn...";
-    
+     
   const detailsCoverContainer = document.getElementById("details-cover-container");
   if (detailsCoverContainer) {
     detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
@@ -400,7 +416,7 @@ async function openDetailsView(item) {
 
   let episodeListContainer = document.getElementById("episode-list");
   let detailsContent = document.querySelector(".details-content");
-  
+ 
   if (!episodeListContainer && detailsContent) {
     const div = document.createElement("div");
     div.className = "episode-list-container";
@@ -512,7 +528,7 @@ function playSpecificEpisode(epData, startPosition = 0) {
   selectedItem.audioUrl = epData.audioUrl;
   if (epData.cover) selectedItem.cover = epData.cover;
   if (epData.sub) selectedItem.sub = epData.sub;
-    
+     
   if (selectedItem.audioUrl) {
     globalAudio.src = selectedItem.audioUrl;
     globalAudio.onloadedmetadata = () => {
