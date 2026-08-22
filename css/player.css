@@ -107,6 +107,7 @@
 
 #fullscreen-player .close-btn {
   color: var(--accent-blue);
+  align-self: flex-start;
 }
 
 /* Løfter hele innholdet opp mot toppen */
@@ -115,10 +116,29 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start; /* Flytter alt opp fra midten */
-  margin-top: 1rem;            /* Juster denne hvis du vil ha bildet enda høyere opp */
+  margin-top: 1rem;            /* Luft mot lukk-knappen */
   flex: 1;
   width: 100%;
   text-align: center;
+}
+
+/* Beholder for storspiller-bilde (matcher HTML) */
+#full-cover-container {
+  margin-bottom: 2.5rem;       /* God avstand ned til teksten så det ikke klemmes */
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Bilde i storspilleren (fungerer uansett om klassen er direkte på <img> eller i container) */
+.full-cover-img,
+#full-cover-container img {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  background-color: #1a2550;
 }
 
 #fullscreen-player h2 {
@@ -131,17 +151,6 @@
 #fullscreen-player p {
   color: var(--text-muted);
   font-size: 0.9rem;
-}
-
-/* Beholder god avstand mellom bilde og tekst */
-.full-cover-img {
-  width: 200px;
-  height: 200px;
-  object-fit: cover;
-  border-radius: var(--radius-lg);
-  margin-bottom: 2.5rem;       /* Økt fra 2rem til 2.5rem så teksten IKKE klemmes mot bildet */
-  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
-  background-color: #1a2550;
 }
 
 .progress-container {
