@@ -208,17 +208,13 @@ async function fetchRSSImageData(rssUrl, cardId, title) {
     if (data.status === 'ok') {
       let imageUrl = "";
 
-      // 1. Sjekk feed-bilde
       if (data.feed && data.feed.image) {
         imageUrl = data.feed.image;
-      } 
-      // 2. Sjekk første episode sitt bilde/thumbnail
-      else if (data.items && data.items.length > 0) {
+      } else if (data.items && data.items.length > 0) {
         imageUrl = data.items[0].thumbnail || data.items[0].enclosure?.thumbnail || "";
       }
 
       if (imageUrl) {
-        // Oppdater kortet i HTML
         const cardContainer = document.getElementById(cardId);
         const coverContainer = document.getElementById(`cover-${cardId}`);
         if (coverContainer) {
@@ -234,7 +230,7 @@ async function fetchRSSImageData(rssUrl, cardId, title) {
   }
 }
 
-// 6. Klikk på kort
+// 6. Klikk på kort (Full uthenting av all RSS-data og episodeliste)
 let selectedItem = {};
 
 function bindCardClickEvents() {
@@ -249,40 +245,100 @@ function bindCardClickEvents() {
         audioUrl: card.dataset.audio
       };
 
+      // Sett basisinfo med en gang
       document.getElementById("details-title").innerText = selectedItem.title;
       document.getElementById("details-sub").innerText = selectedItem.sub;
       document.getElementById("details-desc").innerText = selectedItem.desc || "Laster inn...";
-
+      
       const detailsCoverContainer = document.getElementById("details-cover-container");
       if (detailsCoverContainer) {
         detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
       }
 
-      // Hent nyeste episode og lydfil fra RSS om tilgjengelig
+      // Sjekk om elementet har en episodeliste-container i HTML, hvis ikke kan vi opprette den dynamisk
+      let episodeListContainer = document.getElementById("episode-list");
+      if (!episodeListContainer) {
+        // Fallback: Legger til episodeliste-seksjon dynamisk i modalen om den mangler i HTML
+        const detailsContent = document.querySelector(".details-content");
+        if (detailsContent) {
+          const div = document.createElement("div");
+          div.className = "episode-list-container";
+          div.innerHTML = `<h3>Alle episoder</h3><div id="episode-list"></div>`;
+          detailsContent.appendChild(div);
+          episodeListContainer = document.getElementById("episode-list");
+        }
+      }
+
+      if (episodeListContainer) {
+        episodeListContainer.innerHTML = "<p class='loading-episodes'>Henter alle episoder fra RSS...</p>";
+      }
+
+      // "Melk ut" alt fra RSS-koden
       if (selectedItem.rssUrl) {
         try {
           const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(selectedItem.rssUrl)}`);
           const data = await res.json();
 
-          if (data.status === 'ok' && data.items.length > 0) {
-            const firstEpisode = data.items[0];
-            if (firstEpisode.enclosure && firstEpisode.enclosure.link) {
-              selectedItem.audioUrl = firstEpisode.enclosure.link;
+          if (data.status === 'ok') {
+            // Hent full feed-beskrivelse
+            if (data.feed && data.feed.description) {
+              document.getElementById("details-desc").innerHTML = data.feed.description;
             }
-            const rssImg = data.feed?.image || firstEpisode.thumbnail;
+
+            // Hent bilde fra feed om det finnes
+            const rssImg = data.feed?.image || (data.items.length > 0 ? data.items[0].thumbnail : "");
             if (rssImg) {
               selectedItem.cover = rssImg;
               if (detailsCoverContainer) {
                 detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
               }
             }
-            if (firstEpisode.description) {
-              const cleanDesc = firstEpisode.description.replace(/<[^>]*>?/gm, '');
-              document.getElementById("details-desc").innerText = cleanDesc;
+
+            // Sett standard startlyd til første episode i feeden
+            if (data.items.length > 0 && data.items[0].enclosure && data.items[0].enclosure.link) {
+              selectedItem.audioUrl = data.items[0].enclosure.link;
+            }
+
+            // Bygg ut den komplette episodelisten
+            if (episodeListContainer && data.items.length > 0) {
+              episodeListContainer.innerHTML = "";
+              data.items.forEach(ep => {
+                const epDiv = document.createElement("div");
+                epDiv.className = "episode-item";
+
+                const durationSec = ep.enclosure?.duration;
+                const durationFormatted = durationSec ? `• ${Math.round(durationSec / 60)} min` : "";
+                const pubDate = ep.pubDate ? new Date(ep.pubDate).toLocaleDateString() : "";
+                const cleanSnippet = ep.description ? ep.description.replace(/<[^>]*>?/gm, '').substring(0, 90) + "..." : "";
+
+                epDiv.innerHTML = `
+                  <div class="episode-title">${ep.title}</div>
+                  <div class="ep-desc">${cleanSnippet}</div>
+                  <div class="episode-footer-meta">
+                    <span><i class="fa-regular fa-calendar"></i> ${pubDate}</span>
+                    <span>${durationFormatted}</span>
+                  </div>
+                `;
+
+                // Klikk på en spesifikk episode for å starte avspilling direkte
+                epDiv.onclick = () => {
+                  playSpecificEpisode({
+                    title: ep.title,
+                    audioUrl: ep.enclosure?.link || selectedItem.audioUrl,
+                    cover: selectedItem.cover,
+                    sub: selectedItem.sub
+                  });
+                };
+
+                episodeListContainer.appendChild(epDiv);
+              });
             }
           }
         } catch (err) {
-          console.error("Feil ved RSS-henting:", err);
+          console.error("Feil ved full RSS-uthenting:", err);
+          if (episodeListContainer) {
+            episodeListContainer.innerHTML = "<p>Kunne ikke laste episoder fra kilden.</p>";
+          }
         }
       }
 
@@ -291,7 +347,36 @@ function bindCardClickEvents() {
   });
 }
 
-// 7. Spiller-håndtering
+// 7. Spiller-håndtering og avspilling av spesifikk episode fra listen
+function playSpecificEpisode(epData) {
+  selectedItem.title = epData.title;
+  selectedItem.audioUrl = epData.audioUrl;
+  
+  if (selectedItem.audioUrl) {
+    globalAudio.src = selectedItem.audioUrl;
+    globalAudio.play();
+    updatePlayIcons(true);
+  }
+
+  document.getElementById("mini-player-title").innerText = selectedItem.title;
+  document.getElementById("mini-player-sub").innerText = selectedItem.sub;
+  const miniCoverContainer = document.getElementById("mini-cover-container");
+  if (miniCoverContainer) {
+    miniCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
+  }
+  document.getElementById("audio-player-bar")?.classList.remove("hidden");
+
+  document.getElementById("full-title").innerText = selectedItem.title;
+  document.getElementById("full-sub").innerText = selectedItem.sub;
+  const fullCoverContainer = document.getElementById("full-cover-container");
+  if (fullCoverContainer) {
+    fullCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
+  }
+
+  document.getElementById("details-page")?.classList.remove("active");
+  document.getElementById("fullscreen-player")?.classList.add("active");
+}
+
 const detailsCloseBtn = document.getElementById("details-close-btn");
 const startPlayBtn = document.getElementById("start-play-btn");
 const openFullPlayer = document.getElementById("open-full-player");
@@ -321,32 +406,12 @@ function formatTime(seconds) {
 
 if (startPlayBtn) {
   startPlayBtn.onclick = () => {
-    document.getElementById("details-page")?.classList.remove("active");
-    
-    if (selectedItem.audioUrl) {
-      if (globalAudio.src !== selectedItem.audioUrl) {
-        globalAudio.src = selectedItem.audioUrl;
-      }
-      globalAudio.play();
-      updatePlayIcons(true);
-    }
-
-    document.getElementById("mini-player-title").innerText = selectedItem.title;
-    document.getElementById("mini-player-sub").innerText = selectedItem.sub;
-    const miniCoverContainer = document.getElementById("mini-cover-container");
-    if (miniCoverContainer) {
-      miniCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
-    }
-    document.getElementById("audio-player-bar")?.classList.remove("hidden");
-
-    document.getElementById("full-title").innerText = selectedItem.title;
-    document.getElementById("full-sub").innerText = selectedItem.sub;
-    const fullCoverContainer = document.getElementById("full-cover-container");
-    if (fullCoverContainer) {
-      fullCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
-    }
-
-    document.getElementById("fullscreen-player")?.classList.add("active");
+    playSpecificEpisode({
+      title: selectedItem.title,
+      audioUrl: selectedItem.audioUrl,
+      cover: selectedItem.cover,
+      sub: selectedItem.sub
+    });
   };
 }
 
