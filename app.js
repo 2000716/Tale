@@ -283,7 +283,7 @@ function updateDetailPlayButtonState() {
   }
 }
 
-// --- OPPDATERT FUNKSJON MED STØTTE FOR LAYOUT ---
+// --- OPPDATERT FUNKSJON MED KORREKT LAYOUT HÅNDTERING ---
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
     
@@ -298,14 +298,14 @@ function loadContentFromFirestore() {
     snapshot.forEach((docSnap) => {
       const sec = docSnap.data();
       const pagesArray = Array.isArray(sec.pages) ? sec.pages : [sec.page || "home"];
-      const layoutClass = sec.layout ? `layout-${sec.layout}` : "layout-grid-3";
+      const containerClass = sec.layout ? `layout-${sec.layout}` : "horizontal-scroll";
 
       pagesArray.forEach(pageTarget => {
         const targetContainer = document.getElementById(`${pageTarget}-sections`);
 
         if (targetContainer) {
           const sectionWrapper = document.createElement("div");
-          sectionWrapper.className = `dynamic-section ${layoutClass}`;
+          sectionWrapper.className = "dynamic-section";
 
           let itemsHTML = "";
           (sec.items || []).forEach((item, index) => {
@@ -340,7 +340,7 @@ function loadContentFromFirestore() {
 
           sectionWrapper.innerHTML = `
             <div class="section-header"><h3>${sec.title}</h3></div>
-            <div class="horizontal-scroll">${itemsHTML}</div>
+            <div class="${containerClass}">${itemsHTML}</div>
           `;
 
           targetContainer.appendChild(sectionWrapper);
