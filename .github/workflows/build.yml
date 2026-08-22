@@ -11,12 +11,22 @@ jobs:
       - name: Hent koden
         uses: actions/checkout@v3
 
+      - name: Sett opp Java (kreves for å bygge APK)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Sett opp Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: Lag APK med Bubblewrap (PWA Builder verktøy)
+      - name: Installer Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Lag dummy APK for testing
         run: |
-          npm install -g @bubblewrap/cli
-          echo "Robot-oppsettet er klart"
+          echo "Klar til å bygge"
+          # Vi lager en enkel oversikt for å sjekke verktøyene
+          bubblewrap --version
