@@ -80,10 +80,11 @@
   margin-top: 0.5rem;
 }
 
-/* Utvidet toppbar med myk, subtil avrunding i bunn */
+/* Toppbar med tydelig bue, men kuttet tomrom i bunnen */
 .top-bar {
   background-color: var(--bar-bg);
-  padding: calc(0.8rem + env(safe-area-inset-top)) 1.2rem 1.1rem 1.2rem;
+  /* Kuttet padding-bottom til 0.4rem så stripen slutter tett inntil søkefeltet */
+  padding: calc(0.8rem + env(safe-area-inset-top)) 1.2rem 0.4rem 1.2rem;
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
@@ -91,9 +92,10 @@
   top: 0;
   z-index: 100;
   color: var(--text-light);
-  /* Nedjustert fra 24px til 12px for en mye mer diskré bue */
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
+  
+  /* Beholder den uttalte, fine buen i hjørnene */
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
   border-bottom: 1px solid var(--bar-border);
 }
 
