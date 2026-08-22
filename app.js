@@ -30,9 +30,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Global Audio-spiller referanse
 let globalAudio = new Audio();
-let isUserSeeking = false; // Hindrer at tidslinjen «hakker» mens brukeren drar i slideren
+let isUserSeeking = false;
 
 setPersistence(auth, browserLocalPersistence);
 
@@ -119,6 +118,20 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 const navAccountBtn = document.getElementById("nav-account-btn");
 if (navAccountBtn) navAccountBtn.onclick = () => switchPage("account");
 
+// Hjelpefunksjon for å hente eller lage poster-bilde (ingen emojis)
+function getCoverMarkup(coverUrl, title) {
+  if (coverUrl && coverUrl.trim() !== '') {
+    return `<img src="${coverUrl}" alt="${title}" class="book-cover-img" loading="lazy">`;
+  }
+  // Generer en stilren bilde-poster dersom URL mangler
+  const cleanTitle = title ? title.trim() : "Tale";
+  return `
+    <div class="generated-cover">
+      <span>${cleanTitle}</span>
+    </div>
+  `;
+}
+
 // 5. Sanntidshenting fra Firestore
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
@@ -145,20 +158,23 @@ function loadContentFromFirestore() {
 
         let itemsHTML = "";
         (sec.items || []).forEach(item => {
+          const coverUrl = item.cover || item.image || item.imageUrl || '';
+          const title = item.title || 'Innhold';
+          const sub = item.sub || '';
+
           itemsHTML += `
             <div class="book-card" 
-                 data-title="${item.title || ''}" 
-                 data-sub="${item.sub || ''}" 
+                 data-title="${title}" 
+                 data-sub="${sub}" 
                  data-desc="${item.desc || ''}" 
-                 data-icon="${item.icon || '🎙️'}"
-                 data-cover="${item.cover || item.image || ''}"
+                 data-cover="${coverUrl}"
                  data-rss="${item.rssUrl || item.rss || ''}"
                  data-audio="${item.audioUrl || item.audio || ''}">
-              <div class="book-cover ${sec.page === 'podcasts' ? 'pod-cover' : sec.page === 'radio' ? 'radio-cover' : ''}">
-                ${item.cover ? `<img src="${item.cover}" alt="${item.title}" class="book-cover-img">` : item.icon || '🎙️'}
+              <div class="book-cover">
+                ${getCoverMarkup(coverUrl, title)}
               </div>
-              <div class="book-title">${item.title || ''}</div>
-              <div class="book-author">${item.sub || ''}</div>
+              <div class="book-title">${title}</div>
+              <div class="book-author">${sub}</div>
             </div>
           `;
         });
@@ -176,7 +192,7 @@ function loadContentFromFirestore() {
   });
 }
 
-// 6. Klikk på kort, RSS-henting og Spiller
+// 6. Klikk på kort & RSS-henting
 let selectedItem = {};
 
 function bindCardClickEvents() {
@@ -186,7 +202,6 @@ function bindCardClickEvents() {
         title: card.dataset.title,
         sub: card.dataset.sub,
         desc: card.dataset.desc,
-        icon: card.dataset.icon,
         cover: card.dataset.cover,
         rssUrl: card.dataset.rss,
         audioUrl: card.dataset.audio
@@ -196,17 +211,12 @@ function bindCardClickEvents() {
       document.getElementById("details-sub").innerText = selectedItem.sub;
       document.getElementById("details-desc").innerText = selectedItem.desc || "Laster innhold...";
 
-      const detailsCoverImg = document.getElementById("details-cover-img");
-      if (detailsCoverImg) {
-        if (selectedItem.cover) {
-          detailsCoverImg.src = selectedItem.cover;
-          detailsCoverImg.classList.remove("hidden");
-        } else {
-          detailsCoverImg.classList.add("hidden");
-        }
+      const detailsCoverContainer = document.getElementById("details-cover-container");
+      if (detailsCoverContainer) {
+        detailsCoverContainer.innerHTML = getCoverMarkup(selectedItem.cover, selectedItem.title);
       }
 
-      // Hvis dette er en RSS feed, hent den ferskeste episoden via rss2json
+      // Hent ferskeste bilde og lydfil dersom RSS er oppgitt
       if (selectedItem.rssUrl) {
         try {
           const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(selectedItem.rssUrl)}`);
@@ -219,9 +229,8 @@ function bindCardClickEvents() {
             }
             if (firstEpisode.thumbnail || (data.feed && data.feed.image)) {
               selectedItem.cover = firstEpisode.thumbnail || data.feed.image;
-              if (detailsCoverImg && selectedItem.cover) {
-                detailsCoverImg.src = selectedItem.cover;
-                detailsCoverImg.classList.remove("hidden");
+              if (detailsCoverContainer) {
+                detailsCoverContainer.innerHTML = getCoverMarkup(selectedItem.cover, selectedItem.title);
               }
             }
             if (firstEpisode.description) {
@@ -239,7 +248,7 @@ function bindCardClickEvents() {
   });
 }
 
-// 7. Spiller-håndtering & Kontroller
+// 7. Spiller-håndtering
 const detailsCloseBtn = document.getElementById("details-close-btn");
 const startPlayBtn = document.getElementById("start-play-btn");
 const openFullPlayer = document.getElementById("open-full-player");
@@ -254,14 +263,12 @@ const totalTimeSpan = document.getElementById("total-time");
 
 if (detailsCloseBtn) detailsCloseBtn.onclick = () => document.getElementById("details-page")?.classList.remove("active");
 
-// Oppdaterer ikoner for spill/pause
 function updatePlayIcons(isPlaying) {
   const iconClass = isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
   if (miniPlayBtn) miniPlayBtn.innerHTML = `<i class="${iconClass}"></i>`;
   if (fullPlayBtn) fullPlayBtn.innerHTML = `<i class="${iconClass}"></i>`;
 }
 
-// Formaterer sekunder til mm:ss
 function formatTime(seconds) {
   if (isNaN(seconds) || seconds < 0) return "0:00";
   const mins = Math.floor(seconds / 60);
@@ -269,7 +276,6 @@ function formatTime(seconds) {
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
-// Start avspilling fra detaljside
 if (startPlayBtn) {
   startPlayBtn.onclick = () => {
     document.getElementById("details-page")?.classList.remove("active");
@@ -282,38 +288,27 @@ if (startPlayBtn) {
       updatePlayIcons(true);
     }
 
-    // Oppdater Mini-spiller
+    // Mini-spiller omslag
     document.getElementById("mini-player-title").innerText = selectedItem.title;
     document.getElementById("mini-player-sub").innerText = selectedItem.sub;
-    const miniCover = document.getElementById("mini-player-cover-img");
-    if (miniCover) {
-      if (selectedItem.cover) {
-        miniCover.src = selectedItem.cover;
-        miniCover.classList.remove("hidden");
-      } else {
-        miniCover.classList.add("hidden");
-      }
+    const miniCoverContainer = document.getElementById("mini-cover-container");
+    if (miniCoverContainer) {
+      miniCoverContainer.innerHTML = getCoverMarkup(selectedItem.cover, selectedItem.title);
     }
     document.getElementById("audio-player-bar")?.classList.remove("hidden");
 
-    // Oppdater Fullskjerm-spiller
+    // Fullskjerm-spiller omslag
     document.getElementById("full-title").innerText = selectedItem.title;
     document.getElementById("full-sub").innerText = selectedItem.sub;
-    const fullCover = document.getElementById("full-cover-img");
-    if (fullCover) {
-      if (selectedItem.cover) {
-        fullCover.src = selectedItem.cover;
-        fullCover.classList.remove("hidden");
-      } else {
-        fullCover.classList.add("hidden");
-      }
+    const fullCoverContainer = document.getElementById("full-cover-container");
+    if (fullCoverContainer) {
+      fullCoverContainer.innerHTML = getCoverMarkup(selectedItem.cover, selectedItem.title);
     }
 
     document.getElementById("fullscreen-player")?.classList.add("active");
   };
 }
 
-// Veksle mellom Play og Pause
 function togglePlay() {
   if (!globalAudio.src) return;
   if (globalAudio.paused) {
@@ -325,37 +320,14 @@ function togglePlay() {
   }
 }
 
-if (miniPlayBtn) {
-  miniPlayBtn.onclick = (e) => {
-    e.stopPropagation(); // Unngå å åpne fullskjerm når man kun trykker play
-    togglePlay();
-  };
-}
+if (miniPlayBtn) miniPlayBtn.onclick = (e) => { e.stopPropagation(); togglePlay(); };
+if (fullPlayBtn) fullPlayBtn.onclick = () => togglePlay();
 
-if (fullPlayBtn) {
-  fullPlayBtn.onclick = () => togglePlay();
-}
+if (skipBackBtn) skipBackBtn.onclick = () => { if (globalAudio.src) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); };
+if (skipForwardBtn) skipForwardBtn.onclick = () => { if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
 
-// Spoling 15 sekunder tilbake og frem
-if (skipBackBtn) {
-  skipBackBtn.onclick = () => {
-    if (globalAudio.src) {
-      globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15);
-    }
-  };
-}
-
-if (skipForwardBtn) {
-  skipForwardBtn.onclick = () => {
-    if (globalAudio.src && globalAudio.duration) {
-      globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15);
-    }
-  };
-}
-
-// 8. Tidslinje / Spolingslinje (Progress bar) & Audio Events
+// Tidslinje-logikk
 if (globalAudio) {
-  // Oppdaterer tidslinjen kontinuerlig under avspilling
   globalAudio.ontimeupdate = () => {
     if (!isUserSeeking && globalAudio.duration) {
       const progressPercent = (globalAudio.currentTime / globalAudio.duration) * 100;
@@ -365,14 +337,12 @@ if (globalAudio) {
     }
   };
 
-  // Når sporet sin varighet er lastet inn
   globalAudio.onloadedmetadata = () => {
     if (totalTimeSpan && globalAudio.duration) {
       totalTimeSpan.innerText = formatTime(globalAudio.duration);
     }
   };
 
-  // Når sporet er ferdig spilt
   globalAudio.onended = () => {
     updatePlayIcons(false);
     if (progressBar) progressBar.value = 0;
@@ -380,7 +350,6 @@ if (globalAudio) {
   };
 }
 
-// Når brukeren drar i spolingslinjen (slider)
 if (progressBar) {
   progressBar.oninput = () => {
     isUserSeeking = true;
