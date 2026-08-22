@@ -176,8 +176,8 @@
 /* Bilde i storspilleren */
 .full-cover-img,
 #full-cover-container img {
-  width: 210px;
-  height: 210px;
+  width: 230px;
+  height: 230px;
   object-fit: cover;
   border-radius: var(--radius-lg);
   box-shadow: 0 12px 30px rgba(0,0,0,0.5);
