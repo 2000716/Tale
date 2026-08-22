@@ -41,10 +41,29 @@ let selectedItem = {};
 
 setPersistence(auth, browserLocalPersistence);
 
+// --- SYNLIGHET FOR BUNNMENY ---
+function updateBottomNavVisibility() {
+  const bottomNav = document.getElementById("bottom-nav") || document.querySelector(".bottom-nav");
+  const detailsPage = document.getElementById("details-page");
+  const fullPlayer = document.getElementById("fullscreen-player");
+
+  const isDetailsActive = detailsPage?.classList.contains("active");
+  const isFullPlayerActive = fullPlayer?.classList.contains("active");
+
+  if (bottomNav) {
+    if (isDetailsActive || isFullPlayerActive) {
+      bottomNav.style.display = "none";
+    } else {
+      bottomNav.style.display = "flex";
+    }
+  }
+}
+
 // 2. Visningsbehandling med URL/Hash-støtte
 function showView(viewId) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById(viewId)?.classList.add("active");
+  updateBottomNavVisibility();
 }
 
 function updateUrlHash(pageOrView) {
@@ -63,7 +82,7 @@ function restoreLastPage() {
   const targetPage = hash || savedPage || "home";
 
   if (targetPage === "details-page") {
-    switchPage("home"); // Gå til hjem i bakgrunnen
+    switchPage("home");
     const lastItem = JSON.parse(localStorage.getItem("lastSelectedItem") || "null");
     if (lastItem && lastItem.title) {
       openDetailsView(lastItem);
@@ -71,6 +90,7 @@ function restoreLastPage() {
   } else if (targetPage === "fullscreen-player") {
     switchPage("home");
     document.getElementById("fullscreen-player")?.classList.add("active");
+    updateBottomNavVisibility();
   } else {
     switchPage(targetPage);
   }
@@ -156,6 +176,7 @@ function switchPage(pageId) {
   if (activeBtn) activeBtn.classList.add("active");
 
   updateUrlHash(pageId);
+  updateBottomNavVisibility();
 }
 
 document.querySelectorAll(".nav-btn").forEach(btn => {
@@ -249,7 +270,7 @@ function renderContinueListening() {
   });
 }
 
-// Oppdater start-knappen i detaljvisningen til "Fortsett" eller "Spill av"
+// Oppdater start-knappen i detaljvisningen
 function updateDetailPlayButtonState() {
   const startBtn = document.getElementById("start-play-btn");
   if (!startBtn || !selectedItem || !selectedItem.title) return;
@@ -271,13 +292,11 @@ function loadContentFromFirestore() {
       
     pages.forEach(p => {
       const container = document.getElementById(`${p}-sections`);
-      if (container) {
-        container.innerHTML = "";
-      }
+      if (container) container.innerHTML = "";
     });
 
-    snapshot.forEach((doc) => {
-      const sec = doc.data();
+    snapshot.forEach((docSnap) => {
+      const sec = docSnap.data();
       const pageTarget = sec.page || "home";
       const targetContainer = document.getElementById(`${pageTarget}-sections`);
 
@@ -291,7 +310,7 @@ function loadContentFromFirestore() {
           const sub = item.sub || '';
           const rssUrl = item.rssUrl || item.rss || '';
           const manualCover = item.cover || item.image || item.imageUrl || '';
-          const cardId = `card-${doc.id}-${index}`;
+          const cardId = `card-${docSnap.id}-${index}`;
 
           itemsHTML += `
             <div class="book-card" 
@@ -468,6 +487,7 @@ async function openDetailsView(item) {
 
   document.getElementById("details-page")?.classList.add("active");
   updateUrlHash("details-page");
+  updateBottomNavVisibility();
 }
 
 // 6. Klikk på kort
@@ -532,6 +552,7 @@ function playSpecificEpisode(epData, startPosition = 0) {
   document.getElementById("details-page")?.classList.remove("active");
   document.getElementById("fullscreen-player")?.classList.add("active");
   updateUrlHash("fullscreen-player");
+  updateBottomNavVisibility();
 }
 
 const detailsCloseBtn = document.getElementById("details-close-btn");
@@ -653,6 +674,7 @@ if (openFullPlayer) {
   openFullPlayer.onclick = () => {
     document.getElementById("fullscreen-player")?.classList.add("active");
     updateUrlHash("fullscreen-player");
+    updateBottomNavVisibility();
   };
 }
 
