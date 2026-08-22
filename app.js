@@ -48,7 +48,7 @@ onAuthStateChanged(auth, (user) => {
     const userAvatar = document.getElementById("user-avatar");
     if (emailDisplay) emailDisplay.innerText = user.email;
     if (userAvatar) userAvatar.innerText = user.email.charAt(0).toUpperCase();
-    
+     
     loadContentFromFirestore();
   } else {
     showView("landing-view");
@@ -105,7 +105,7 @@ if (logoutBtn) logoutBtn.onclick = () => {
 function switchPage(pageId) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-  
+   
   document.getElementById(pageId)?.classList.add("active");
   const activeBtn = document.querySelector(`.nav-btn[data-target="${pageId}"]`);
   if (activeBtn) activeBtn.classList.add("active");
@@ -134,10 +134,10 @@ function buildCoverMarkup(src, title) {
 // 5. Last innhold fra Firestore & Automatisk hente bilde fra RSS
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
-  
+   
   onSnapshot(q, (snapshot) => {
     const pages = ["home", "audiobooks", "podcasts", "radio"];
-    
+     
     pages.forEach(p => {
       const container = document.getElementById(p);
       if (container) {
@@ -180,7 +180,6 @@ function loadContentFromFirestore() {
             </div>
           `;
 
-          // Hvis RSS er registrert, hent cover-bilde direkte fra RSS i bakgrunnen
           if (rssUrl) {
             fetchRSSImageData(rssUrl, cardId, title);
           }
@@ -245,20 +244,17 @@ function bindCardClickEvents() {
         audioUrl: card.dataset.audio
       };
 
-      // Sett basisinfo med en gang
       document.getElementById("details-title").innerText = selectedItem.title;
       document.getElementById("details-sub").innerText = selectedItem.sub;
       document.getElementById("details-desc").innerText = selectedItem.desc || "Laster inn...";
-      
+       
       const detailsCoverContainer = document.getElementById("details-cover-container");
       if (detailsCoverContainer) {
         detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
       }
 
-      // Sjekk om elementet har en episodeliste-container i HTML, hvis ikke kan vi opprette den dynamisk
       let episodeListContainer = document.getElementById("episode-list");
       if (!episodeListContainer) {
-        // Fallback: Legger til episodeliste-seksjon dynamisk i modalen om den mangler i HTML
         const detailsContent = document.querySelector(".details-content");
         if (detailsContent) {
           const div = document.createElement("div");
@@ -273,19 +269,16 @@ function bindCardClickEvents() {
         episodeListContainer.innerHTML = "<p class='loading-episodes'>Henter alle episoder fra RSS...</p>";
       }
 
-      // "Melk ut" alt fra RSS-koden
       if (selectedItem.rssUrl) {
         try {
           const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(selectedItem.rssUrl)}`);
           const data = await res.json();
 
           if (data.status === 'ok') {
-            // Hent full feed-beskrivelse
             if (data.feed && data.feed.description) {
               document.getElementById("details-desc").innerHTML = data.feed.description;
             }
 
-            // Hent bilde fra feed om det finnes
             const rssImg = data.feed?.image || (data.items.length > 0 ? data.items[0].thumbnail : "");
             if (rssImg) {
               selectedItem.cover = rssImg;
@@ -294,38 +287,40 @@ function bindCardClickEvents() {
               }
             }
 
-            // Sett standard startlyd til første episode i feeden
             if (data.items.length > 0 && data.items[0].enclosure && data.items[0].enclosure.link) {
               selectedItem.audioUrl = data.items[0].enclosure.link;
             }
 
-            // Bygg ut den komplette episodelisten
+            // Bygg ut den komplette episodelisten med egne minipostere
             if (episodeListContainer && data.items.length > 0) {
               episodeListContainer.innerHTML = "";
               data.items.forEach(ep => {
                 const epDiv = document.createElement("div");
                 epDiv.className = "episode-item";
 
+                const epImage = ep.itunes?.image || ep.thumbnail || selectedItem.cover;
                 const durationSec = ep.enclosure?.duration;
                 const durationFormatted = durationSec ? `• ${Math.round(durationSec / 60)} min` : "";
                 const pubDate = ep.pubDate ? new Date(ep.pubDate).toLocaleDateString() : "";
-                const cleanSnippet = ep.description ? ep.description.replace(/<[^>]*>?/gm, '').substring(0, 90) + "..." : "";
+                const cleanSnippet = ep.description ? ep.description.replace(/<[^>]*>?/gm, '').substring(0, 70) + "..." : "";
 
                 epDiv.innerHTML = `
-                  <div class="episode-title">${ep.title}</div>
-                  <div class="ep-desc">${cleanSnippet}</div>
-                  <div class="episode-footer-meta">
-                    <span><i class="fa-regular fa-calendar"></i> ${pubDate}</span>
-                    <span>${durationFormatted}</span>
+                  <img src="${epImage}" class="episode-poster" alt="Cover" loading="lazy">
+                  <div class="episode-info">
+                    <div class="episode-title">${ep.title}</div>
+                    <div class="ep-desc">${cleanSnippet}</div>
+                    <div class="episode-footer-meta">
+                      <span><i class="fa-regular fa-calendar"></i> ${pubDate}</span>
+                      <span>${durationFormatted}</span>
+                    </div>
                   </div>
                 `;
 
-                // Klikk på en spesifikk episode for å starte avspilling direkte
                 epDiv.onclick = () => {
                   playSpecificEpisode({
                     title: ep.title,
                     audioUrl: ep.enclosure?.link || selectedItem.audioUrl,
-                    cover: selectedItem.cover,
+                    cover: epImage,
                     sub: selectedItem.sub
                   });
                 };
@@ -351,7 +346,10 @@ function bindCardClickEvents() {
 function playSpecificEpisode(epData) {
   selectedItem.title = epData.title;
   selectedItem.audioUrl = epData.audioUrl;
-  
+  if (epData.cover) {
+    selectedItem.cover = epData.cover;
+  }
+   
   if (selectedItem.audioUrl) {
     globalAudio.src = selectedItem.audioUrl;
     globalAudio.play();
