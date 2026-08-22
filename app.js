@@ -204,8 +204,23 @@ function buildCoverMarkup(src, title) {
   `;
 }
 
+// --- MELLOMLAGRET HISTORIKK ---
 async function loadUserHistory() {
   if (!currentUser) return;
+
+  // 1. Les fra localStorage umiddelbart for umiddelbar oppstart uten treghet
+  const cachedHistory = localStorage.getItem(`userHistory_${currentUser.uid}`);
+  if (cachedHistory) {
+    try {
+      userHistory = JSON.parse(cachedHistory);
+      renderContinueListening();
+      updateDetailPlayButtonState();
+    } catch (e) {
+      console.warn("Kunne ikke lese cached historikk:", e);
+    }
+  }
+
+  // 2. Oppdater fra Firestore i bakgrunnen
   try {
     const historyRef = collection(db, "users", currentUser.uid, "history");
     const snapshot = await getDocs(historyRef);
@@ -213,6 +228,10 @@ async function loadUserHistory() {
     snapshot.forEach(docSnap => {
       userHistory[docSnap.id] = docSnap.data();
     });
+
+    // Lagre til lokalt lager
+    localStorage.setItem(`userHistory_${currentUser.uid}`, JSON.stringify(userHistory));
+
     renderContinueListening();
     updateDetailPlayButtonState();
   } catch (err) {
@@ -224,17 +243,22 @@ async function saveProgressToFirestore(itemId, data) {
   if (!currentUser || !itemId) return;
   try {
     const cleanId = itemId.replace(/[^a-zA-Z0-9-_]/g, '_');
-    const historyRef = doc(db, "users", currentUser.uid, "history", cleanId);
     const payload = {
       ...data,
       currentTime: globalAudio.currentTime,
       duration: globalAudio.duration || 0,
       updatedAt: new Date()
     };
-    await setDoc(historyRef, payload, { merge: true });
+
+    // Lagre lokalt med én gang
     userHistory[cleanId] = payload;
+    localStorage.setItem(`userHistory_${currentUser.uid}`, JSON.stringify(userHistory));
     renderContinueListening();
     updateDetailPlayButtonState();
+
+    // Send deretter til databasen
+    const historyRef = doc(db, "users", currentUser.uid, "history", cleanId);
+    await setDoc(historyRef, payload, { merge: true });
   } catch (err) {
     console.error("Feil ved lagring av fremdrift:", err);
   }
@@ -244,13 +268,16 @@ async function removeFromFirestoreHistory(itemId) {
   if (!currentUser || !itemId) return;
   try {
     const cleanId = itemId.replace(/[^a-zA-Z0-9-_]/g, '_');
-    const historyRef = doc(db, "users", currentUser.uid, "history", cleanId);
     
-    await deleteDoc(historyRef);
-    
+    // Fjern lokalt umiddelbart
     delete userHistory[cleanId];
+    localStorage.setItem(`userHistory_${currentUser.uid}`, JSON.stringify(userHistory));
     renderContinueListening();
     updateDetailPlayButtonState();
+
+    // Slett fra Firestore
+    const historyRef = doc(db, "users", currentUser.uid, "history", cleanId);
+    await deleteDoc(historyRef);
   } catch (err) {
     console.error("Feil ved fjerning fra historikk:", err);
   }
@@ -267,7 +294,11 @@ function renderContinueListening() {
     return;
   }
 
-  items.sort((a, b) => (b[1].updatedAt?.seconds || 0) - (a[1].updatedAt?.seconds || 0));
+  items.sort((a, b) => {
+    const aTime = a[1].updatedAt?.seconds || (a[1].updatedAt ? new Date(a[1].updatedAt).getTime() / 1000 : 0);
+    const bTime = b[1].updatedAt?.seconds || (b[1].updatedAt ? new Date(b[1].updatedAt).getTime() / 1000 : 0);
+    return bTime - aTime;
+  });
 
   container.innerHTML = "";
   section.style.display = "block";
@@ -300,19 +331,18 @@ function updateDetailPlayButtonState() {
   }
 }
 
+// --- MELLOMLAGRET SEKSJONS- OG INNHOLDSLASTING ---
 function loadContentFromFirestore() {
-  const q = query(collection(db, "sections"), orderBy("order", "asc"));
-    
-  onSnapshot(q, (snapshot) => {
-    const pages = ["home", "audiobooks", "podcasts", "radio"];
-    
+  const pages = ["home", "audiobooks", "podcasts", "radio"];
+
+  // Helper-funksjon for å bygge/tegne seksjonene
+  const renderSectionsData = (sectionsList) => {
     pages.forEach(p => {
       const container = document.getElementById(`${p}-sections`);
       if (container) container.innerHTML = "";
     });
 
-    snapshot.forEach((docSnap) => {
-      const sec = docSnap.data();
+    sectionsList.forEach((sec) => {
       const pagesArray = Array.isArray(sec.pages) ? sec.pages : [sec.page || "home"];
       const containerClass = sec.layout ? `layout-${sec.layout}` : "horizontal-scroll";
 
@@ -330,7 +360,7 @@ function loadContentFromFirestore() {
             const rssUrl = item.rssUrl || item.rss || '';
             const manualCover = item.coverUrl || item.cover || item.image || '';
             const audioUrl = item.audioUrl || item.audio || '';
-            const cardId = `card-${docSnap.id}-${index}-${pageTarget}`;
+            const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
             itemsHTML += `
               <div class="book-card" 
@@ -365,6 +395,37 @@ function loadContentFromFirestore() {
     });
 
     bindCardClickEvents();
+  };
+
+  // 1. Vis fra localStorage først hvis tilgjengelig
+  const cachedSections = localStorage.getItem("app_sections_cache");
+  if (cachedSections) {
+    try {
+      const parsedData = JSON.parse(cachedSections);
+      renderSectionsData(parsedData);
+    } catch (e) {
+      console.warn("Kunne ikke lese seksjons-cache:", e);
+    }
+  }
+
+  // 2. Lytt på Firestore og oppdater mellomlager + skjerm når ny data ankommer
+  const q = query(collection(db, "sections"), orderBy("order", "asc"));
+    
+  onSnapshot(q, (snapshot) => {
+    const sectionsData = [];
+
+    snapshot.forEach((docSnap) => {
+      sectionsData.push({
+        id: docSnap.id,
+        ...docSnap.data()
+      });
+    });
+
+    // Lagre nyeste snapshot i localStorage
+    localStorage.setItem("app_sections_cache", JSON.stringify(sectionsData));
+
+    // Rendrer oppdatert grensesnitt
+    renderSectionsData(sectionsData);
   });
 }
 
