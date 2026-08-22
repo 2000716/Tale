@@ -80,8 +80,9 @@ if (authBackBtn) authBackBtn.onclick = () => showView("landing-view");
 let isSignUp = false;
 function setAuthMode(signUp) {
   isSignUp = signUp;
-  document.getElementById("auth-title").innerText = isSignUp ? "Opprett konto" : "Logg inn";
-  document.getElementById("toggle-auth-mode").innerText = isSignUp ? "Har du allerede konto? Logg inn" : "Har du ikke konto? Registrer deg";
+  const authTitle = document.getElementById("auth-title");
+  if (authTitle) authTitle.innerText = isSignUp ? "Opprett konto" : "Logg inn";
+  if (toggleAuthModeBtn) toggleAuthModeBtn.innerText = isSignUp ? "Har du allerede konto? Logg inn" : "Har du ikke konto? Registrer deg";
 }
 
 if (toggleAuthModeBtn) toggleAuthModeBtn.onclick = () => setAuthMode(!isSignUp);
@@ -226,14 +227,13 @@ function updateDetailPlayButtonState() {
   }
 }
 
-// 5. Last innhold fra Firestore & Automatisk hente bilde fra RSS (KORRIGERT)
+// 5. Last innhold fra Firestore & Automatisk hente bilde fra RSS
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
     
   onSnapshot(q, (snapshot) => {
     const pages = ["home", "audiobooks", "podcasts", "radio"];
       
-    // Tøm de dynamiske containerne direkte i stedet for hovedseksjonen
     pages.forEach(p => {
       const container = document.getElementById(`${p}-sections`);
       if (container) {
@@ -244,7 +244,6 @@ function loadContentFromFirestore() {
     snapshot.forEach((doc) => {
       const sec = doc.data();
       const pageTarget = sec.page || "home";
-      // Pek på -sections containeren i HTML-en
       const targetContainer = document.getElementById(`${pageTarget}-sections`);
 
       if (targetContainer) {
@@ -338,9 +337,13 @@ function bindCardClickEvents() {
         audioUrl: card.dataset.audio
       };
 
-      document.getElementById("details-title").innerText = selectedItem.title;
-      document.getElementById("details-sub").innerText = selectedItem.sub;
-      document.getElementById("details-desc").innerText = selectedItem.desc || "Laster inn...";
+      const dTitle = document.getElementById("details-title");
+      const dSub = document.getElementById("details-sub");
+      const dDesc = document.getElementById("details-desc");
+
+      if (dTitle) dTitle.innerText = selectedItem.title;
+      if (dSub) dSub.innerText = selectedItem.sub;
+      if (dDesc) dDesc.innerText = selectedItem.desc || "Laster inn...";
         
       const detailsCoverContainer = document.getElementById("details-cover-container");
       if (detailsCoverContainer) {
@@ -350,19 +353,21 @@ function bindCardClickEvents() {
       updateDetailPlayButtonState();
 
       let episodeListContainer = document.getElementById("episode-list");
-      if (!episodeListContainer) {
-        const detailsContent = document.querySelector(".details-content");
-        if (detailsContent) {
-          const div = document.createElement("div");
-          div.className = "episode-list-container";
-          div.innerHTML = `<h3>Alle episoder</h3><div id="episode-list"></div>`;
-          detailsContent.appendChild(div);
-          episodeListContainer = document.getElementById("episode-list");
-        }
+      let detailsContent = document.querySelector(".details-content");
+      
+      // Hvis episodelisten ikke eksisterer, bygg den inn i detaljsiden
+      if (!episodeListContainer && detailsContent) {
+        const div = document.createElement("div");
+        div.className = "episode-list-container";
+        div.innerHTML = `<h3>Alle episoder</h3><div id="episode-list"></div>`;
+        detailsContent.appendChild(div);
+        episodeListContainer = document.getElementById("episode-list");
       }
 
       if (episodeListContainer) {
-        episodeListContainer.innerHTML = "<p class='loading-episodes'>Henter alle episoder fra RSS...</p>";
+        episodeListContainer.innerHTML = selectedItem.rssUrl 
+          ? "<p class='loading-episodes'>Henter alle episoder fra RSS...</p>" 
+          : "";
       }
 
       if (selectedItem.rssUrl) {
@@ -371,8 +376,8 @@ function bindCardClickEvents() {
           const data = await res.json();
 
           if (data.status === 'ok') {
-            if (data.feed && data.feed.description) {
-              document.getElementById("details-desc").innerHTML = data.feed.description;
+            if (data.feed && data.feed.description && dDesc) {
+              dDesc.innerHTML = data.feed.description;
             }
 
             const rssImg = data.feed?.image || (data.items.length > 0 ? data.items[0].thumbnail : "");
@@ -459,18 +464,25 @@ function playSpecificEpisode(epData, startPosition = 0) {
         totalTimeSpan.innerText = formatTime(globalAudio.duration);
       }
     };
+    globalAudio.play().catch(e => console.log("Auto-play avbrutt av nettleser:", e));
   }
 
-  document.getElementById("mini-player-title").innerText = selectedItem.title;
-  document.getElementById("mini-player-sub").innerText = selectedItem.sub || "";
+  const miniTitle = document.getElementById("mini-player-title");
+  const miniSub = document.getElementById("mini-player-sub");
+  if (miniTitle) miniTitle.innerText = selectedItem.title;
+  if (miniSub) miniSub.innerText = selectedItem.sub || "";
+
   const miniCoverContainer = document.getElementById("mini-cover-container");
   if (miniCoverContainer) {
     miniCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
   }
   document.getElementById("audio-player-bar")?.classList.remove("hidden");
 
-  document.getElementById("full-title").innerText = selectedItem.title;
-  document.getElementById("full-sub").innerText = selectedItem.sub || "";
+  const fullTitle = document.getElementById("full-title");
+  const fullSub = document.getElementById("full-sub");
+  if (fullTitle) fullTitle.innerText = selectedItem.title;
+  if (fullSub) fullSub.innerText = selectedItem.sub || "";
+
   const fullCoverContainer = document.getElementById("full-cover-container");
   if (fullCoverContainer) {
     fullCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
