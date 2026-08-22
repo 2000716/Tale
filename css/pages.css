@@ -1,9 +1,9 @@
 /* ==========================================
-   1. LANDING & AUTENTISERING
+   1. LANDING & AUTENTISERING (Visnings-styring)
    ========================================== */
 #landing-view, 
 #auth-view {
-  display: flex;
+  display: none; /* Skjult som standard slik at sider ikke overlapper */
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -12,6 +12,17 @@
   background-color: var(--bg-dark);
   color: var(--text-light);
   min-height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+}
+
+/* Vis kun når de har .active-klassen */
+#landing-view.active, 
+#auth-view.active {
+  display: flex;
 }
 
 .landing-logo, 
@@ -202,7 +213,6 @@
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 
-  /* Standard: Skjult og utilgjengelig */
   transform: translate(-50%, 100%);
   opacity: 0;
   visibility: hidden;
@@ -460,7 +470,6 @@
   flex-direction: column;
   align-items: center;
 
-  /* Standard: Skjult helt under skjermen */
   transform: translate(-50%, 100%);
   opacity: 0;
   visibility: hidden;
