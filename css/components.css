@@ -177,7 +177,7 @@
   color: var(--text-muted);
 }
 
-/* Bunnmeny - Justert for større ikoner og romsligere design */
+/* Bunnmeny - Tilpasset for PNG-ikoner med dynamisk fargetilpasning */
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -185,7 +185,7 @@
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  height: calc(72px + env(safe-area-inset-bottom)); /* Økt høyde for å gi plass til større ikoner */
+  height: calc(72px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   background-color: var(--bar-bg);
   display: flex;
@@ -204,18 +204,35 @@
   align-items: center;
   justify-content: center;
   padding: 4px 12px;
-  gap: 5px; /* Litt mer avstand mellom ikon og tekst */
+  gap: 5px;
   cursor: pointer;
   transition: color 0.2s ease, transform 0.1s ease;
 }
 
-/* Større SVG-ikoner som synkroniserer farge via currentColor */
-.bottom-bar .nav-icon {
-  width: 28px;  /* Økt størrelse fra 22px til 28px */
+/* Støtte for både vanlige SVG-ikoner og PNG-masker */
+.bottom-bar .nav-icon,
+.bottom-bar .nav-icon-png {
+  width: 28px;
   height: 28px;
+  transition: all 0.2s ease;
+}
+
+.bottom-bar .nav-icon {
   fill: currentColor;
   stroke: currentColor;
-  transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
+/* Gjør PNG-bildet om til en maske slik at det skifter farge med teksten */
+.bottom-bar img.nav-icon-png {
+  background-color: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-image: url(attr(src));
+  mask-image: url(attr(src));
 }
 
 .bottom-bar .nav-text {
