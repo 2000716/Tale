@@ -7,49 +7,19 @@
   width: 100%;
   max-width: 480px;
   height: 62px;
-  background-color: var(--bar-bg);
-  color: var(--text-light);
+  background-color: #ffffff; /* Hvit bakgrunn */
+  color: #000000; /* Svart tekst */
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 1rem;
-  border-top: 1px solid var(--bar-border);
-  box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
+  border-top: 1px solid rgba(0, 0, 0, 0.08); /* Myk, mørk linje på hvit bakgrunn */
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05); /* Mye svakere skygge tilpasset lys bakgrunn */
   z-index: 1100;
   
   /* Overgang for myk visning/skjuling av mini-spiller */
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
   opacity: 1;
-}
-
-.player-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  flex: 1;
-  overflow: hidden;
-}
-
-#mini-cover-container {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-#mini-cover-container img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-}
-
-.player-info {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 .player-title {
@@ -58,21 +28,22 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #ffffff;
+  color: #000000; /* Endret til ren svart */
 }
 
 .player-sub {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: #666666; /* Mørkere grå slik at den leses lett på hvit bakgrunn */
 }
 
+/* Play-knapp tilpasset lys bakgrunn */
 .icon-play-btn {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: rgba(174, 194, 247, 0.15);
-  border: 1.5px solid #AEC2F7;
-  color: #AEC2F7;
+  background-color: #f0f4fe; /* Myk lys bakgrunn for knappen */
+  border: 1.5px solid #2b56d0; /* Mørkere blå farge for bedre kontrast */
+  color: #2b56d0;
   font-size: 1rem;
   cursor: pointer;
   display: flex;
@@ -82,9 +53,8 @@
 }
 
 .icon-play-btn i {
-  color: #AEC2F7;
+  color: #2b56d0; /* Mørkere blå på ikonet */
 }
-
 /* Fullskjerm-spiller (Fastlåst skjerm som dras ned) */
 #fullscreen-player {
   display: flex;
