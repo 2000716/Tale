@@ -284,7 +284,7 @@ main {
   color: var(--text-dark);
 }
 
-/* Tvinger ALLE gallerier til horisontal rulling på én linje */
+/* Horisontal rulling */
 .horizontal-scroll,
 .horizontal-scroll-container {
   display: flex !important;
@@ -386,10 +386,32 @@ main {
 }
 
 /* ==========================================================================
-   7. MODALER & OVERLAYS (DETALJSIDE OG FULLSKJERMSPILLER)
+   7. MODALER & MØRKEBLÅ FULLSKJERMSPILLER (#070b1e)
    ========================================================================== */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 100vh;
+  max-height: 100vh;
+  background: var(--bg-content);
+  color: var(--text-dark);
+  z-index: 1000;
+  padding: 2rem 1.5rem;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
-/* Detaljvisning legges oppå hele appen som en overlay */
+.modal.active {
+  display: flex;
+}
+
+/* Detaljside */
 #details-page {
   display: none;
   position: fixed;
@@ -411,145 +433,12 @@ main {
   display: block;
 }
 
-/* Fullskjermspiller */
-#fullscreen-player {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  height: 100vh;
-  background-color: var(--bg-dark);
-  color: var(--text-light);
-  z-index: 2000;
-  overflow-y: auto;
-  padding: 1.5rem;
-  box-sizing: border-box;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-}
-
-#fullscreen-player.active {
-  display: flex;
-}
-
-/* Tittel & Undertekst i Fullskjermspiller */
-#fullscreen-player .player-info {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  width: 100%;
-}
-
-#fullscreen-player #full-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--text-light);
-  margin-bottom: 0.3rem;
-  line-height: 1.3;
-}
-
-#fullscreen-player #full-sub {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-
-/* Framgangslinje (Seekbar / Slider) */
-.progress-container {
-  width: 100%;
-  margin: 1.5rem 0 0.5rem 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 6px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: var(--bar-border);
-  border-radius: 3px;
-  outline: none;
-  cursor: pointer;
-}
-
-.progress-bar::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--accent-blue);
-  cursor: pointer;
-  transition: transform 0.1s ease;
-}
-
-.progress-bar::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-}
-
-.time-stamps {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-/* Spillerknapper (Spill av, spole osv.) */
-.player-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  width: 100%;
-  margin-bottom: 2rem;
-}
-
-.skip-btn {
-  background: none;
-  border: none;
-  color: var(--accent-blue);
-  font-size: 1.4rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.2s;
-}
-
-.skip-btn:hover {
-  opacity: 0.8;
-}
-
-.full-play-btn {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background-color: var(--accent-blue);
-  color: #0b112c;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px rgba(174, 194, 247, 0.4);
-  transition: transform 0.2s ease;
-}
-
-.full-play-btn:hover {
-  transform: scale(1.05);
-}
-
 .details-content {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   text-align: left;
-  padding-bottom: 140px;
+  padding-bottom: 120px;
 }
 
 .details-hero {
@@ -575,28 +464,6 @@ main {
   flex: 1;
 }
 
-.details-badges {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.badge-tag {
-  background: var(--bar-bg);
-  color: var(--accent-blue);
-  padding: 0.25rem 0.6rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge-tag.alt {
-  background: rgba(174, 194, 247, 0.2);
-  color: #2b4ba2;
-}
-
 #details-title {
   font-size: 1.3rem;
   font-weight: 700;
@@ -612,52 +479,6 @@ main {
   margin: 0;
 }
 
-.details-action-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 1rem 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  margin-bottom: 1.5rem;
-}
-
-.details-action-bar .btn-primary {
-  flex: 1;
-  padding: 0.8rem 1rem;
-}
-
-.secondary-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn-action-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: var(--card-content);
-  color: var(--text-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s ease;
-}
-
-.btn-action-icon:hover {
-  background: rgba(0, 0, 0, 0.04);
-  transform: translateY(-1px);
-}
-
-.btn-action-icon.active {
-  color: var(--danger-red);
-  border-color: var(--danger-red);
-  background: rgba(239, 68, 68, 0.08);
-}
-
 .details-description-box {
   background: var(--card-content);
   padding: 1rem 1.2rem;
@@ -667,14 +488,6 @@ main {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
 }
 
-.details-description-box h3,
-.recommendations-container h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-dark);
-  margin-bottom: 0.5rem;
-}
-
 .details-desc {
   color: var(--text-muted-dark);
   font-size: 0.88rem;
@@ -682,26 +495,136 @@ main {
   margin-bottom: 0;
 }
 
-.section-title-wrapper {
+/* Fullskjerm Spiller - Mørkeblå Bakgrunn (#070b1e) */
+#fullscreen-player {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 100vh;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  z-index: 2000;
+  overflow-y: auto;
+  padding: 2rem 1.5rem;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+}
+
+#fullscreen-player.active {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 0.8rem;
 }
 
-.meta-small {
-  font-size: 0.75rem;
-  color: var(--text-muted-dark);
+.player-full-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  text-align: center;
 }
 
-.recommendations-container {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+#fullscreen-player h2 {
+  color: #ffffff;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
 }
 
-.recommendations-container .horizontal-scroll {
-  padding-top: 0.5rem;
+#fullscreen-player p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+#full-cover-container {
+  width: 230px;
+  height: 230px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  background-color: #1a2550;
+}
+
+#full-cover-container .book-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Tidslinje (Spolingslinje) i #AEC2F7 */
+.progress-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 2rem 0;
+  font-size: 0.85rem;
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+
+.progress-container input[type="range"] {
+  flex: 1;
+  height: 5px;
+  border-radius: 5px;
+  accent-color: #AEC2F7;
+  cursor: pointer;
+}
+
+/* Kontroller & Knapper i #AEC2F7 */
+.full-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.8rem;
+}
+
+.skip-btn {
+  background: transparent;
+  border: 1.5px solid #AEC2F7;
+  color: #AEC2F7;
+  padding: 0.6rem 1.1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.skip-btn i {
+  color: #AEC2F7;
+}
+
+.skip-btn:hover {
+  background-color: rgba(174, 194, 247, 0.15);
+}
+
+.main-play-btn {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  background: #AEC2F7;
+  color: #070b1e;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(174, 194, 247, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.main-play-btn:active {
+  transform: scale(0.95);
 }
 
 /* ==========================================================================
@@ -743,14 +666,6 @@ main {
   flex-shrink: 0;
 }
 
-.mini-cover-img {
-  width: 44px;
-  height: 44px;
-  object-fit: cover;
-  border-radius: 6px;
-  background-color: #1a2550;
-}
-
 .player-info {
   display: flex;
   flex-direction: column;
@@ -788,23 +703,6 @@ main {
 
 .icon-play-btn i {
   color: #AEC2F7;
-}
-
-#full-cover-container {
-  width: 230px;
-  height: 230px;
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
-}
-
-#mini-cover-container .book-cover-img,
-#full-cover-container .book-cover-img,
-.details-cover-container .book-cover-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .bottom-bar {
