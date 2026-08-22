@@ -16,6 +16,10 @@
   border-top: 1px solid var(--bar-border);
   box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
   z-index: 1100;
+  
+  /* Overgang for myk visning/skjuling av mini-spiller */
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
+  opacity: 1;
 }
 
 .player-left {
@@ -81,13 +85,12 @@
   color: #AEC2F7;
 }
 
-/* Fullskjerm-spiller */
+/* Fullskjerm-spiller (Animasjon opp og ned) */
 #fullscreen-player {
-  display: none;
+  display: flex; /* Må alltid være flex for at overgangen skal fungere */
   position: fixed;
   top: 0;
   left: 50%;
-  transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
   height: 100vh;
@@ -99,15 +102,27 @@
   box-sizing: border-box;
   flex-direction: column;
   align-items: center;
+
+  /* Standard status (Skjult helt under skjermen) */
+  transform: translate(-50%, 100%);
+  opacity: 0;
+  pointer-events: none; /* Forhindrer klikk når den er usynlig */
+
+  /* Myk fjærende overgangseffekt */
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
 }
 
+/* Aktiv status (Glir opp til synlig posisjon) */
 #fullscreen-player.active {
-  display: flex;
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 #fullscreen-player .close-btn {
   color: var(--accent-blue);
   align-self: flex-start;
+  cursor: pointer;
 }
 
 /* Løfter hele innholdet opp mot toppen */
@@ -115,22 +130,22 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* Flytter alt opp fra midten */
-  margin-top: 1rem;            /* Luft mot lukk-knappen */
+  justify-content: flex-start;
+  margin-top: 1rem;
   flex: 1;
   width: 100%;
   text-align: center;
 }
 
-/* Beholder for storspiller-bilde (matcher HTML) */
+/* Beholder for storspiller-bilde */
 #full-cover-container {
-  margin-bottom: 2.5rem;       /* God avstand ned til teksten så det ikke klemmes */
+  margin-bottom: 2.5rem;
   display: flex;
   justify-content: center;
   width: 100%;
 }
 
-/* Bilde i storspilleren (fungerer uansett om klassen er direkte på <img> eller i container) */
+/* Bilde i storspilleren */
 .full-cover-img,
 #full-cover-container img {
   width: 200px;
@@ -221,10 +236,13 @@
   transform: scale(0.95);
 }
 
-/* Skjul bunnmeny & minispiller ved overlay */
-body:has(#fullscreen-player.active) .bottom-bar,
-body:has(#fullscreen-player.active) .player,
-body:has(#details-page.active) .bottom-bar,
-body:has(#details-page.active) .player {
+/* Skjul bunnmeny & minispiller mykt ved overlay */
+body:has(#fullscreen-player.active) .bottom-bar {
   display: none !important;
+}
+
+body:has(#fullscreen-player.active) .player {
+  transform: translate(-50%, 100px);
+  opacity: 0;
+  pointer-events: none;
 }
