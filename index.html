@@ -76,6 +76,13 @@
           <h2>Ditt bibliotek på Tale</h2>
           <p>Utforsk nye lydbøker, podkaster og radiokanaler nedenfor.</p>
         </div>
+
+        <!-- NY: Seksjon for "Fortsett å lytte" galleri -->
+        <div id="continue-listening-section" class="continue-section" style="display: none;">
+          <h3>Fortsett å lytte</h3>
+          <div id="continue-listening-container" class="horizontal-scroll-container"></div>
+        </div>
+
         <div id="home-sections" class="dynamic-container"></div>
       </section>
 
@@ -104,7 +111,7 @@
       </section>
     </main>
 
-<!-- INFORMASJONSSIDE OVERLAY -->
+    <!-- INFORMASJONSSIDE OVERLAY -->
     <div id="details-page" class="modal">
       <button id="details-close-btn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
       <div class="details-content">
@@ -113,9 +120,10 @@
         <p id="details-sub" class="details-sub">Kategori</p>
         <p id="details-desc" class="details-desc">Beskrivelse...</p>
         
-        <button id="start-play-btn" class="btn-primary"><i class="fa-solid fa-play"></i> Start nyeste</button>
+        <!-- Knappen vil dynamisk endres til "Fortsett" eller "Spill av" via JS -->
+        <button id="start-play-btn" class="btn-primary"><i class="fa-solid fa-play"></i> Spill av</button>
 
-        <!-- NY: Container som fylles automatisk med alle episoder fra RSS -->
+        <!-- Container som fylles automatisk med alle episoder -->
         <div class="episode-list-container">
           <h3>Alle episoder</h3>
           <div id="episode-list"></div>
