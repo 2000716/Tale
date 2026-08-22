@@ -1,7 +1,12 @@
+/* Globale variabler (legg øverst i CSS-filen din) */
+:root {
+  --bottom-bar-height: 70px; /* Endre denne verdien slik at den matcher den nye høyden på bunnmenyen din */
+}
+
 /* Mini-spiller */
 .player {
   position: fixed;
-  bottom: calc(60px + env(safe-area-inset-bottom));
+  bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom)); /* Tilpasset dynamisk etter bunnmenyen */
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
