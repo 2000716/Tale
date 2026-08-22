@@ -57,6 +57,64 @@
     .status-msg { font-size: 0.85rem; color: #38bdf8; margin-top: 0.75rem; text-align: center; min-height: 1.2rem; }
     .badge { display: inline-block; padding: 0.15rem 0.4rem; background: #1e293b; border-radius: 4px; font-size: 0.7rem; color: #38bdf8; font-weight: 600; text-transform: uppercase; margin-right: 0.25rem; }
     
+    /* API Søke-boks elementer */
+    .api-box {
+      background: #020617;
+      border: 1px solid #0284c7;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .api-search-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .api-search-row input { flex: 1; }
+    .api-search-row button { width: auto; white-space: nowrap; }
+    
+    .api-results-container {
+      max-height: 180px;
+      overflow-y: auto;
+      margin-top: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .api-result-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0f172a;
+      padding: 0.4rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+    .api-result-item img {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      object-fit: cover;
+    }
+    .api-result-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow: hidden;
+    }
+    .api-result-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .btn-api-select {
+      background: #10b981;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      width: auto;
+    }
+    .btn-api-select:hover { background: #059669; }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -118,9 +176,20 @@
         </form>
       </div>
 
-      <!-- 2. LEGG TIL INNHOLD ELLER RSS-STRØM -->
+      <!-- 2. LEGG TIL INNHOLD ELLER RSS-STRØM (MED ITUNES API-SØK) -->
       <div class="card">
         <h3>2. Legg til Innhold / Media</h3>
+        
+        <!-- NY: iTunes API Søke-boks -->
+        <div class="api-box">
+          <label style="color: #38bdf8;">Hent fra Apple Podkaster (iTunes API)</label>
+          <div class="api-search-row">
+            <input type="text" id="api-search-input" placeholder="Søk podkastnavn (f.eks. NRK, Henrettelsespodden)...">
+            <button type="button" id="api-search-btn">Søk</button>
+          </div>
+          <div id="api-results" class="api-results-container"></div>
+        </div>
+
         <form id="add-item-form">
           <div class="form-group">
             <label>Velg Målseksjon</label>
@@ -238,6 +307,66 @@
 
     // Logg ut
     logoutBtn.addEventListener("click", () => signOut(auth));
+
+    // --- FUNKSJON FOR Å SØKE I ITUNES API ---
+    let searchResultsCache = [];
+    document.getElementById("api-search-btn").addEventListener("click", async () => {
+      const term = document.getElementById("api-search-input").value.trim();
+      const resultsContainer = document.getElementById("api-results");
+      
+      if (!term) return alert("Vennligst skriv et søkeord.");
+
+      resultsContainer.innerHTML = '<div style="color: #94a3b8; font-size: 0.8rem;">Søker hos Apple...</div>';
+
+      try {
+        const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=10`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        searchResultsCache = data.results || [];
+        resultsContainer.innerHTML = '';
+
+        if (searchResultsCache.length === 0) {
+          resultsContainer.innerHTML = '<div style="color: #64748b; font-size: 0.8rem;">Ingen podkaster funnet.</div>';
+          return;
+        }
+
+        searchResultsCache.forEach((pod, index) => {
+          const row = document.createElement("div");
+          row.className = "api-result-item";
+          row.innerHTML = `
+            <div class="api-result-left">
+              <img src="${pod.artworkUrl100 || ''}" alt="Cover">
+              <div class="api-result-text">
+                <strong>${pod.collectionName}</strong>
+                <div style="color: #64748b; font-size: 0.7rem;">${pod.artistName || ''}</div>
+              </div>
+            </div>
+            <button type="button" class="btn-api-select" onclick="selectApiPodcast(${index})">Velg</button>
+          `;
+          resultsContainer.appendChild(row);
+        });
+
+      } catch (err) {
+        resultsContainer.innerHTML = '<div style="color: #ef4444; font-size: 0.8rem;">Feil ved søk: ' + err.message + '</div>';
+      }
+    });
+
+    // Velg podkast fra API-resultat og fyll ut skjema automatisk
+    window.selectApiPodcast = (index) => {
+      const pod = searchResultsCache[index];
+      if (!pod) return;
+
+      document.getElementById("item-title").value = pod.collectionName || "";
+      document.getElementById("item-sub").value = pod.artistName || pod.primaryGenreName || "";
+      document.getElementById("item-cover").value = pod.artworkUrl600 || pod.artworkUrl100 || "";
+      document.getElementById("item-rss").value = pod.feedUrl || "";
+      document.getElementById("item-desc").value = `Podkast hentet fra Apple. Sjanger: ${pod.primaryGenreName || 'Diverse'}.`;
+
+      const statusMsg = document.getElementById("status-msg");
+      statusMsg.innerText = "Data fylt ut fra Apple API! Velg målseksjon og trykk Publiser.";
+      setTimeout(() => statusMsg.innerText = "", 4000);
+    };
 
     // Last inn databasen i sanntid
     function loadDatabaseContent() {
@@ -358,6 +487,7 @@
 
         statusMsg.innerText = "Innhold ble lagret!";
         document.getElementById("add-item-form").reset();
+        document.getElementById("api-results").innerHTML = "";
       } catch (err) {
         statusMsg.innerText = "Feil ved lagring: " + err.message;
       } finally {
