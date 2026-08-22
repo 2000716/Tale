@@ -109,11 +109,13 @@
   color: var(--accent-blue);
 }
 
+/* Løfter hele innholdet opp mot toppen */
 .player-full-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* Flytter alt opp fra midten */
+  margin-top: 1rem;            /* Juster denne hvis du vil ha bildet enda høyere opp */
   flex: 1;
   width: 100%;
   text-align: center;
@@ -131,12 +133,13 @@
   font-size: 0.9rem;
 }
 
+/* Beholder god avstand mellom bilde og tekst */
 .full-cover-img {
   width: 230px;
   height: 230px;
   object-fit: cover;
   border-radius: var(--radius-lg);
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;       /* Økt fra 2rem til 2.5rem så teksten IKKE klemmes mot bildet */
   box-shadow: 0 12px 30px rgba(0,0,0,0.5);
   background-color: #1a2550;
 }
