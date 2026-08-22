@@ -322,7 +322,6 @@ function loadContentFromFirestore() {
               </div>
             `;
 
-            // Hvis elementet har RSS, forsøk å hente oppdatert bilde derfra hvis det mangler cover
             if (rssUrl && !manualCover) {
               fetchRSSImageData(rssUrl, cardId, title);
             }
@@ -479,6 +478,16 @@ function bindSearchCardClickEvents() {
   });
 }
 
+// --- "Se mer" funksjon for beskrivelsen ---
+window.toggleReadMore = function() {
+  const box = document.getElementById('descBox');
+  const btn = document.getElementById('readMoreBtn');
+  if (!box || !btn) return;
+  
+  box.classList.toggle('expanded');
+  btn.textContent = box.classList.contains('expanded') ? 'Se mindre' : 'Se mer';
+};
+
 async function openDetailsView(item) {
   selectedItem = item;
   localStorage.setItem("lastSelectedItem", JSON.stringify(selectedItem));
@@ -486,10 +495,16 @@ async function openDetailsView(item) {
   const dTitle = document.getElementById("details-title");
   const dSub = document.getElementById("details-sub");
   const dDesc = document.getElementById("details-desc");
+  const descBox = document.getElementById("descBox");
+  const readMoreBtn = document.getElementById("readMoreBtn");
+
+  // Nullstill "Se mer"-status hver gang en ny detaljside åpnes
+  if (descBox) descBox.classList.remove('expanded');
+  if (readMoreBtn) readMoreBtn.textContent = 'Se mer';
 
   if (dTitle) dTitle.innerText = selectedItem.title;
   if (dSub) dSub.innerText = selectedItem.sub;
-  if (dDesc) dDesc.innerText = selectedItem.desc || "Laster inn...";
+  if (dDesc) dDesc.innerHTML = selectedItem.desc || "Laster inn...";
     
   const detailsCoverContainer = document.getElementById("details-cover-container");
   if (detailsCoverContainer) {
@@ -513,7 +528,6 @@ async function openDetailsView(item) {
     if (selectedItem.rssUrl) {
       episodeListContainer.innerHTML = "<p class='loading-episodes'>Henter alle episoder fra RSS...</p>";
     } else if (selectedItem.audioUrl) {
-      // Hvis det er en direkte lydfil/radio-stream uten RSS
       episodeListContainer.innerHTML = `
         <div class="episode-item" style="cursor: pointer;">
           <div class="episode-info">
@@ -706,7 +720,6 @@ function formatTime(seconds) {
 
 if (startPlayBtn) {
   startPlayBtn.onclick = () => {
-    // Hvis det er en direkte stream/lydbok (uten RSS-episodoliste, men med audioUrl)
     if (selectedItem.audioUrl && !selectedItem.rssUrl) {
       playSpecificEpisode(selectedItem, 0);
       return;
