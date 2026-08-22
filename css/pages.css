@@ -185,10 +185,9 @@
 }
 
 /* ==========================================
-   3. DETALJSIDE & EPISODER (Med Slide-animasjon)
+   3. DETALJSIDE (Modal / Glide-in)
    ========================================== */
 #details-page {
-  display: block;
   position: fixed;
   top: 0;
   left: 50%;
@@ -203,23 +202,24 @@
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 
-  /* Startstatus: Skjult under skjermen */
+  /* Standard: Skjult og utilgjengelig */
   transform: translate(-50%, 100%);
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 
-  /* Myk fjærende overgang (fjernes midlertidig under aktiv dra-bevegelse via JS) */
   transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
-              opacity 0.3s ease;
+              opacity 0.3s ease,
+              visibility 0.3s ease;
 }
 
 #details-page.active {
   transform: translate(-50%, 0);
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
 }
 
-/* Liten "dra-håndtak"-indikator øverst i modalen (typisk for spillere) */
 .details-drag-handle {
   width: 40px;
   height: 5px;
@@ -347,4 +347,270 @@
   font-style: italic;
   text-align: center;
   padding: 1rem;
+}
+
+/* ==========================================
+   5. MINI-SPILLER & FULLSKJERMSPILLER
+   ========================================== */
+.player {
+  position: fixed;
+  bottom: calc(60px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 62px;
+  background-color: var(--bar-bg);
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  border-top: 1px solid var(--bar-border);
+  box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
+  z-index: 1100;
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
+  opacity: 1;
+}
+
+.player-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  flex: 1;
+  overflow: hidden;
+}
+
+#mini-cover-container {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+#mini-cover-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.player-title {
+  font-size: 0.85rem;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ffffff;
+}
+
+.player-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.icon-play-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(174, 194, 247, 0.15);
+  border: 1.5px solid #AEC2F7;
+  color: #AEC2F7;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.icon-play-btn i {
+  color: #AEC2F7;
+}
+
+#fullscreen-player {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  width: 100%;
+  max-width: 480px;
+  height: 100vh;
+  height: 100dvh;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  z-index: 2000;
+  
+  overflow: hidden;
+  touch-action: none;
+
+  padding-top: calc(0.8rem + env(safe-area-inset-top));
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  /* Standard: Skjult helt under skjermen */
+  transform: translate(-50%, 100%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), 
+              opacity 0.3s ease,
+              visibility 0.3s ease;
+}
+
+#fullscreen-player.active {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.drag-handle {
+  width: 36px;
+  height: 5px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  margin-top: 0.2rem;
+  margin-bottom: 0.8rem;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+#fullscreen-player .close-btn {
+  position: absolute;
+  top: calc(1.2rem + env(safe-area-inset-top));
+  left: 1.5rem;
+  color: var(--accent-blue);
+  cursor: pointer;
+  z-index: 10;
+}
+
+.player-full-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  text-align: center;
+}
+
+#full-cover-container {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.full-cover-img,
+#full-cover-container img {
+  width: 210px;
+  height: 210px;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  background-color: #1a2550;
+}
+
+#fullscreen-player h2 {
+  color: #ffffff;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+#fullscreen-player p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.progress-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 2rem 0;
+  font-size: 0.85rem;
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+
+.progress-container input[type="range"] {
+  flex: 1;
+  height: 5px;
+  border-radius: 5px;
+  accent-color: #AEC2F7;
+  cursor: pointer;
+}
+
+.full-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.8rem;
+}
+
+.skip-btn {
+  background: transparent;
+  border: 1.5px solid #AEC2F7;
+  color: #AEC2F7;
+  padding: 0.6rem 1.1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.skip-btn i {
+  color: #AEC2F7;
+}
+
+.skip-btn:hover {
+  background-color: rgba(174, 194, 247, 0.15);
+}
+
+.main-play-btn {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  background: #AEC2F7;
+  color: #070b1e;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(174, 194, 247, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.main-play-btn:active {
+  transform: scale(0.95);
+}
+
+body:has(#fullscreen-player.active) .bottom-bar {
+  display: none !important;
+}
+
+body:has(#fullscreen-player.active) .player {
+  transform: translate(-50%, 100px);
+  opacity: 0;
+  pointer-events: none;
 }
