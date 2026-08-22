@@ -135,8 +135,8 @@
 
 /* Beholder god avstand mellom bilde og tekst */
 .full-cover-img {
-  width: 230px;
-  height: 230px;
+  width: 200px;
+  height: 200px;
   object-fit: cover;
   border-radius: var(--radius-lg);
   margin-bottom: 2.5rem;       /* Økt fra 2rem til 2.5rem så teksten IKKE klemmes mot bildet */
