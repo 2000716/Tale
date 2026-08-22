@@ -259,3 +259,61 @@
   box-shadow: none !important;
   display: block;
 }
+
+/* --- DYNAMISKE DYNAMISKE LAYOUT-KLASSER (LAGT TIL) --- */
+
+.section-wrapper {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--text-light, #ffffff);
+}
+
+/* 2-kolonners visning */
+.layout-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* 3-kolonners visning */
+.layout-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+/* 4-kolonners visning */
+.layout-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+/* Banner-visning */
+.layout-banner {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid var(--bar-border, rgba(255, 255, 255, 0.1));
+}
+
+.layout-banner .media-card {
+  width: 100%;
+}
+
+/* Responsiv tilpasning for mindre skjermer (mobil) */
+@media (max-width: 480px) {
+  .layout-grid-3 {
+    grid-template-columns: repeat(3, 1fr); /* Beholder 3 på mobil hvis du ønsker, eller endre til 2 */
+  }
+  .layout-grid-4 {
+    grid-template-columns: repeat(2, 1fr); /* Gjør 4-kolonner om til 2 på mobil for lesbarhet */
+  }
+}
