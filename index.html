@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   
   <title>Tale</title>
-  <meta name="description" content="Lytt til taler, undervisning og podkaster på Watch Nordic." />
+  <meta name="description" content="Lytt til taler, undervisning og podkaster på Tale." />
 
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347128/tALE_edited_gvs2so.png" />
@@ -62,9 +62,12 @@
     <!-- Toppstripe med integrert søkelinje og buet bunn -->
     <header class="top-bar">
       <div class="top-bar-main">
-        <div class="logo-container">
-          <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347860/copy_of_tale_edited_gvs2so.png" alt="Tale Logo" class="logo-img">
-        </div>
+        <!-- Logoen fungerer nå som Hjem-knapp -->
+        <button id="nav-home-logo-btn" class="logo-btn" aria-label="Gå til Hjem">
+          <div class="logo-container">
+            <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347860/copy_of_tale_edited_gvs2so.png" alt="Tale Logo" class="logo-img">
+          </div>
+        </button>
         <div class="profile-btn" id="nav-account-btn">
           <span class="profile-avatar" id="user-avatar">M</span>
           <span class="profile-name">Min Konto</span>
@@ -86,7 +89,7 @@
     <!-- Innholdsområde -->
     <main>
       <section id="home" class="page active">
-        <!-- NY: Seksjon for "Fortsett å lytte" galleri -->
+        <!-- Seksjon for "Fortsett å lytte" galleri -->
         <div id="continue-listening-section" class="continue-section" style="display: none;">
           <h3>Fortsett å lytte</h3>
           <div id="continue-listening-container" class="horizontal-scroll-container"></div>
@@ -170,7 +173,6 @@
     <!-- Episodeliste (Med antall/episoder-tekst øverst til venstre) -->
     <div class="episode-list-container">
       <div class="section-title-wrapper">
-        <!-- Denne vil nå bli plassert helt øverst til venstre takket være CSS-en -->
         <h3 id="details-badge-episodes">0 episoder</h3>
         <span id="episode-count-text" class="meta-small"></span>
       </div>
@@ -224,11 +226,8 @@
       </div>
     </div>
 
-    <!-- BUNNMENY -->
+    <!-- BUNNMENY (Hjem-knapp fjernet) -->
     <nav class="bottom-bar">
-      <button class="nav-btn active" data-target="home">
-        <span class="nav-text">Hjem</span>
-      </button>
       <button class="nav-btn" data-target="audiobooks">
         <span class="nav-text">Lydbøker</span>
       </button>
