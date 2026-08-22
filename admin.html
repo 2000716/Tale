@@ -3,238 +3,325 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tale – Admin Control Panel</title>
+  <title>Tale Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #090d16;
-      --card-bg: #0f172a;
-      --input-bg: #020617;
+      --bg-main: #0b0f19;
+      --bg-card: #131b2e;
+      --bg-input: #080c14;
       --border: #1e293b;
-      --border-focus: #38bdf8;
+      --border-light: #334155;
+      --accent: #38bdf8;
       --primary: #0284c7;
       --primary-hover: #0369a1;
-      --text: #f8fafc;
+      --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --danger: #ef4444;
       --danger-hover: #dc2626;
       --success: #10b981;
+      --success-hover: #059669;
+      --radius: 10px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 2rem 1rem; min-height: 100vh; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
     
-    .container { max-width: 1200px; margin: 0 auto; }
-    
-    header { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      margin-bottom: 2rem; 
-      border-bottom: 1px solid var(--border); 
-      padding-bottom: 1.5rem; 
+    /* Layout Framework */
+    .app-header {
+      background: rgba(19, 27, 46, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
     }
-    h1 { color: #ffffff; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
-    p.subtitle { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem; }
     
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .brand-title { display: flex; align-items: center; gap: 0.75rem; }
+    .brand-title h1 { font-size: 1.25rem; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+    .brand-title .badge-tag { background: rgba(56, 189, 248, 0.15); color: var(--accent); padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
     
-    .card { background: var(--card-bg); padding: 1.5rem; border-radius: 10px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
-    .card.full-width { grid-column: 1 / -1; }
-    
-    h3 { margin-bottom: 1.25rem; color: #ffffff; font-size: 1.05rem; font-weight: 600; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
-    
-    .form-group { margin-bottom: 1rem; }
-    .checkbox-group-container { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem; background: var(--input-bg); padding: 0.8rem; border-radius: 8px; border: 1px solid #334155; }
-    .checkbox-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: #cbd5e1; cursor: pointer; }
-    .checkbox-item input { width: auto; cursor: pointer; }
+    .container { max-width: 1400px; margin: 0 auto; width: 100%; padding: 2rem; }
 
-    label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    input, select, textarea { width: 100%; padding: 0.65rem 0.8rem; background: var(--input-bg); border: 1px solid #334155; color: var(--text); border-radius: 6px; font-size: 0.875rem; transition: all 0.2s; }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--border-focus); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+    /* Auth Card */
+    .auth-container { max-width: 400px; margin: 5rem auto; width: 100%; }
+    .auth-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 2.5rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
     
-    button { background: var(--primary); color: #ffffff; padding: 0.65rem 1rem; border: none; border-radius: 6px; font-weight: 600; font-size: 0.875rem; cursor: pointer; width: 100%; transition: background-color 0.2s; display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem; }
-    button:hover { background: var(--primary-hover); }
-    
-    .btn-secondary { background: #334155; color: var(--text); width: auto; padding: 0.4rem 0.8rem; }
-    .btn-secondary:hover { background: #475569; }
+    /* Grid System */
+    .dashboard-grid { display: grid; grid-template-columns: 380px 1fr; gap: 2rem; align-items: start; }
+    @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr; } }
 
-    .btn-delete { background: var(--danger); color: white; padding: 0.35rem 0.75rem; font-size: 0.75rem; width: auto; border-radius: 4px; }
-    .btn-delete:hover { background: var(--danger-hover); }
-    
-    .section-card { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; }
-    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
-    
-    .item-row { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 0.6rem 0.8rem; border-radius: 6px; margin-top: 0.5rem; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.03); }
-    .item-info { display: flex; align-items: center; gap: 0.75rem; }
-    .item-thumbnail { width: 36px; height: 36px; background: #1e293b; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
-    
-    .status-msg { font-size: 0.85rem; color: var(--border-focus); margin-top: 0.75rem; text-align: center; min-height: 1.2rem; font-weight: 500; }
-    .badge { display: inline-block; padding: 0.15rem 0.4rem; background: #1e293b; border-radius: 4px; font-size: 0.7rem; color: var(--border-focus); font-weight: 600; text-transform: uppercase; margin-right: 0.25rem; }
-    
-    /* API Søke-boks elementer */
-    .api-box { background: var(--input-bg); border: 1px solid var(--primary); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); }
+    .card-header { margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
+    .card-header h3 { color: #fff; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+
+    /* Inputs & Forms */
+    .form-group { margin-bottom: 1.1rem; }
+    label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    input, select, textarea {
+      width: 100%; padding: 0.7rem 0.9rem; background: var(--bg-input); border: 1px solid var(--border-light);
+      color: var(--text-main); border-radius: 6px; font-size: 0.875rem; transition: all 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
+
+    /* Custom Checkbox Group */
+    .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; background: var(--bg-input); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-light); }
+    .checkbox-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.825rem; color: #cbd5e1; cursor: pointer; user-select: none; }
+    .checkbox-item input { width: auto; cursor: pointer; accent-color: var(--primary); }
+
+    /* Buttons */
+    .btn { background: var(--primary); color: #fff; padding: 0.7rem 1.2rem; border: none; border-radius: 6px; font-weight: 600; font-size: 0.875rem; cursor: pointer; width: 100%; transition: all 0.2s; display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem; }
+    .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn-secondary { background: #1e293b; color: var(--text-main); width: auto; border: 1px solid var(--border-light); }
+    .btn-secondary:hover { background: #334155; }
+    .btn-danger { background: var(--danger); width: auto; padding: 0.4rem 0.8rem; font-size: 0.75rem; }
+    .btn-danger:hover { background: var(--danger-hover); }
+    .btn-edit { background: #334155; width: auto; padding: 0.4rem 0.8rem; font-size: 0.75rem; }
+    .btn-edit:hover { background: #475569; }
+
+    /* API Search Box */
+    .api-box { background: rgba(2, 132, 199, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; }
     .api-search-row { display: flex; gap: 0.5rem; }
     .api-search-row input { flex: 1; }
     .api-search-row button { width: auto; white-space: nowrap; }
-    
-    .api-results-container { max-height: 220px; overflow-y: auto; margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; padding-right: 4px; }
-    .api-result-item { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.8rem; border: 1px solid var(--border); }
-    .api-result-item img { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; }
-    .api-result-left { display: flex; align-items: center; gap: 0.6rem; overflow: hidden; }
+
+    .api-results-container { max-height: 240px; overflow-y: auto; margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 4px; }
+    .api-result-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.8rem; border: 1px solid var(--border); }
+    .api-result-left { display: flex; align-items: center; gap: 0.75rem; overflow: hidden; }
+    .api-result-left img { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
     .api-result-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.75rem; width: auto; border-radius: 4px; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { background: var(--success-hover); }
+
+    /* Sections List Display */
+    .search-filter-bar { display: flex; gap: 1rem; margin-bottom: 1rem; }
+    .search-filter-bar input { background: var(--bg-card); }
+
+    .section-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; transition: border-color 0.2s; }
+    .section-card:hover { border-color: var(--border-light); }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
     
-    .btn-api-select { background: var(--success); color: white; padding: 0.3rem 0.6rem; font-size: 0.75rem; width: auto; border-radius: 4px; }
-    .btn-api-select:hover { background: #059669; }
-    .btn-api-select.selected { background: #64748b; }
+    .tag-badge { display: inline-block; padding: 0.15rem 0.5rem; background: #1e293b; border-radius: 4px; font-size: 0.68rem; color: var(--accent); font-weight: 600; text-transform: uppercase; margin-right: 0.25rem; }
 
-    .selected-queue { margin-top: 0.75rem; padding: 0.75rem; background: var(--card-bg); border-radius: 6px; border: 1px dashed #334155; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
-    .selected-queue button { width: auto; padding: 0.3rem 0.6rem; font-size: 0.75rem; background: var(--success); }
-
+    .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
+    .item-card { display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border); }
+    .item-info { display: flex; align-items: center; gap: 0.75rem; overflow: hidden; }
+    .item-thumbnail { width: 40px; height: 40px; background: #1e293b; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+    
+    .status-msg { font-size: 0.85rem; color: var(--accent); margin-top: 0.75rem; text-align: center; min-height: 1.2rem; font-weight: 500; }
     .hidden { display: none !important; }
 
-    /* Scrollbar styling */
+    /* Modals for Edit */
+    .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
+    .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 500px; padding: 1.5rem; }
+
     ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--input-bg); }
+    ::-webkit-scrollbar-track { background: var(--bg-input); }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <header>
-      <div>
-        <h1>Tale — Admin Control Panel</h1>
-        <p class="subtitle">Systembehandling og innholdsstyring i sanntid</p>
-      </div>
-      <button id="logout-btn" class="btn-secondary hidden">Logg ut</button>
-    </header>
-
-    <!-- INNLOGGINGSSKJEMA -->
-    <div id="login-card" class="card" style="max-width: 380px; margin: 4rem auto;">
-      <h3>Administrator Autentisering</h3>
-      <form id="login-form">
-        <div class="form-group">
-          <label>E-postadresse</label>
-          <input type="email" id="login-email" placeholder="admin@tale.no" required>
-        </div>
-        <div class="form-group">
-          <label>Passord</label>
-          <input type="password" id="login-password" placeholder="••••••••" required>
-        </div>
-        <button type="submit">Logg inn</button>
-        <div id="login-msg" class="status-msg"></div>
-      </form>
+  <!-- Header Navigation -->
+  <header class="app-header">
+    <div class="brand-title">
+      <h1>Tale Admin</h1>
+      <span class="badge-tag">v2.0 Realtime</span>
     </div>
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <span id="user-display" style="font-size: 0.85rem; color: var(--text-muted);"></span>
+      <button id="logout-btn" class="btn btn-secondary hidden">Logg ut</button>
+    </div>
+  </header>
 
-    <!-- ADMIN PANELS -->
-    <div id="admin-content" class="grid hidden">
-      
-      <!-- 1. OPPRETT SEKSJON -->
-      <div class="card">
-        <h3>1. Opprett Kategori / Seksjon</h3>
-        <form id="add-section-form">
-          <div class="form-group">
-            <label>Navn på Seksjon</label>
-            <input type="text" id="sec-title" placeholder="f.eks. Populære Podkaster" required>
-          </div>
-          
-          <div class="form-group">
-            <label>Vis på følgende sider:</label>
-            <div class="checkbox-group-container">
-              <label class="checkbox-item"><input type="checkbox" value="home" class="sec-target-pages" checked> Hjem</label>
-              <label class="checkbox-item"><input type="checkbox" value="audiobooks" class="sec-target-pages"> Lydbøker</label>
-              <label class="checkbox-item"><input type="checkbox" value="podcasts" class="sec-target-pages"> Podkaster</label>
-              <label class="checkbox-item"><input type="checkbox" value="radio" class="sec-target-pages"> Radio</label>
-            </div>
-          </div>
+  <div class="container">
 
+    <!-- LOGIN SCREEN -->
+    <div id="login-card" class="auth-container">
+      <div class="auth-card">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+          <h2 style="font-size: 1.4rem;">Velkommen</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Logg inn for å behandle Tale app-innhold</p>
+        </div>
+        <form id="login-form">
           <div class="form-group">
-            <label>Visningsrekkefølge (Prioritet/Tall)</label>
-            <input type="number" id="sec-order" value="1" required>
+            <label>E-postadresse</label>
+            <input type="email" id="login-email" placeholder="admin@tale.no" required>
           </div>
-
-          <button type="submit">Opprett Seksjon</button>
+          <div class="form-group">
+            <label>Passord</label>
+            <input type="password" id="login-password" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn">Logg inn</button>
+          <div id="login-msg" class="status-msg"></div>
         </form>
       </div>
+    </div>
 
-      <!-- 2. LEGG TIL INNHOLD -->
-      <div class="card">
-        <h3>2. Legg til Innhold / Media</h3>
+    <!-- MAIN DASHBOARD -->
+    <div id="admin-content" class="dashboard-grid hidden">
+      
+      <!-- LEFT COLUMN: CREATION CONTROLS -->
+      <div>
         
-        <!-- Type velger -->
-        <div class="form-group">
-          <label>Velg Innholdstype</label>
-          <select id="content-type-select">
-            <option value="podcast">Podkast (Søk via Apple API / RSS)</option>
-            <option value="audiobook">Lydbok / Bok (Manuell input)</option>
-            <option value="radio">Radio Kanal / Stream</option>
-          </select>
+        <!-- 1. CREATION PANEL -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Ny Seksjon</h3>
+          </div>
+          <form id="add-section-form">
+            <div class="form-group">
+              <label>Seksjonsnavn</label>
+              <input type="text" id="sec-title" placeholder="f.eks. Populære Podkaster" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Vis på sider</label>
+              <div class="checkbox-grid">
+                <label class="checkbox-item"><input type="checkbox" value="home" class="sec-target-pages" checked> Hjem</label>
+                <label class="checkbox-item"><input type="checkbox" value="audiobooks" class="sec-target-pages"> Lydbøker</label>
+                <label class="checkbox-item"><input type="checkbox" value="podcasts" class="sec-target-pages"> Podkaster</label>
+                <label class="checkbox-item"><input type="checkbox" value="radio" class="sec-target-pages"> Radio</label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Rekkefølge / Prioritet</label>
+              <input type="number" id="sec-order" value="1" required>
+            </div>
+
+            <button type="submit" class="btn">Opprett Seksjon</button>
+          </form>
         </div>
 
-        <!-- Apple Podkast Søkefelt -->
-        <div id="podcast-search-box" class="api-box">
-          <label style="color: var(--border-focus);">Søk og fyll ut fra Apple Podkaster</label>
-          <div class="api-search-row">
-            <input type="text" id="api-search-input" placeholder="Søk tittel (f.eks. NRK, Oppdatert)...">
-            <button type="button" id="api-search-btn">Søk</button>
+        <!-- 2. ADD CONTENT PANEL -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Legg til Innhold</h3>
           </div>
-          <div id="api-results" class="api-results-container"></div>
           
-          <!-- Kø for masseimport -->
-          <div id="selected-queue" class="selected-queue hidden">
-            <span>Valgte elementer i kø: <strong id="queue-count">0</strong></span>
-            <button type="button" id="batch-publish-btn">Publiser alle i kø</button>
-          </div>
-        </div>
-
-        <form id="add-item-form">
           <div class="form-group">
-            <label>Velg Målseksjon i Appen</label>
-            <select id="item-section-select" required>
-              <option value="">Laster seksjoner...</option>
+            <label>Innholdstype</label>
+            <select id="content-type-select">
+              <option value="podcast">Podkast (Apple API Search)</option>
+              <option value="audiobook">Lydbok (Manuell Entry)</option>
+              <option value="radio">Radio Stream</option>
             </select>
           </div>
 
-          <div class="form-group">
-            <label>Tittel</label>
-            <input type="text" id="item-title" placeholder="Tittel på mediet" required>
+          <!-- iTunes Search API -->
+          <div id="podcast-search-box" class="api-box">
+            <label style="color: var(--accent);">Søk Apple Podkaster</label>
+            <div class="api-search-row" style="margin-top: 0.4rem;">
+              <input type="text" id="api-search-input" placeholder="Søk f.eks. 'Aftenposten'">
+              <button type="button" id="api-search-btn" class="btn btn-secondary">Søk</button>
+            </div>
+            <div id="api-results" class="api-results-container"></div>
+            
+            <div id="selected-queue" class="hidden" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.8rem;">Kø: <strong id="queue-count" style="color: var(--accent);">0</strong> elementer</span>
+              <button type="button" id="batch-publish-btn" class="btn btn-sm btn-success">Publiser alle i kø</button>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>Utgiver / Forfatter / Sjanger</label>
-            <input type="text" id="item-sub" placeholder="f.eks. NRK, Forlaget, Krim" required>
-          </div>
+          <!-- Direct Entry Form -->
+          <form id="add-item-form">
+            <div class="form-group">
+              <label>Målseksjon</label>
+              <select id="item-section-select" required>
+                <option value="">Laster seksjoner...</option>
+              </select>
+            </div>
 
-          <div class="form-group">
-            <label>Cover Bilde-URL (HTTPS)</label>
-            <input type="url" id="item-cover" placeholder="https://domene.no/bilde.jpg">
-          </div>
+            <div class="form-group">
+              <label>Tittel</label>
+              <input type="text" id="item-title" placeholder="Media tittel" required>
+            </div>
 
-          <div class="form-group" id="url-field-group">
-            <label id="url-label-text">RSS Feed URL</label>
-            <input type="url" id="item-rss" placeholder="https://eksempel.no/feed.xml">
-          </div>
+            <div class="form-group">
+              <label>Undertittel / Opphavseier</label>
+              <input type="text" id="item-sub" placeholder="f.eks. NRK / Forfatter" required>
+            </div>
 
-          <div class="form-group">
-            <label>Beskrivelse</label>
-            <textarea id="item-desc" placeholder="Kort beskrivelse..." rows="2"></textarea>
-          </div>
+            <div class="form-group">
+              <label>Bilde URL (Cover)</label>
+              <input type="url" id="item-cover" placeholder="https://domain.com/image.jpg">
+            </div>
 
-          <button type="submit" id="save-btn">Publiser Enkelt-Innhold</button>
-          <div id="status-msg" class="status-msg"></div>
-        </form>
+            <div class="form-group">
+              <label id="url-label-text">RSS Feed URL</label>
+              <input type="url" id="item-rss" placeholder="https://domain.com/feed.xml">
+            </div>
+
+            <div class="form-group">
+              <label>Beskrivelse</label>
+              <textarea id="item-desc" rows="2" placeholder="Kort sammendrag..."></textarea>
+            </div>
+
+            <button type="submit" class="btn">Publiser Enkeltinnhold</button>
+            <div id="status-msg" class="status-msg"></div>
+          </form>
+        </div>
+
       </div>
 
-      <!-- 3. OVERSIKT OVER SEKSJONER -->
-      <div class="card full-width">
-        <h3>Aktive Seksjoner og Innhold i Firestore</h3>
-        <div id="sections-list">Laster inn struktur...</div>
+      <!-- RIGHT COLUMN: CONTENT & SECTIONS MANAGEMENT -->
+      <div>
+        <div class="search-filter-bar">
+          <input type="text" id="filter-sections-input" placeholder="Søk i eksisterende seksjoner eller media...">
+        </div>
+
+        <div id="sections-list">
+          <div style="text-align: center; color: var(--text-muted); padding: 3rem;">Laster inn databasen...</div>
+        </div>
       </div>
+
     </div>
   </div>
 
-  <!-- FIREBASE INTEGRASJON -->
+  <!-- EDIT SECTION MODAL -->
+  <div id="edit-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="card-header">
+        <h3>Rediger Seksjon</h3>
+        <button type="button" onclick="closeEditModal()" class="btn btn-secondary btn-sm">X</button>
+      </div>
+      <form id="edit-section-form">
+        <input type="hidden" id="edit-sec-id">
+        <div class="form-group">
+          <label>Seksjonsnavn</label>
+          <input type="text" id="edit-sec-title" required>
+        </div>
+        <div class="form-group">
+          <label>Vis på sider</label>
+          <div class="checkbox-grid">
+            <label class="checkbox-item"><input type="checkbox" value="home" class="edit-sec-target-pages"> Hjem</label>
+            <label class="checkbox-item"><input type="checkbox" value="audiobooks" class="edit-sec-target-pages"> Lydbøker</label>
+            <label class="checkbox-item"><input type="checkbox" value="podcasts" class="edit-sec-target-pages"> Podkaster</label>
+            <label class="checkbox-item"><input type="checkbox" value="radio" class="edit-sec-target-pages"> Radio</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Rekkefølge / Prioritet</label>
+          <input type="number" id="edit-sec-order" required>
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+          <button type="button" onclick="closeEditModal()" class="btn btn-secondary">Avbryt</button>
+          <button type="submit" class="btn">Lagre Endringer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FIREBASE ENGINE & APP LOGIC -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
@@ -261,24 +348,28 @@
     const adminContent = document.getElementById("admin-content");
     const loginMsg = document.getElementById("login-msg");
     const logoutBtn = document.getElementById("logout-btn");
+    const userDisplay = document.getElementById("user-display");
 
-    let queueItems = []; // Kø for massepulishing fra Apple API
+    let queueItems = [];
+    let rawSectionsData = [];
 
-    // Håndter innloggingsstatus
+    // Authentication State Listener
     onAuthStateChanged(auth, (user) => {
       if (user) {
         loginCard.classList.add("hidden");
         adminContent.classList.remove("hidden");
         logoutBtn.classList.remove("hidden");
+        userDisplay.innerText = user.email;
         loadDatabaseContent();
       } else {
         loginCard.classList.remove("hidden");
         adminContent.classList.add("hidden");
         logoutBtn.classList.add("hidden");
+        userDisplay.innerText = "";
       }
     });
 
-    // Innlogging
+    // Login Handler
     document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       try {
@@ -291,7 +382,7 @@
 
     logoutBtn.addEventListener("click", () => signOut(auth));
 
-    // Endre grensesnitt basert på valgt innholdstype
+    // Dynamic Form Labels based on Content Type Choice
     document.getElementById("content-type-select").addEventListener("change", (e) => {
       const type = e.target.value;
       const podcastBox = document.getElementById("podcast-search-box");
@@ -304,8 +395,8 @@
         rssInput.placeholder = "https://eksempel.no/feed.xml";
       } else if (type === "audiobook") {
         podcastBox.classList.add("hidden");
-        urlLabel.innerText = "Lydfil / Bok URL (Valgfri)";
-        rssInput.placeholder = "https://eksempel.no/lydbok.mp3";
+        urlLabel.innerText = "Lydfil / Bok Stream URL";
+        rssInput.placeholder = "https://eksempel.no/audio.mp3";
       } else if (type === "radio") {
         podcastBox.classList.add("hidden");
         urlLabel.innerText = "Radio Stream URL (Icecast/HLS)";
@@ -313,14 +404,14 @@
       }
     });
 
-    // --- ITUNES API SØK ---
+    // iTunes Search Functionality
     let searchResultsCache = [];
     document.getElementById("api-search-btn").addEventListener("click", async () => {
       const term = document.getElementById("api-search-input").value.trim();
       const resultsContainer = document.getElementById("api-results");
       if (!term) return alert("Skriv inn et søkeord.");
 
-      resultsContainer.innerHTML = '<div style="color: #94a3b8; font-size: 0.8rem; padding: 0.5rem 0;">Søker hos Apple Podkaster...</div>';
+      resultsContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; padding: 0.5rem 0;">Søker hos Apple...</div>';
 
       try {
         const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`);
@@ -329,7 +420,7 @@
         resultsContainer.innerHTML = '';
 
         if (searchResultsCache.length === 0) {
-          resultsContainer.innerHTML = '<div style="color: #64748b; font-size: 0.8rem;">Ingen treff funnet.</div>';
+          resultsContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem;">Ingen treff funnet.</div>';
           return;
         }
 
@@ -341,22 +432,21 @@
               <img src="${pod.artworkUrl100 || ''}" alt="">
               <div class="api-result-text">
                 <strong>${pod.collectionName}</strong>
-                <div style="color: #64748b; font-size: 0.7rem;">${pod.artistName || 'Ukjent kunstner'}</div>
+                <div style="color: var(--text-muted); font-size: 0.7rem;">${pod.artistName || 'Ukjent'}</div>
               </div>
             </div>
             <div style="display: flex; gap: 0.3rem;">
-              <button type="button" class="btn-api-select" onclick="fillFormFromApi(${index})">Fyll Ut</button>
-              <button type="button" class="btn-api-select" style="background: #3b82f6;" onclick="addToQueue(${index}, this)">+ Kø</button>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="fillFormFromApi(${index})">Fyll Ut</button>
+              <button type="button" class="btn btn-sm" style="background: var(--primary);" onclick="addToQueue(${index}, this)">+ Kø</button>
             </div>
           `;
           resultsContainer.appendChild(row);
         });
       } catch (err) {
-        resultsContainer.innerHTML = '<div style="color: #ef4444; font-size: 0.8rem;">Feil under søk: ' + err.message + '</div>';
+        resultsContainer.innerHTML = '<div style="color: var(--danger); font-size: 0.8rem;">Feil: ' + err.message + '</div>';
       }
     });
 
-    // Fyll ut enkelt-skjema
     window.fillFormFromApi = (index) => {
       const pod = searchResultsCache[index];
       if (!pod) return;
@@ -372,33 +462,29 @@
       setTimeout(() => statusMsg.innerText = "", 4000);
     };
 
-    // Legg til i multikø
     window.addToQueue = (index, btnElement) => {
       const pod = searchResultsCache[index];
       if (!pod) return;
 
-      const itemData = {
+      queueItems.push({
         title: pod.collectionName || "",
         sub: pod.artistName || pod.primaryGenreName || "",
         coverUrl: pod.artworkUrl600 || pod.artworkUrl100 || "",
         rssUrl: pod.feedUrl || "",
         desc: `Podkast hentet fra Apple. Sjanger: ${pod.primaryGenreName || 'Diverse'}.`
-      };
+      });
 
-      queueItems.push(itemData);
-      btnElement.innerText = "Lagt til!";
+      btnElement.innerText = "Lagt til";
       btnElement.disabled = true;
-      btnElement.style.background = "#64748b";
+      btnElement.style.opacity = "0.5";
 
-      const queueBox = document.getElementById("selected-queue");
-      queueBox.classList.remove("hidden");
+      document.getElementById("selected-queue").classList.remove("hidden");
       document.getElementById("queue-count").innerText = queueItems.length;
     };
 
-    // Publiser alle fra køen
     document.getElementById("batch-publish-btn").addEventListener("click", async () => {
       const sectionId = document.getElementById("item-section-select").value;
-      if (!sectionId) return alert("Du må velge en Målseksjon i skjemaet under før du publiserer køen!");
+      if (!sectionId) return alert("Du må velge en målseksjon før du publiserer køen!");
 
       try {
         const sectionRef = doc(db, "sections", sectionId);
@@ -406,88 +492,103 @@
         
         if (docSnap.exists()) {
           const currentItems = docSnap.data().items || [];
-          const updatedItems = [...currentItems, ...queueItems];
+          await updateDoc(sectionRef, { items: [...currentItems, ...queueItems] });
           
-          await updateDoc(sectionRef, { items: updatedItems });
-          
-          alert(`${queueItems.length} elementer ble vellykket lagt til i seksjonen!`);
-          
-          // Nullstill kø
+          alert(`${queueItems.length} elementer ble vellykket lagt til!`);
           queueItems = [];
           document.getElementById("selected-queue").classList.add("hidden");
           document.getElementById("queue-count").innerText = "0";
         }
       } catch (err) {
-        alert("Feil under publisering av kø: " + err.message);
+        alert("Feil under lagring: " + err.message);
       }
     });
 
-    // Last inn Firestore-data i sanntid
+    // Database Realtime Load
     function loadDatabaseContent() {
-      const sectionsSelect = document.getElementById("item-section-select");
-      const sectionsList = document.getElementById("sections-list");
-
       const q = query(collection(db, "sections"), orderBy("order", "asc"));
       onSnapshot(q, (snapshot) => {
-        sectionsSelect.innerHTML = '<option value="">-- Velg Seksjon --</option>';
-        sectionsList.innerHTML = '';
-
-        if (snapshot.empty) {
-          sectionsList.innerHTML = '<p style="color: #64748b; text-align: center; padding: 2rem;">Ingen seksjoner funnet. Opprett en ovenfor.</p>';
-        }
-
+        rawSectionsData = [];
         snapshot.forEach((docSnap) => {
-          const sec = docSnap.data();
-          const id = docSnap.id;
-          const pages = Array.isArray(sec.pages) ? sec.pages : [sec.page || 'home'];
-
-          // Oppdater nedtrekksmeny
-          const opt = document.createElement("option");
-          opt.value = id;
-          opt.textContent = `[${pages.join(", ").toUpperCase()}] ${sec.title}`;
-          sectionsSelect.appendChild(opt);
-
-          // Bygg oversiktskort
-          const secCard = document.createElement("div");
-          secCard.className = "section-card";
-
-          let itemsHtml = "";
-          if (sec.items && sec.items.length > 0) {
-            itemsHtml = sec.items.map((item, index) => `
-              <div class="item-row">
-                <div class="item-info">
-                  ${item.coverUrl ? `<img src="${item.coverUrl}" class="item-thumbnail" alt="Cover">` : `<div class="item-thumbnail"></div>`}
-                  <div>
-                    <strong>${item.title}</strong>
-                    <div style="color: #64748b; font-size: 0.75rem;">${item.sub}</div>
-                  </div>
-                </div>
-                <button class="btn-delete" onclick="deleteItem('${id}', ${index})">Slett</button>
-              </div>
-            `).join("");
-          } else {
-            itemsHtml = `<div style="color: #475569; font-size: 0.8rem; padding: 0.5rem 0;">Ingen elementer i denne seksjonen ennå.</div>`;
-          }
-
-          const badgesHtml = pages.map(p => `<span class="badge">${p}</span>`).join("");
-
-          secCard.innerHTML = `
-            <div class="section-header">
-              <div>
-                ${badgesHtml}
-                <strong style="margin-left: 0.5rem; font-size: 1rem;">${sec.title}</strong>
-                <span style="color: #64748b; font-size: 0.8rem; margin-left: 0.5rem;">(Rekkefølge: ${sec.order})</span>
-              </div>
-              <button class="btn-delete" onclick="deleteSection('${id}')">Slett Seksjon</button>
-            </div>
-            ${itemsHtml}
-          `;
-          sectionsList.appendChild(secCard);
+          rawSectionsData.push({ id: docSnap.id, ...docSnap.data() });
         });
+        renderSectionsUI();
       });
     }
 
-    // Opprett Seksjon
+    function renderSectionsUI() {
+      const sectionsSelect = document.getElementById("item-section-select");
+      const sectionsList = document.getElementById("sections-list");
+      const filterText = document.getElementById("filter-sections-input").value.toLowerCase();
+
+      sectionsSelect.innerHTML = '<option value="">-- Velg Seksjon --</option>';
+      sectionsList.innerHTML = '';
+
+      const filtered = rawSectionsData.filter(sec => {
+        const matchTitle = sec.title.toLowerCase().includes(filterText);
+        const matchItems = sec.items && sec.items.some(i => i.title.toLowerCase().includes(filterText));
+        return matchTitle || matchItems;
+      });
+
+      if (filtered.length === 0) {
+        sectionsList.innerHTML = '<div class="card" style="text-align: center; color: var(--text-muted);">Ingen seksjoner eller innhold samsvarer med søket.</div>';
+        return;
+      }
+
+      filtered.forEach((sec) => {
+        const pages = Array.isArray(sec.pages) ? sec.pages : [sec.page || 'home'];
+
+        // Populate Select Input
+        const opt = document.createElement("option");
+        opt.value = sec.id;
+        opt.textContent = `[${pages.join(", ").toUpperCase()}] ${sec.title}`;
+        sectionsSelect.appendChild(opt);
+
+        // Build Dashboard Cards
+        const secCard = document.createElement("div");
+        secCard.className = "section-card";
+
+        let itemsHtml = "";
+        if (sec.items && sec.items.length > 0) {
+          itemsHtml = `<div class="item-grid">` + sec.items.map((item, index) => `
+            <div class="item-card">
+              <div class="item-info">
+                ${item.coverUrl ? `<img src="${item.coverUrl}" class="item-thumbnail" alt="Cover">` : `<div class="item-thumbnail"></div>`}
+                <div style="overflow: hidden;">
+                  <strong style="font-size: 0.85rem; display: block; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${item.title}</strong>
+                  <div style="color: var(--text-muted); font-size: 0.75rem;">${item.sub}</div>
+                </div>
+              </div>
+              <button class="btn btn-danger btn-sm" onclick="deleteItem('${sec.id}', ${index})">Slett</button>
+            </div>
+          `).join("") + `</div>`;
+        } else {
+          itemsHtml = `<div style="color: var(--text-muted); font-size: 0.8rem; padding: 0.5rem 0;">Ingen innholdselementer tilknyttet denne seksjonen enda.</div>`;
+        }
+
+        const badgesHtml = pages.map(p => `<span class="tag-badge">${p}</span>`).join("");
+
+        secCard.innerHTML = `
+          <div class="section-header">
+            <div>
+              ${badgesHtml}
+              <strong style="margin-left: 0.5rem; font-size: 1.05rem;">${sec.title}</strong>
+              <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.5rem;">(Prioritet: ${sec.order})</span>
+            </div>
+            <div style="display: flex; gap: 0.4rem;">
+              <button class="btn btn-edit" onclick="openEditModal('${sec.id}')">Rediger</button>
+              <button class="btn btn-danger" onclick="deleteSection('${sec.id}')">Slett Seksjon</button>
+            </div>
+          </div>
+          ${itemsHtml}
+        `;
+        sectionsList.appendChild(secCard);
+      });
+    }
+
+    document.getElementById("filter-sections-input").addEventListener("input", renderSectionsUI);
+
+    // Section Creation
     document.getElementById("add-section-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = document.getElementById("sec-title").value;
@@ -500,11 +601,11 @@
         await addDoc(collection(db, "sections"), { title, pages: selectedPages, order, items: [] });
         document.getElementById("sec-title").value = '';
       } catch (err) {
-        alert("Feil under opprettelse: " + err.message);
+        alert("Feil ved opprettelse: " + err.message);
       }
     });
 
-    // Legg til enkelt-innhold
+    // Content Creation
     document.getElementById("add-item-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const sectionId = document.getElementById("item-section-select").value;
@@ -528,11 +629,9 @@
           const currentItems = docSnap.data().items || [];
           const newItem = { title, sub, coverUrl: coverUrl || "", rssUrl: rssUrl || "", desc };
           
-          await updateDoc(sectionRef, {
-            items: [...currentItems, newItem]
-          });
+          await updateDoc(sectionRef, { items: [...currentItems, newItem] });
 
-          statusMsg.innerText = "Publisert med suksess!";
+          statusMsg.innerText = "Publisert!";
           document.getElementById("add-item-form").reset();
           document.getElementById("api-results").innerHTML = "";
         }
@@ -543,14 +642,49 @@
       }
     });
 
-    // Slett seksjon
+    // Edit Modal logic
+    window.openEditModal = (secId) => {
+      const sec = rawSectionsData.find(s => s.id === secId);
+      if (!sec) return;
+
+      document.getElementById("edit-sec-id").value = sec.id;
+      document.getElementById("edit-sec-title").value = sec.title;
+      document.getElementById("edit-sec-order").value = sec.order;
+
+      const pages = Array.isArray(sec.pages) ? sec.pages : [sec.page || 'home'];
+      document.querySelectorAll('.edit-sec-target-pages').forEach(cb => {
+        cb.checked = pages.includes(cb.value);
+      });
+
+      document.getElementById("edit-modal").classList.remove("hidden");
+    };
+
+    window.closeEditModal = () => {
+      document.getElementById("edit-modal").classList.add("hidden");
+    };
+
+    document.getElementById("edit-section-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("edit-sec-id").value;
+      const title = document.getElementById("edit-sec-title").value;
+      const order = parseInt(document.getElementById("edit-sec-order").value);
+      const selectedPages = Array.from(document.querySelectorAll('.edit-sec-target-pages:checked')).map(cb => cb.value);
+
+      try {
+        await updateDoc(doc(db, "sections", id), { title, order, pages: selectedPages });
+        closeEditModal();
+      } catch (err) {
+        alert("Feil ved oppdatering: " + err.message);
+      }
+    });
+
+    // Delete Operations
     window.deleteSection = async (id) => {
-      if (confirm("Er du sikker på at du vil slette hele denne seksjonen og alt innholdet i den?")) {
+      if (confirm("Er du sikker på at du vil slette hele denne seksjonen?")) {
         await deleteDoc(doc(db, "sections", id));
       }
     };
 
-    // Slett enkelt-element fra seksjon
     window.deleteItem = async (sectionId, itemIndex) => {
       if (confirm("Vil du slette dette elementet?")) {
         const sectionRef = doc(db, "sections", sectionId);
