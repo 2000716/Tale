@@ -126,21 +126,20 @@
   
   <div class="details-content">
     
-    <!-- Hero / Header Elementer -->
+    <!-- Hero / Header Elementer (Horisontal layout) -->
     <div class="details-hero">
       <div id="details-cover-container" class="details-cover-container"></div>
       
       <div class="details-header-info">
         <div class="details-badges">
           <span id="details-badge-type" class="badge-tag">Podkast</span>
-          <span id="details-badge-episodes" class="badge-tag alt"><i class="fa-solid fa-list"></i> 0 episoder</span>
         </div>
         <h2 id="details-title">Tittel</h2>
         <p id="details-sub" class="details-sub">Kategori / Utgiver</p>
       </div>
     </div>
 
-    <!-- Handlingsknapper (Action Bar) -->
+    <!-- Handlingsknapper (Action Bar - Kortere og på venstre side) -->
     <div class="details-action-bar">
       <button id="start-play-btn" class="btn-primary">
         <i class="fa-solid fa-play"></i> <span>Spill av</span>
@@ -168,10 +167,11 @@
       </div>
     </div>
 
-    <!-- Episodeliste -->
+    <!-- Episodeliste (Med antall/episoder-tekst øverst til venstre) -->
     <div class="episode-list-container">
       <div class="section-title-wrapper">
-        <h3>Alle episoder</h3>
+        <!-- Denne vil nå bli plassert helt øverst til venstre takket være CSS-en -->
+        <h3 id="details-badge-episodes">0 episoder</h3>
         <span id="episode-count-text" class="meta-small"></span>
       </div>
       <div id="episode-list"></div>
