@@ -361,3 +361,15 @@
     grid-template-columns: repeat(2, 1fr); /* Gjør 4-kolonner om til 2 på mobil for lesbarhet */
   }
 }
+
+/* Forhindrer automatisk zoom på mobil når et tekstfelt får fokus */
+input, select, textarea {
+  font-size: 16px !important;
+  touch-action: manipulation;
+}
+
+/* Forhindrer dobbelttrykk-zoom på knapper og skjerm */
+html, body {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
