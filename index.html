@@ -120,72 +120,73 @@
       </section>
     </main>
 
-    <!-- INFORMASJONSSIDE OVERLAY (AVANSERT) -->
-    <div id="details-page" class="modal">
-      <button id="details-close-btn" class="close-btn" aria-label="Lukk"><i class="fa-solid fa-xmark"></i></button>
+<!-- INFORMASJONSSIDE OVERLAY (AVANSERT) -->
+<div id="details-page" class="modal">
+  <button id="details-close-btn" class="close-btn" aria-label="Lukk"><i class="fa-solid fa-xmark"></i></button>
+  
+  <div class="details-content">
+    
+    <!-- Hero / Header Elementer -->
+    <div class="details-hero">
+      <div id="details-cover-container" class="details-cover-container"></div>
       
-      <div class="details-content">
-        
-        <!-- Hero / Header Elementer -->
-        <div class="details-hero">
-          <div id="details-cover-container" class="details-cover-container"></div>
-          
-          <div class="details-header-info">
-            <div class="details-badges">
-              <span id="details-badge-type" class="badge-tag">Podkast</span>
-              <span id="details-badge-episodes" class="badge-tag alt"><i class="fa-solid fa-list"></i> 0 episoder</span>
-            </div>
-            <h2 id="details-title">Tittel</h2>
-            <p id="details-sub" class="details-sub">Kategori / Utgiver</p>
-          </div>
+      <div class="details-header-info">
+        <div class="details-badges">
+          <span id="details-badge-type" class="badge-tag">Podkast</span>
+          <span id="details-badge-episodes" class="badge-tag alt"><i class="fa-solid fa-list"></i> 0 episoder</span>
         </div>
-
-        <!-- Handlingsknapper (Action Bar) -->
-        <div class="details-action-bar">
-          <button id="start-play-btn" class="btn-primary">
-            <i class="fa-solid fa-play"></i> <span>Spill av</span>
-          </button>
-          
-          <div class="secondary-actions">
-            <button id="details-like-btn" class="btn-action-icon" title="Favoritt">
-              <i class="fa-regular fa-heart"></i>
-            </button>
-            <button id="details-download-btn" class="btn-action-icon" title="Last ned for offline lytting">
-              <i class="fa-solid fa-arrow-down-to-line"></i>
-            </button>
-            <button id="details-share-btn" class="btn-action-icon" title="Del">
-              <i class="fa-solid fa-share-nodes"></i>
-            </button>
-          </div>
-        </div>
-
-        <!-- Strukturert Beskrivelse & Metadata -->
-        <div class="details-body">
-          <div class="details-description-box">
-            <h3>Om innholdet</h3>
-            <p id="details-desc" class="details-desc">Beskrivelse laster inn...</p>
-          </div>
-        </div>
-
-        <!-- Episodeliste -->
-        <div class="episode-list-container">
-          <div class="section-title-wrapper">
-            <h3>Alle episoder</h3>
-            <span id="episode-count-text" class="meta-small"></span>
-          </div>
-          <div id="episode-list"></div>
-        </div>
-
-        <!-- Anbefalinger / Lignende innhold -->
-        <div class="recommendations-container">
-          <h3>Du vil kanskje også like</h3>
-          <div id="recommendations-list" class="horizontal-scroll">
-            <!-- Fylles dynamisk fra JS -->
-          </div>
-        </div>
-
+        <h2 id="details-title">Tittel</h2>
+        <p id="details-sub" class="details-sub">Kategori / Utgiver</p>
       </div>
     </div>
+
+    <!-- Handlingsknapper (Action Bar) -->
+    <div class="details-action-bar">
+      <button id="start-play-btn" class="btn-primary">
+        <i class="fa-solid fa-play"></i> <span>Spill av</span>
+      </button>
+      
+      <div class="secondary-actions">
+        <button id="details-like-btn" class="btn-action-icon" title="Favoritt">
+          <i class="fa-regular fa-heart"></i>
+        </button>
+        <button id="details-download-btn" class="btn-action-icon" title="Last ned for offline lytting">
+          <i class="fa-solid fa-arrow-down-to-line"></i>
+        </button>
+        <button id="details-share-btn" class="btn-action-icon" title="Del">
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Strukturert Beskrivelse & Metadata i Boks med "Se mer" -->
+    <div class="details-body">
+      <div class="details-description-box" id="descBox">
+        <h3>Om innholdet</h3>
+        <p id="details-desc" class="details-desc">Beskrivelse laster inn...</p>
+        <button class="details-read-more-btn" id="readMoreBtn" onclick="toggleReadMore()">Se mer</button>
+      </div>
+    </div>
+
+    <!-- Episodeliste -->
+    <div class="episode-list-container">
+      <div class="section-title-wrapper">
+        <h3>Alle episoder</h3>
+        <span id="episode-count-text" class="meta-small"></span>
+      </div>
+      <div id="episode-list"></div>
+    </div>
+
+    <!-- Anbefalinger / Lignende innhold -->
+    <div class="recommendations-container">
+      <h3>Du vil kanskje også like</h3>
+      <div id="recommendations-list" class="horizontal-scroll">
+        <!-- Fylles dynamisk fra JS -->
+      </div>
+    </div>
+
+  </div>
+</div>
 
     <!-- FULLSKJERM SPILLER -->
     <div id="fullscreen-player" class="modal">
