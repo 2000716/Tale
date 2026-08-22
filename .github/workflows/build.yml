@@ -1,0 +1,22 @@
+name: Bygg App-fil
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v3
+
+      - name: Sett opp Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Lag APK med Bubblewrap (PWA Builder verktøy)
+        run: |
+          npm install -g @bubblewrap/cli
+          echo "Robot-oppsettet er klart"
