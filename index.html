@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#050F11" />
+  <meta name="theme-color" content="#070b1e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   
@@ -12,7 +12,7 @@
 
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347128/tALE_edited_gvs2so.png" />
-  <!-- FontAwesome for elegante ikoner -->
+  <!-- FontAwesome for ikoner -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   
   <link rel="stylesheet" href="style.css">
@@ -25,7 +25,7 @@
   <!-- Skjult lyd-element for selve avspillingen -->
   <audio id="global-audio" preload="metadata"></audio>
 
-  <!-- 1. LANDINGSSIDE (Mørkeblå) -->
+  <!-- 1. LANDINGSSIDE -->
   <div id="landing-view" class="view active">
     <div class="landing-hero">
       <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347860/copy_of_tale_edited_gvs2so.png" alt="Tale Logo" class="landing-logo">
@@ -38,7 +38,7 @@
     </div>
   </div>
 
-  <!-- 2. INNLOGGING / REGISTRERING (Mørkeblå) -->
+  <!-- 2. INNLOGGING / REGISTRERING -->
   <div id="auth-view" class="view">
     <button id="auth-back-btn" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Tilbake</button>
     <div class="auth-card">
@@ -68,7 +68,7 @@
       </div>
     </header>
 
-    <!-- Innholdsområde (Varmhvit / Lys) -->
+    <!-- Innholdsområde -->
     <main>
       <section id="home" class="page active">
         <div class="hero-banner">
@@ -85,7 +85,7 @@
       </section>
 
       <section id="podcasts" class="page">
-        <h2>Podcaster</h2>
+        <h2>Podkaster</h2>
         <div id="podcasts-sections" class="dynamic-container"></div>
       </section>
 
@@ -108,7 +108,7 @@
     <div id="details-page" class="modal">
       <button id="details-close-btn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
       <div class="details-content">
-        <img id="details-cover-img" src="" alt="Omslag" class="details-cover-img hidden">
+        <div id="details-cover-container" class="details-cover-container"></div>
         <h2 id="details-title">Tittel</h2>
         <p id="details-sub" class="details-sub">Kategori</p>
         <p id="details-desc" class="details-desc">Beskrivelse...</p>
@@ -120,7 +120,7 @@
     <div id="fullscreen-player" class="modal">
       <button id="player-close-btn" class="close-btn"><i class="fa-solid fa-chevron-down"></i></button>
       <div class="player-full-content">
-        <img id="full-cover-img" src="" alt="Omslag" class="full-cover-img">
+        <div id="full-cover-container"></div>
         <h2 id="full-title">Tittel</h2>
         <p id="full-sub">Undertittel</p>
 
@@ -138,10 +138,10 @@
       </div>
     </div>
 
-    <!-- MINI-SPILLERSTRIPE (Hvit rute med ikoner) -->
+    <!-- MINI-SPILLERSTRIPE -->
     <div class="player hidden" id="audio-player-bar">
       <div class="player-left" id="open-full-player">
-        <img id="mini-player-cover-img" src="" alt="Omslag" class="mini-cover-img">
+        <div id="mini-cover-container"></div>
         <div class="player-info">
           <span id="mini-player-title" class="player-title">Ingen spilles</span>
           <span id="mini-player-sub" class="player-sub">Velg tittel</span>
