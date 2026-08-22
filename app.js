@@ -13,7 +13,10 @@ import {
   collection, 
   onSnapshot, 
   query, 
-  orderBy 
+  orderBy,
+  doc,
+  setDoc,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // 1. Firebase Config
@@ -32,6 +35,8 @@ const db = getFirestore(app);
 
 let globalAudio = new Audio();
 let isUserSeeking = false;
+let currentUser = null;
+let userHistory = {}; // Holder styr på brukers historikk lokalt
 
 setPersistence(auth, browserLocalPersistence);
 
@@ -42,6 +47,7 @@ function showView(viewId) {
 }
 
 onAuthStateChanged(auth, (user) => {
+  currentUser = user;
   if (user) {
     showView("app-view");
     const emailDisplay = document.getElementById("account-email-display");
@@ -50,8 +56,11 @@ onAuthStateChanged(auth, (user) => {
     if (userAvatar) userAvatar.innerText = user.email.charAt(0).toUpperCase();
      
     loadContentFromFirestore();
+    loadUserHistory();
   } else {
     showView("landing-view");
+    currentUser = null;
+    userHistory = {};
   }
 });
 
@@ -129,6 +138,91 @@ function buildCoverMarkup(src, title) {
       <span>${cleanTitle}</span>
     </div>
   `;
+}
+
+// Last ned brukerens historikk fra Firestore
+async function loadUserHistory() {
+  if (!currentUser) return;
+  try {
+    const historyRef = collection(db, "users", currentUser.uid, "history");
+    const snapshot = await getDocs(historyRef);
+    userHistory = {};
+    snapshot.forEach(docSnap => {
+      userHistory[docSnap.id] = docSnap.data();
+    });
+    renderContinueListening();
+    updateDetailPlayButtonState();
+  } catch (err) {
+    console.error("Kunne ikke laste brukerhistorikk:", err);
+  }
+}
+
+// Lagre fremdrift til Firebase
+async function saveProgressToFirestore(itemId, data) {
+  if (!currentUser || !itemId) return;
+  try {
+    const cleanId = itemId.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const historyRef = doc(db, "users", currentUser.uid, "history", cleanId);
+    const payload = {
+      ...data,
+      currentTime: globalAudio.currentTime,
+      duration: globalAudio.duration || 0,
+      updatedAt: new Date()
+    };
+    await setDoc(historyRef, payload, { merge: true });
+    userHistory[cleanId] = payload;
+    renderContinueListening();
+    updateDetailPlayButtonState();
+  } catch (err) {
+    console.error("Feil ved lagring av fremdrift:", err);
+  }
+}
+
+// Vis "Fortsett å lytte"-galleriet på Hjem-siden
+function renderContinueListening() {
+  const section = document.getElementById("continue-listening-section");
+  const container = document.getElementById("continue-listening-container");
+  if (!section || !container) return;
+
+  const items = Object.entries(userHistory);
+  if (items.length === 0) {
+    section.style.display = "none";
+    return;
+  }
+
+  // Sorter etter sist oppdatert
+  items.sort((a, b) => (b[1].updatedAt?.seconds || 0) - (a[1].updatedAt?.seconds || 0));
+
+  container.innerHTML = "";
+  section.style.display = "block";
+
+  items.forEach(([id, item]) => {
+    const card = document.createElement("div");
+    card.className = "book-card";
+    card.innerHTML = `
+      <div class="book-cover">${buildCoverMarkup(item.cover, item.title)}</div>
+      <div class="book-title">${item.title}</div>
+      <div class="book-author">${item.sub || ''}</div>
+    `;
+    card.onclick = () => {
+      selectedItem = { ...item, id: id };
+      playSpecificEpisode(selectedItem, item.currentTime || 0);
+    };
+    container.appendChild(card);
+  });
+}
+
+// Oppdater start-knappen i detaljvisningen til "Fortsett" eller "Spill av"
+function updateDetailPlayButtonState() {
+  const startBtn = document.getElementById("start-play-btn");
+  if (!startBtn || !selectedItem.title) return;
+
+  const cleanId = selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_');
+  if (userHistory[cleanId] && userHistory[cleanId].currentTime > 5) {
+    startBtn.innerHTML = `<i class="fa-solid fa-play"></i> Fortsett (${Math.floor(userHistory[cleanId].currentTime / 60)} min)`;
+  } else {
+    startBtn.innerHTML = `<i class="fa-solid fa-play"></i> Spill av`;
+  }
 }
 
 // 5. Last innhold fra Firestore & Automatisk hente bilde fra RSS
@@ -229,7 +323,7 @@ async function fetchRSSImageData(rssUrl, cardId, title) {
   }
 }
 
-// 6. Klikk på kort (Full uthenting av all RSS-data og episodeliste)
+// 6. Klikk på kort
 let selectedItem = {};
 
 function bindCardClickEvents() {
@@ -252,6 +346,8 @@ function bindCardClickEvents() {
       if (detailsCoverContainer) {
         detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
       }
+
+      updateDetailPlayButtonState();
 
       let episodeListContainer = document.getElementById("episode-list");
       if (!episodeListContainer) {
@@ -291,7 +387,6 @@ function bindCardClickEvents() {
               selectedItem.audioUrl = data.items[0].enclosure.link;
             }
 
-            // Bygg ut den komplette episodelisten med egne minipostere
             if (episodeListContainer && data.items.length > 0) {
               episodeListContainer.innerHTML = "";
               data.items.forEach(ep => {
@@ -317,12 +412,15 @@ function bindCardClickEvents() {
                 `;
 
                 epDiv.onclick = () => {
-                  playSpecificEpisode({
+                  const epData = {
                     title: ep.title,
                     audioUrl: ep.enclosure?.link || selectedItem.audioUrl,
                     cover: epImage,
                     sub: selectedItem.sub
-                  });
+                  };
+                  const cleanId = ep.title.replace(/[^a-zA-Z0-9-_]/g, '_');
+                  const savedTime = userHistory[cleanId]?.currentTime || 0;
+                  playSpecificEpisode(epData, savedTime);
                 };
 
                 episodeListContainer.appendChild(epDiv);
@@ -342,22 +440,29 @@ function bindCardClickEvents() {
   });
 }
 
-// 7. Spiller-håndtering og avspilling av spesifikk episode fra listen
-function playSpecificEpisode(epData) {
+// 7. Spiller-håndtering
+function playSpecificEpisode(epData, startPosition = 0) {
   selectedItem.title = epData.title;
   selectedItem.audioUrl = epData.audioUrl;
-  if (epData.cover) {
-    selectedItem.cover = epData.cover;
-  }
+  if (epData.cover) selectedItem.cover = epData.cover;
+  if (epData.sub) selectedItem.sub = epData.sub;
    
   if (selectedItem.audioUrl) {
     globalAudio.src = selectedItem.audioUrl;
-    globalAudio.play();
-    updatePlayIcons(true);
+    globalAudio.onloadedmetadata = () => {
+      if (startPosition > 0) {
+        globalAudio.currentTime = startPosition;
+      }
+      globalAudio.play();
+      updatePlayIcons(true);
+      if (totalTimeSpan && globalAudio.duration) {
+        totalTimeSpan.innerText = formatTime(globalAudio.duration);
+      }
+    };
   }
 
   document.getElementById("mini-player-title").innerText = selectedItem.title;
-  document.getElementById("mini-player-sub").innerText = selectedItem.sub;
+  document.getElementById("mini-player-sub").innerText = selectedItem.sub || "";
   const miniCoverContainer = document.getElementById("mini-cover-container");
   if (miniCoverContainer) {
     miniCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
@@ -365,7 +470,7 @@ function playSpecificEpisode(epData) {
   document.getElementById("audio-player-bar")?.classList.remove("hidden");
 
   document.getElementById("full-title").innerText = selectedItem.title;
-  document.getElementById("full-sub").innerText = selectedItem.sub;
+  document.getElementById("full-sub").innerText = selectedItem.sub || "";
   const fullCoverContainer = document.getElementById("full-cover-container");
   if (fullCoverContainer) {
     fullCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
@@ -404,12 +509,14 @@ function formatTime(seconds) {
 
 if (startPlayBtn) {
   startPlayBtn.onclick = () => {
+    const cleanId = selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const savedTime = userHistory[cleanId]?.currentTime || 0;
     playSpecificEpisode({
       title: selectedItem.title,
       audioUrl: selectedItem.audioUrl,
       cover: selectedItem.cover,
       sub: selectedItem.sub
-    });
+    }, savedTime);
   };
 }
 
@@ -421,6 +528,9 @@ function togglePlay() {
   } else {
     globalAudio.pause();
     updatePlayIcons(false);
+    if (selectedItem.title) {
+      saveProgressToFirestore(selectedItem.title, selectedItem);
+    }
   }
 }
 
@@ -431,18 +541,21 @@ if (skipBackBtn) skipBackBtn.onclick = () => { if (globalAudio.src) globalAudio.
 if (skipForwardBtn) skipForwardBtn.onclick = () => { if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
 
 if (globalAudio) {
+  let saveTimer = null;
   globalAudio.ontimeupdate = () => {
     if (!isUserSeeking && globalAudio.duration) {
       const progressPercent = (globalAudio.currentTime / globalAudio.duration) * 100;
       if (progressBar) progressBar.value = progressPercent;
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(globalAudio.currentTime);
       if (totalTimeSpan) totalTimeSpan.innerText = formatTime(globalAudio.duration);
-    }
-  };
 
-  globalAudio.onloadedmetadata = () => {
-    if (totalTimeSpan && globalAudio.duration) {
-      totalTimeSpan.innerText = formatTime(globalAudio.duration);
+      // Lagre automatisk til Firebase hvert 10. sekund under avspilling
+      if (!saveTimer && selectedItem.title) {
+        saveTimer = setTimeout(() => {
+          saveProgressToFirestore(selectedItem.title, selectedItem);
+          saveTimer = null;
+        }, 10000);
+      }
     }
   };
 
@@ -450,6 +563,10 @@ if (globalAudio) {
     updatePlayIcons(false);
     if (progressBar) progressBar.value = 0;
     if (currentTimeSpan) currentTimeSpan.innerText = "0:00";
+    if (selectedItem.title) {
+      globalAudio.currentTime = 0;
+      saveProgressToFirestore(selectedItem.title, selectedItem);
+    }
   };
 }
 
@@ -465,6 +582,9 @@ if (progressBar) {
   progressBar.onchange = () => {
     if (globalAudio.duration) {
       globalAudio.currentTime = (progressBar.value / 100) * globalAudio.duration;
+      if (selectedItem.title) {
+        saveProgressToFirestore(selectedItem.title, selectedItem);
+      }
     }
     isUserSeeking = false;
   };
