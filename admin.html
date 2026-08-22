@@ -58,7 +58,6 @@
     .badge { display: inline-block; padding: 0.15rem 0.4rem; background: #1e293b; border-radius: 4px; font-size: 0.7rem; color: #38bdf8; font-weight: 600; text-transform: uppercase; margin-right: 0.25rem; }
     .badge-layout { background: #0284c7; color: white; }
     
-    /* API Søke-boks elementer */
     .api-box {
       background: #020617;
       border: 1px solid #0284c7;
@@ -93,7 +92,6 @@
     
     .btn-api-select { background: #10b981; color: white; padding: 0.25rem 0.6rem; font-size: 0.75rem; width: auto; }
     .btn-api-select:hover { background: #059669; }
-    .btn-api-select.selected { background: #64748b; }
 
     .selected-queue {
       margin-top: 0.75rem;
@@ -113,7 +111,7 @@
     <header>
       <div>
         <h1>Tale — Admin Control Panel</h1>
-        <p class="subtitle">Effektiv systembehandling for innhold</p>
+        <p class="subtitle">Full kontroll over oppsett, seksjoner og layout</p>
       </div>
       <button id="logout-btn" class="btn-secondary hidden">Logg ut</button>
     </header>
@@ -138,22 +136,23 @@
     <!-- ADMIN PANELS -->
     <div id="admin-content" class="grid hidden">
       
-      <!-- 1. OPPRETT SEKSJON -->
+      <!-- 1. OPPRETT SEKSJON / LAYOUT -->
       <div class="card">
-        <h3>1. Opprett Kategori / Seksjon</h3>
+        <h3>1. Opprett / Konfigurer Seksjonsoppsett</h3>
         <form id="add-section-form">
           <div class="form-group">
             <label>Navn på Seksjon</label>
-            <input type="text" id="sec-title" placeholder="f.eks. Populære Podkaster" required>
+            <input type="text" id="sec-title" placeholder="f.eks. Ukens Utvalgte / Stort Banner" required>
           </div>
 
           <div class="form-group">
-            <label>Visningsoppsett (Layout)</label>
+            <label>Velg Design / Layout-oppsett</label>
             <select id="sec-layout" required>
-              <option value="grid-2">Todelt galleri (2 kolonner)</option>
-              <option value="grid-3" selected>Tredelt galleri (3 kolonner)</option>
-              <option value="grid-4">Firedelt galleri (4 kolonner)</option>
-              <option value="banner">Promoteringsbanner (Full bredde)</option>
+              <option value="grid-2">Todelt galleri (2 store kolonner)</option>
+              <option value="grid-3" selected>Standard galleri (3 kolonner)</option>
+              <option value="grid-4">Kompakt galleri (4 små kolonner)</option>
+              <option value="banner">Stort fremhevet banner (Full bredde)</option>
+              <option value="spotlight">Spotlight-visning (Stort bilde til venstre)</option>
             </select>
           </div>
           
@@ -172,33 +171,30 @@
             <input type="number" id="sec-order" value="1" required>
           </div>
 
-          <button type="submit">Opprett Seksjon</button>
+          <button type="submit">Opprett Ny Seksjon</button>
         </form>
       </div>
 
-      <!-- 2. LEGG TIL INNHOLD / MASSEINNHOLD -->
+      <!-- 2. LEGG TIL INNHOLD -->
       <div class="card">
-        <h3>2. Legg til Innhold / Media</h3>
+        <h3>2. Legg til Innhold i Seksjon</h3>
         
-        <!-- Type velger -->
         <div class="form-group">
-          <label>Velg Innholdstype</label>
+          <label>Innholdstype</label>
           <select id="content-type-select">
-            <option value="podcast">Podkast (Søk via Apple API / RSS)</option>
-            <option value="audiobook">Lydbok / Bok (Manuell)</option>
+            <option value="podcast">Podkast (Søk via Apple API)</option>
+            <option value="audiobook">Lydbok / Manuell</option>
             <option value="radio">Radio Kanal / Stream</option>
           </select>
         </div>
 
-        <!-- Apple Podkast Søkefelt (vises kun for podkast) -->
         <div id="podcast-search-box" class="api-box">
-          <label style="color: #38bdf8;">Søk og legg til fra Apple Podkaster</label>
+          <label style="color: #38bdf8;">Søk og hent fra Apple Podkaster</label>
           <div class="api-search-row">
-            <input type="text" id="api-search-input" placeholder="Søk tittel (f.eks. NRK, Oppdatert)...">
+            <input type="text" id="api-search-input" placeholder="Søk tittel...">
             <button type="button" id="api-search-btn">Søk</button>
           </div>
           <div id="api-results" class="api-results-container"></div>
-          <div id="selected-queue" class="selected-queue hidden">Valgte elementer klar for publisering: <span id="queue-count">0</span> stk</div>
         </div>
 
         <form id="add-item-form">
@@ -211,51 +207,46 @@
 
           <div class="form-group">
             <label>Tittel</label>
-            <input type="text" id="item-title" placeholder="Tittel på mediet" required>
+            <input type="text" id="item-title" placeholder="Tittel" required>
           </div>
 
           <div class="form-group">
-            <label>Utgiver / Forfatter / Sjanger</label>
-            <input type="text" id="item-sub" placeholder="f.eks. NRK, Forlaget, Krim" required>
+            <label>Undertekst / Utgiver</label>
+            <input type="text" id="item-sub" placeholder="f.eks. Forfatter eller kanal" required>
           </div>
 
           <div class="form-group">
             <label>Cover Bilde-URL (HTTPS)</label>
-            <input type="url" id="item-cover" placeholder="https://domene.no/bilde.jpg">
+            <input type="url" id="item-cover" placeholder="https://...">
           </div>
 
-          <div class="form-group" id="url-field-group">
-            <label id="url-label-text">RSS Feed URL</label>
-            <input type="url" id="item-rss" placeholder="https://eksempel.no/feed.xml">
+          <div class="form-group">
+            <label id="url-label-text">RSS Feed URL / Stream URL</label>
+            <input type="url" id="item-rss" placeholder="https://...">
           </div>
 
           <div class="form-group">
             <label>Beskrivelse</label>
-            <textarea id="item-desc" placeholder="Kort beskrivelse..." rows="2"></textarea>
+            <textarea id="item-desc" placeholder="Beskrivelse..." rows="2"></textarea>
           </div>
 
-          <button type="submit" id="save-btn">Publiser Innhold</button>
+          <button type="submit" id="save-btn">Legg til i Seksjon</button>
           <div id="status-msg" class="status-msg"></div>
         </form>
       </div>
 
-      <!-- 3. OVERSIKT OVER SEKSJONER (UTEN ANTALL) -->
+      <!-- 3. OVERSIKT -->
       <div class="card full-width">
-        <h3>Aktive Seksjoner og Innhold i Firestore</h3>
+        <h3>Aktive Seksjoner og Layout-struktur i Firestore</h3>
         <div id="sections-list">Laster inn struktur...</div>
       </div>
     </div>
   </div>
 
-  <!-- FIREBASE INTEGRASJON -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, getDoc, arrayUnion, query, orderBy 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { 
-      getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, getDoc, arrayUnion, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDfJ3IXqeJUkCVcMnPt3ya37Co7Du-f1WU",
@@ -270,21 +261,16 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    const loginCard = document.getElementById("login-card");
-    const adminContent = document.getElementById("admin-content");
-    const loginMsg = document.getElementById("login-msg");
-    const logoutBtn = document.getElementById("logout-btn");
-
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        loginCard.classList.add("hidden");
-        adminContent.classList.remove("hidden");
-        logoutBtn.classList.remove("hidden");
+        document.getElementById("login-card").classList.add("hidden");
+        document.getElementById("admin-content").classList.remove("hidden");
+        document.getElementById("logout-btn").classList.remove("hidden");
         loadDatabaseContent();
       } else {
-        loginCard.classList.remove("hidden");
-        adminContent.classList.add("hidden");
-        logoutBtn.classList.add("hidden");
+        document.getElementById("login-card").classList.remove("hidden");
+        document.getElementById("admin-content").classList.add("hidden");
+        document.getElementById("logout-btn").classList.add("hidden");
       }
     });
 
@@ -292,92 +278,48 @@
       e.preventDefault();
       try {
         await signInWithEmailAndPassword(auth, document.getElementById("login-email").value, document.getElementById("login-password").value);
-        loginMsg.innerText = "";
       } catch (err) {
-        loginMsg.innerText = "Feil ved innlogging: " + err.message;
+        document.getElementById("login-msg").innerText = "Feil ved innlogging.";
       }
     });
 
-    logoutBtn.addEventListener("click", () => signOut(auth));
+    document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
 
-    // Endre feltnavn basert på innholdstype
-    document.getElementById("content-type-select").addEventListener("change", (e) => {
-      const type = e.target.value;
-      const podcastBox = document.getElementById("podcast-search-box");
-      const urlLabel = document.getElementById("url-label-text");
-      const rssInput = document.getElementById("item-rss");
-
-      if (type === "podcast") {
-        podcastBox.classList.remove("hidden");
-        urlLabel.innerText = "RSS Feed URL";
-        rssInput.placeholder = "https://eksempel.no/feed.xml";
-      } else if (type === "audiobook") {
-        podcastBox.classList.add("hidden");
-        urlLabel.innerText = "Lydfil / Bok URL (Valgfri)";
-        rssInput.placeholder = "https://eksempel.no/lydbok.mp3";
-      } else if (type === "radio") {
-        podcastBox.classList.add("hidden");
-        urlLabel.innerText = "Radio Stream URL (Icecast/HLS)";
-        rssInput.placeholder = "https://stream.eksempel.no/radio";
-      }
-    });
-
-    // --- ITUNES API SØK ---
     let searchResultsCache = [];
     document.getElementById("api-search-btn").addEventListener("click", async () => {
       const term = document.getElementById("api-search-input").value.trim();
       const resultsContainer = document.getElementById("api-results");
-      if (!term) return alert("Skriv et søkeord.");
+      if (!term) return;
 
-      resultsContainer.innerHTML = '<div style="color: #94a3b8; font-size: 0.8rem;">Søker hos Apple...</div>';
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=10`);
+      const data = await res.json();
+      searchResultsCache = data.results || [];
+      resultsContainer.innerHTML = '';
 
-      try {
-        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=15`);
-        const data = await res.json();
-        searchResultsCache = data.results || [];
-        resultsContainer.innerHTML = '';
-
-        if (searchResultsCache.length === 0) {
-          resultsContainer.innerHTML = '<div style="color: #64748b; font-size: 0.8rem;">Ingen funnet.</div>';
-          return;
-        }
-
-        searchResultsCache.forEach((pod, index) => {
-          const row = document.createElement("div");
-          row.className = "api-result-item";
-          row.innerHTML = `
-            <div class="api-result-left">
-              <img src="${pod.artworkUrl100 || ''}" alt="">
-              <div class="api-result-text">
-                <strong>${pod.collectionName}</strong>
-                <div style="color: #64748b; font-size: 0.7rem;">${pod.artistName || ''}</div>
-              </div>
-            </div>
-            <button type="button" class="btn-api-select" id="select-btn-${index}" onclick="selectApiPodcast(${index})">Fyll ut</button>
-          `;
-          resultsContainer.appendChild(row);
-        });
-      } catch (err) {
-        resultsContainer.innerHTML = '<div style="color: #ef4444; font-size: 0.8rem;">Feil: ' + err.message + '</div>';
-      }
+      searchResultsCache.forEach((pod, index) => {
+        const row = document.createElement("div");
+        row.className = "api-result-item";
+        row.innerHTML = `
+          <div class="api-result-left">
+            <img src="${pod.artworkUrl100 || ''}" alt="">
+            <div class="api-result-text"><strong>${pod.collectionName}</strong></div>
+          </div>
+          <button type="button" class="btn-api-select" onclick="selectApiPodcast(${index})">Velg</button>
+        `;
+        resultsContainer.appendChild(row);
+      });
     });
 
     window.selectApiPodcast = (index) => {
       const pod = searchResultsCache[index];
       if (!pod) return;
-
       document.getElementById("item-title").value = pod.collectionName || "";
-      document.getElementById("item-sub").value = pod.artistName || pod.primaryGenreName || "";
-      document.getElementById("item-cover").value = pod.artworkUrl600 || pod.artworkUrl100 || "";
+      document.getElementById("item-sub").value = pod.artistName || "";
+      document.getElementById("item-cover").value = pod.artworkUrl600 || "";
       document.getElementById("item-rss").value = pod.feedUrl || "";
-      document.getElementById("item-desc").value = `Podkast fra Apple. Sjanger: ${pod.primaryGenreName || 'Diverse'}.`;
-
-      const statusMsg = document.getElementById("status-msg");
-      statusMsg.innerText = `Fylt ut: "${pod.collectionName}". Velg seksjon og trykk Publiser!`;
-      setTimeout(() => statusMsg.innerText = "", 4000);
+      document.getElementById("item-desc").value = pod.primaryGenreName || "";
     };
 
-    // Last inn databasen i sanntid
     function loadDatabaseContent() {
       const sectionsSelect = document.getElementById("item-section-select");
       const sectionsList = document.getElementById("sections-list");
@@ -387,10 +329,6 @@
         sectionsSelect.innerHTML = '<option value="">-- Velg Seksjon --</option>';
         sectionsList.innerHTML = '';
 
-        if (snapshot.empty) {
-          sectionsList.innerHTML = '<p style="color: #64748b; text-align: center; padding: 2rem;">Ingen seksjoner funnet.</p>';
-        }
-
         snapshot.forEach((docSnap) => {
           const sec = docSnap.data();
           const id = docSnap.id;
@@ -399,39 +337,28 @@
 
           const opt = document.createElement("option");
           opt.value = id;
-          opt.textContent = `[${pages.join(", ").toUpperCase()}] ${sec.title}`;
+          opt.textContent = `[${pages.join(", ").toUpperCase()}] ${sec.title} (${layout})`;
           sectionsSelect.appendChild(opt);
 
           const secCard = document.createElement("div");
           secCard.className = "section-card";
 
-          let itemsHtml = "";
-          if (sec.items && sec.items.length > 0) {
-            itemsHtml = sec.items.map((item, index) => `
-              <div class="item-row">
-                <div class="item-info">
-                  ${item.coverUrl ? `<img src="${item.coverUrl}" class="item-thumbnail" alt="">` : `<div class="item-thumbnail"></div>`}
-                  <div>
-                    <strong>${item.title}</strong>
-                    <div style="color: #64748b; font-size: 0.75rem;">${item.sub}</div>
-                  </div>
-                </div>
-                <button class="btn-delete" onclick="deleteItem('${id}', ${index})">Slett</button>
+          let itemsHtml = (sec.items || []).map((item, index) => `
+            <div class="item-row">
+              <div class="item-info">
+                ${item.coverUrl ? `<img src="${item.coverUrl}" class="item-thumbnail" alt="">` : `<div class="item-thumbnail"></div>`}
+                <div><strong>${item.title}</strong> <span style="color:#64748b">(${item.sub})</span></div>
               </div>
-            `).join("");
-          } else {
-            itemsHtml = `<div style="color: #475569; font-size: 0.8rem; padding: 0.5rem 0;">Ingen elementer her ennå.</div>`;
-          }
-
-          const badgesHtml = pages.map(p => `<span class="badge">${p}</span>`).join("");
-          const layoutBadge = `<span class="badge badge-layout">${layout}</span>`;
+              <button class="btn-delete" onclick="deleteItem('${id}', ${index})">Slett element</button>
+            </div>
+          `).join("") || '<div style="color: #475569; font-size: 0.8rem;">Ingen elementer her ennå.</div>';
 
           secCard.innerHTML = `
             <div class="section-header">
               <div>
-                ${badgesHtml}
-                ${layoutBadge}
-                <strong style="margin-left: 0.5rem; font-size: 1rem;">${sec.title}</strong>
+                ${pages.map(p => `<span class="badge">${p}</span>`).join("")}
+                <span class="badge badge-layout">${layout}</span>
+                <strong style="margin-left: 0.5rem;">${sec.title}</strong>
               </div>
               <button class="btn-delete" onclick="deleteSection('${id}')">Slett Seksjon</button>
             </div>
@@ -442,7 +369,6 @@
       });
     }
 
-    // Opprett seksjon med valgt Layout
     document.getElementById("add-section-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = document.getElementById("sec-title").value;
@@ -450,63 +376,39 @@
       const layout = document.getElementById("sec-layout").value;
       const selectedPages = Array.from(document.querySelectorAll('.sec-target-pages:checked')).map(cb => cb.value);
 
-      if (selectedPages.length === 0) return alert("Velg minst én side.");
-
-      try {
-        await addDoc(collection(db, "sections"), { title, pages: selectedPages, order, layout, items: [] });
-        document.getElementById("sec-title").value = '';
-      } catch (err) {
-        alert("Feil: " + err.message);
-      }
+      await addDoc(collection(db, "sections"), { title, pages: selectedPages, order, layout, items: [] });
+      document.getElementById("sec-title").value = '';
+        
     });
 
-    // Legg til innhold
     document.getElementById("add-item-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const sectionId = document.getElementById("item-section-select").value;
-      const statusMsg = document.getElementById("status-msg");
+      if (!sectionId) return alert("Velg seksjon!");
 
-      if (!sectionId) return alert("Velg en seksjon først!");
-
-      statusMsg.innerText = "Lagrer...";
-
-      try {
-        const title = document.getElementById("item-title").value;
-        const sub = document.getElementById("item-sub").value;
-        const coverUrl = document.getElementById("item-cover").value;
-        const rssUrl = document.getElementById("item-rss").value;
-        const desc = document.getElementById("item-desc").value;
-
-        const sectionRef = doc(db, "sections", sectionId);
-        await updateDoc(sectionRef, {
-          items: arrayUnion({ title, sub, coverUrl: coverUrl || "", rssUrl: rssUrl || "", desc })
-        });
-
-        statusMsg.innerText = "Lagret vellykket!";
-        document.getElementById("add-item-form").reset();
-        document.getElementById("api-results").innerHTML = "";
-      } catch (err) {
-        statusMsg.innerText = "Feil: " + err.message;
-      } finally {
-        setTimeout(() => statusMsg.innerText = "", 3000);
-      }
+      const sectionRef = doc(db, "sections", sectionId);
+      await updateDoc(sectionRef, {
+        items: arrayUnion({
+          title: document.getElementById("item-title").value,
+          sub: document.getElementById("item-sub").value,
+          coverUrl: document.getElementById("item-cover").value,
+          rssUrl: document.getElementById("item-rss").value,
+          desc: document.getElementById("item-desc").value
+        })
+      });
+      document.getElementById("add-item-form").reset();
+      document.getElementById("status-msg").innerText = "Lagt til!";
+      setTimeout(() => document.getElementById("status-msg").innerText = "", 2000);
     });
 
-    window.deleteSection = async (id) => {
-      if (confirm("Slett denne seksjonen og alt innholdet?")) {
-        await deleteDoc(doc(db, "sections", id));
-      }
-    };
-
+    window.deleteSection = async (id) => { if (confirm("Slett seksjon?")) await deleteDoc(doc(db, "sections", id)); };
     window.deleteItem = async (sectionId, itemIndex) => {
-      if (confirm("Slett dette elementet?")) {
-        const sectionRef = doc(db, "sections", sectionId);
-        const docSnap = await getDoc(sectionRef);
-        if (docSnap.exists()) {
-          const currentItems = docSnap.data().items || [];
-          currentItems.splice(itemIndex, 1);
-          await updateDoc(sectionRef, { items: currentItems });
-        }
+      const sectionRef = doc(db, "sections", sectionId);
+      const docSnap = await getDoc(sectionRef);
+      if (docSnap.exists()) {
+        const currentItems = docSnap.data().items || [];
+        currentItems.splice(itemIndex, 1);
+        await updateDoc(sectionRef, { items: currentItems });
       }
     };
   </script>
