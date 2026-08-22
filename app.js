@@ -16,7 +16,8 @@ import {
   orderBy,
   doc,
   setDoc,
-  getDocs
+  getDocs,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -239,6 +240,22 @@ async function saveProgressToFirestore(itemId, data) {
   }
 }
 
+async function removeFromFirestoreHistory(itemId) {
+  if (!currentUser || !itemId) return;
+  try {
+    const cleanId = itemId.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const historyRef = doc(db, "users", currentUser.uid, "history", cleanId);
+    
+    await deleteDoc(historyRef);
+    
+    delete userHistory[cleanId];
+    renderContinueListening();
+    updateDetailPlayButtonState();
+  } catch (err) {
+    console.error("Feil ved fjerning fra historikk:", err);
+  }
+}
+
 function renderContinueListening() {
   const section = document.getElementById("continue-listening-section");
   const container = document.getElementById("continue-listening-container");
@@ -283,7 +300,6 @@ function updateDetailPlayButtonState() {
   }
 }
 
-// --- OPPDATERT FUNKSJON MED KORREKT LAYOUT HÅNDTERING ---
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
     
@@ -783,13 +799,22 @@ if (globalAudio) {
     }
   };
 
-  globalAudio.onended = () => {
+  globalAudio.onended = async () => {
     updatePlayIcons(false);
     if (progressBar) progressBar.value = 0;
     if (currentTimeSpan) currentTimeSpan.innerText = "0:00";
+
     if (selectedItem.title) {
-      globalAudio.currentTime = 0;
-      saveProgressToFirestore(selectedItem.title, selectedItem);
+      const itemToOpen = { ...selectedItem };
+
+      await removeFromFirestoreHistory(selectedItem.title);
+      
+      document.getElementById("audio-player-bar")?.classList.add("hidden");
+      document.getElementById("fullscreen-player")?.classList.remove("active");
+      
+      globalAudio.src = "";
+
+      openDetailsView(itemToOpen);
     }
   };
 }
