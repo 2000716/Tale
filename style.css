@@ -2,12 +2,12 @@
    1. VARIABLER & RESET
    ========================================================================== */
 :root {
-  --bg-dark: #070b1e;         /* Mørkeblå for innlogging/forside/spiller */
-  --bar-bg: #0b112c;          /* Mørk topp- og bunnmeny / mini-spiller */
-  --card-bg: #131b3e;         /* Mørkeblå kort for innlogging */
+  --bg-dark: #070b1e;          /* Mørkeblå for innlogging/forside/spiller */
+  --bar-bg: #0b112c;           /* Mørk topp- og bunnmeny / mini-spiller */
+  --card-bg: #131b3e;          /* Mørkeblå kort for innlogging */
   --bar-border: #1e293b;
   
-  --accent-blue: #AEC2F7;     /* Spillerfarge, ikoner, knapper og tidslinje */
+  --accent-blue: #AEC2F7;      /* Spillerfarge, ikoner, knapper og tidslinje */
   --accent-hover: #8da9f2;
   
   --text-light: #ffffff;
@@ -18,7 +18,7 @@
   /* Lys/varmhvit innholdsdel */
   --bg-content: #fbf9f5;        
   --card-content: #ffffff;      
-  --text-dark: #1e1b18;         
+  --text-dark: #1e1b18;          
   --text-muted-dark: #635b52;  
 }
 
@@ -144,10 +144,14 @@ main {
   align-self: flex-end;
   background: none;
   border: none;
-  color: var(--accent-blue);
+  color: var(--text-dark);
   font-size: 1.4rem;
   cursor: pointer;
   margin-bottom: 1rem;
+}
+
+#fullscreen-player .close-btn {
+  color: var(--accent-blue);
 }
 
 .error-msg {
@@ -256,7 +260,7 @@ main {
 }
 
 /* ==========================================================================
-   6. HOVEDINNHOLD & KORT (Lys del)
+   6. HOVEDINNHOLD, KORT & HORISONTAL RULLING (Lys del)
    ========================================================================== */
 .hero-banner {
   background: linear-gradient(135deg, #0b112c 0%, #1a2550 100%);
@@ -280,30 +284,39 @@ main {
   color: var(--text-dark);
 }
 
-/* Containeren som holder på kortene */
+/* Tvinger ALLE gallerier til horisontal rulling på én linje */
+.horizontal-scroll,
 .horizontal-scroll-container {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
   gap: 16px;
-  padding-bottom: 10px; /* Gir plass til scrollelinje eller skygger */
-  -webkit-overflow-scrolling: touch; /* Sørger for myk rulling på iOS */
+  padding-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
 }
 
-/* Kortene/posterne inni containeren (juster klassenavnet hvis du bruker noe annet enn .card / .poster-card) */
-.horizontal-scroll-container > * {
-  flex: 0 0 auto; /* Forhindrer at kortene krymper eller strekker seg */
-  width: 140px;   /* Sett ønsket bredde på posterne */
+/* Skjul stygge rullefelt */
+.horizontal-scroll::-webkit-scrollbar,
+.horizontal-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.horizontal-scroll,
+.horizontal-scroll-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .book-card {
-  flex: 0 0 130px;
-  width: 130px;
+  flex: 0 0 130px !important;
+  width: 130px !important;
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  scroll-snap-align: start;
 }
 
 .book-cover {
@@ -374,8 +387,55 @@ main {
 }
 
 /* ==========================================================================
-   7. MODALER & OVERLAY (AVANSERT DETALJSIDE)
+   7. MODALER & OVERLAYS (DETALJSIDE OG FULLSKJERMSPILLER)
    ========================================================================== */
+
+/* Detaljvisning legges oppå hele appen som en overlay */
+#details-page {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 100vh;
+  background-color: var(--bg-content);
+  color: var(--text-dark);
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 1.2rem;
+  box-sizing: border-box;
+}
+
+#details-page.active {
+  display: block;
+}
+
+/* Fullskjermspiller legges oppå alt (inkludert detaljsiden) */
+#fullscreen-player {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 100vh;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  z-index: 2000;
+  overflow-y: auto;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+}
+
+#fullscreen-player.active {
+  display: flex;
+}
+
 .details-content {
   display: flex;
   flex-direction: column;
@@ -542,6 +602,8 @@ main {
 .player {
   position: fixed;
   bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
   height: 62px;
@@ -553,7 +615,7 @@ main {
   padding: 0 1rem;
   border-top: 1px solid var(--bar-border);
   box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
-  z-index: 20;
+  z-index: 900;
 }
 
 .player-left {
@@ -640,6 +702,8 @@ main {
 .bottom-bar {
   position: fixed;
   bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
   height: 60px;
@@ -647,7 +711,7 @@ main {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  z-index: 10;
+  z-index: 950;
   border-top: 1px solid var(--bar-border);
 }
 
