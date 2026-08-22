@@ -283,6 +283,7 @@ function updateDetailPlayButtonState() {
   }
 }
 
+// --- OPPDATERT FUNKSJON MED STØTTE FOR LAYOUT ---
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
     
@@ -297,13 +298,14 @@ function loadContentFromFirestore() {
     snapshot.forEach((docSnap) => {
       const sec = docSnap.data();
       const pagesArray = Array.isArray(sec.pages) ? sec.pages : [sec.page || "home"];
+      const layoutClass = sec.layout ? `layout-${sec.layout}` : "layout-grid-3";
 
       pagesArray.forEach(pageTarget => {
         const targetContainer = document.getElementById(`${pageTarget}-sections`);
 
         if (targetContainer) {
           const sectionWrapper = document.createElement("div");
-          sectionWrapper.className = "dynamic-section";
+          sectionWrapper.className = `dynamic-section ${layoutClass}`;
 
           let itemsHTML = "";
           (sec.items || []).forEach((item, index) => {
