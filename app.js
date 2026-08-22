@@ -120,6 +120,15 @@ const toggleAuthModeBtn = document.getElementById("toggle-auth-mode");
 const authForm = document.getElementById("auth-form");
 const logoutBtn = document.getElementById("logout-btn");
 
+// Hjem-knapp på Tale-logoen
+const navHomeLogoBtn = document.getElementById("nav-home-logo-btn");
+if (navHomeLogoBtn) {
+  navHomeLogoBtn.onclick = () => {
+    removeSearchResultsView();
+    switchPage("home");
+  };
+}
+
 if (goToLoginBtn) goToLoginBtn.onclick = () => { setAuthMode(false); showView("auth-view"); };
 if (goToRegisterBtn) goToRegisterBtn.onclick = () => { setAuthMode(true); showView("auth-view"); };
 if (authBackBtn) authBackBtn.onclick = () => showView("landing-view");
@@ -166,7 +175,7 @@ function switchPage(pageId) {
 
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-    
+      
   document.getElementById(pageId)?.classList.add("active");
   const activeBtn = document.querySelector(`.nav-btn[data-target="${pageId}"]`);
   if (activeBtn) activeBtn.classList.add("active");
@@ -498,7 +507,6 @@ async function openDetailsView(item) {
   const descBox = document.getElementById("descBox");
   const readMoreBtn = document.getElementById("readMoreBtn");
 
-  // Nullstill "Se mer"-status hver gang en ny detaljside åpnes
   if (descBox) descBox.classList.remove('expanded');
   if (readMoreBtn) readMoreBtn.textContent = 'Se mer';
 
