@@ -110,6 +110,7 @@
     .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
     
     .tag-badge { display: inline-block; padding: 0.15rem 0.5rem; background: #1e293b; border-radius: 4px; font-size: 0.68rem; color: var(--accent); font-weight: 600; text-transform: uppercase; margin-right: 0.25rem; }
+    .type-badge { display: inline-block; padding: 0.1rem 0.4rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; font-size: 0.65rem; color: var(--accent); font-weight: 700; text-transform: uppercase; margin-left: 0.4rem; }
 
     .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
     .item-card { display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border); }
@@ -180,7 +181,7 @@
           <form id="add-section-form">
             <div class="form-group">
               <label>Seksjonsnavn</label>
-              <input type="text" id="sec-title" placeholder="f.eks. Populære Podkaster" required>
+              <input type="text" id="sec-title" placeholder="f.eks. Populære Radiokanaler" required>
             </div>
             
             <div class="form-group">
@@ -211,17 +212,17 @@
           <div class="form-group">
             <label>Innholdstype</label>
             <select id="content-type-select">
-              <option value="podcast">Podkast (Apple API Search)</option>
-              <option value="audiobook">Lydbok (Manuell Entry)</option>
-              <option value="radio">Radio Stream</option>
+              <option value="podcast">Podkast (Apple API Search / RSS)</option>
+              <option value="radio">Radio Stream (MP3 / AAC / HLS Direct URL)</option>
+              <option value="audiobook">Lydbok (Direkte MP3 / Lydfil URL)</option>
             </select>
           </div>
 
-          <!-- iTunes Search API -->
+          <!-- iTunes Search API (Kun for Podkast) -->
           <div id="podcast-search-box" class="api-box">
             <label style="color: var(--accent);">Søk Apple Podkaster</label>
             <div class="api-search-row" style="margin-top: 0.4rem;">
-              <input type="text" id="api-search-input" placeholder="Søk f.eks. 'Aftenposten'">
+              <input type="text" id="api-search-input" placeholder="Søk f.eks. 'NRK'">
               <button type="button" id="api-search-btn" class="btn btn-secondary">Søk</button>
             </div>
             <div id="api-results" class="api-results-container"></div>
@@ -243,22 +244,22 @@
 
             <div class="form-group">
               <label>Tittel</label>
-              <input type="text" id="item-title" placeholder="Media tittel" required>
+              <input type="text" id="item-title" placeholder="f.eks. NRK P3" required>
             </div>
 
             <div class="form-group">
               <label>Undertittel / Opphavseier</label>
-              <input type="text" id="item-sub" placeholder="f.eks. NRK / Forfatter" required>
+              <input type="text" id="item-sub" placeholder="f.eks. NRK / Ungdom & Musikk" required>
             </div>
 
             <div class="form-group">
-              <label>Bilde URL (Cover)</label>
-              <input type="url" id="item-cover" placeholder="https://domain.com/image.jpg">
+              <label>Bilde URL (Cover / Logo)</label>
+              <input type="url" id="item-cover" placeholder="https://domain.com/logo.jpg">
             </div>
 
             <div class="form-group">
               <label id="url-label-text">RSS Feed URL</label>
-              <input type="url" id="item-rss" placeholder="https://domain.com/feed.xml">
+              <input type="url" id="item-url" placeholder="https://domain.com/feed.xml" required>
             </div>
 
             <div class="form-group">
@@ -387,20 +388,20 @@
       const type = e.target.value;
       const podcastBox = document.getElementById("podcast-search-box");
       const urlLabel = document.getElementById("url-label-text");
-      const rssInput = document.getElementById("item-rss");
+      const mediaInput = document.getElementById("item-url");
 
       if (type === "podcast") {
         podcastBox.classList.remove("hidden");
         urlLabel.innerText = "RSS Feed URL";
-        rssInput.placeholder = "https://eksempel.no/feed.xml";
+        mediaInput.placeholder = "https://eksempel.no/feed.xml";
       } else if (type === "audiobook") {
         podcastBox.classList.add("hidden");
-        urlLabel.innerText = "Lydfil / Bok Stream URL";
-        rssInput.placeholder = "https://eksempel.no/audio.mp3";
+        urlLabel.innerText = "Lydfil Stream URL (MP3/M4B)";
+        mediaInput.placeholder = "https://eksempel.no/audiobook.mp3";
       } else if (type === "radio") {
         podcastBox.classList.add("hidden");
-        urlLabel.innerText = "Radio Stream URL (Icecast/HLS)";
-        rssInput.placeholder = "https://stream.eksempel.no/radio";
+        urlLabel.innerText = "Radio Stream URL (MP3 / AAC / HLS)";
+        mediaInput.placeholder = "https://lyd.nrk.no/nrk_radio_p3_aac_h";
       }
     });
 
@@ -454,7 +455,7 @@
       document.getElementById("item-title").value = pod.collectionName || "";
       document.getElementById("item-sub").value = pod.artistName || pod.primaryGenreName || "";
       document.getElementById("item-cover").value = pod.artworkUrl600 || pod.artworkUrl100 || "";
-      document.getElementById("item-rss").value = pod.feedUrl || "";
+      document.getElementById("item-url").value = pod.feedUrl || "";
       document.getElementById("item-desc").value = `Podkast hentet fra Apple. Sjanger: ${pod.primaryGenreName || 'Diverse'}.`;
 
       const statusMsg = document.getElementById("status-msg");
@@ -467,10 +468,11 @@
       if (!pod) return;
 
       queueItems.push({
+        type: "podcast",
         title: pod.collectionName || "",
         sub: pod.artistName || pod.primaryGenreName || "",
         coverUrl: pod.artworkUrl600 || pod.artworkUrl100 || "",
-        rssUrl: pod.feedUrl || "",
+        mediaUrl: pod.feedUrl || "",
         desc: `Podkast hentet fra Apple. Sjanger: ${pod.primaryGenreName || 'Diverse'}.`
       });
 
@@ -550,18 +552,23 @@
 
         let itemsHtml = "";
         if (sec.items && sec.items.length > 0) {
-          itemsHtml = `<div class="item-grid">` + sec.items.map((item, index) => `
+          itemsHtml = `<div class="item-grid">` + sec.items.map((item, index) => {
+            const itemType = item.type || (item.rssUrl ? 'podcast' : 'media');
+            return `
             <div class="item-card">
               <div class="item-info">
                 ${item.coverUrl ? `<img src="${item.coverUrl}" class="item-thumbnail" alt="Cover">` : `<div class="item-thumbnail"></div>`}
                 <div style="overflow: hidden;">
-                  <strong style="font-size: 0.85rem; display: block; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${item.title}</strong>
+                  <strong style="font-size: 0.85rem; display: flex; align-items: center; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                    ${item.title}
+                    <span class="type-badge">${itemType}</span>
+                  </strong>
                   <div style="color: var(--text-muted); font-size: 0.75rem;">${item.sub}</div>
                 </div>
               </div>
               <button class="btn btn-danger btn-sm" onclick="deleteItem('${sec.id}', ${index})">Slett</button>
             </div>
-          `).join("") + `</div>`;
+          `}).join("") + `</div>`;
         } else {
           itemsHtml = `<div style="color: var(--text-muted); font-size: 0.8rem; padding: 0.5rem 0;">Ingen innholdselementer tilknyttet denne seksjonen enda.</div>`;
         }
@@ -605,7 +612,7 @@
       }
     });
 
-    // Content Creation
+    // Content Creation (Single Item)
     document.getElementById("add-item-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const sectionId = document.getElementById("item-section-select").value;
@@ -616,10 +623,11 @@
       statusMsg.innerText = "Lagrer innhold...";
 
       try {
+        const contentType = document.getElementById("content-type-select").value;
         const title = document.getElementById("item-title").value;
         const sub = document.getElementById("item-sub").value;
         const coverUrl = document.getElementById("item-cover").value;
-        const rssUrl = document.getElementById("item-rss").value;
+        const mediaUrl = document.getElementById("item-url").value;
         const desc = document.getElementById("item-desc").value;
 
         const sectionRef = doc(db, "sections", sectionId);
@@ -627,7 +635,15 @@
 
         if (docSnap.exists()) {
           const currentItems = docSnap.data().items || [];
-          const newItem = { title, sub, coverUrl: coverUrl || "", rssUrl: rssUrl || "", desc };
+          
+          const newItem = { 
+            type: contentType,
+            title, 
+            sub, 
+            coverUrl: coverUrl || "", 
+            mediaUrl: mediaUrl || "",
+            desc 
+          };
           
           await updateDoc(sectionRef, { items: [...currentItems, newItem] });
 
@@ -689,6 +705,7 @@
       if (confirm("Vil du slette dette elementet?")) {
         const sectionRef = doc(db, "sections", sectionId);
         const docSnap = await getDoc(sectionRef);
+
         if (docSnap.exists()) {
           const currentItems = docSnap.data().items || [];
           currentItems.splice(itemIndex, 1);
