@@ -37,6 +37,7 @@ let globalAudio = new Audio();
 let isUserSeeking = false;
 let currentUser = null;
 let userHistory = {}; // Holder styr på brukers historikk lokalt
+let selectedItem = {};
 
 setPersistence(auth, browserLocalPersistence);
 
@@ -215,7 +216,7 @@ function renderContinueListening() {
 // Oppdater start-knappen i detaljvisningen til "Fortsett" eller "Spill av"
 function updateDetailPlayButtonState() {
   const startBtn = document.getElementById("start-play-btn");
-  if (!startBtn || !selectedItem.title) return;
+  if (!startBtn || !selectedItem || !selectedItem.title) return;
 
   const cleanId = selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_');
   if (userHistory[cleanId] && userHistory[cleanId].currentTime > 5) {
@@ -225,25 +226,26 @@ function updateDetailPlayButtonState() {
   }
 }
 
-// 5. Last innhold fra Firestore & Automatisk hente bilde fra RSS
+// 5. Last innhold fra Firestore & Automatisk hente bilde fra RSS (KORRIGERT)
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
     
   onSnapshot(q, (snapshot) => {
     const pages = ["home", "audiobooks", "podcasts", "radio"];
       
+    // Tøm de dynamiske containerne direkte i stedet for hovedseksjonen
     pages.forEach(p => {
-      const container = document.getElementById(p);
+      const container = document.getElementById(`${p}-sections`);
       if (container) {
-        const dynamicElements = container.querySelectorAll(".dynamic-section");
-        dynamicElements.forEach(el => el.remove());
+        container.innerHTML = "";
       }
     });
 
     snapshot.forEach((doc) => {
       const sec = doc.data();
       const pageTarget = sec.page || "home";
-      const targetContainer = document.getElementById(pageTarget);
+      // Pek på -sections containeren i HTML-en
+      const targetContainer = document.getElementById(`${pageTarget}-sections`);
 
       if (targetContainer) {
         const sectionWrapper = document.createElement("div");
@@ -324,8 +326,6 @@ async function fetchRSSImageData(rssUrl, cardId, title) {
 }
 
 // 6. Klikk på kort
-let selectedItem = {};
-
 function bindCardClickEvents() {
   document.querySelectorAll(".book-card").forEach(card => {
     card.onclick = async () => {
