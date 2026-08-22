@@ -20,6 +20,11 @@
   --card-content: #ffffff;      
   --text-dark: #1e1b18;          
   --text-muted-dark: #635b52;  
+
+  /* Bilde- og layout-variabler */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
 }
 
 * {
@@ -41,7 +46,7 @@ body {
 }
 
 /* ==========================================================================
-   2. Hovedlayout & App-ramme
+   2. HOVEDLAYOUT & APP-RAMME
    ========================================================================== */
 .view {
   display: none;
@@ -60,7 +65,7 @@ body {
 
 main {
   flex: 1;
-  padding: 1rem;
+  padding: 1.25rem;
   padding-bottom: 140px; /* Luft til mini-spiller og bunnmeny */
   background-color: var(--bg-content);
 }
@@ -83,7 +88,7 @@ main {
   color: #0b112c;
   border: none;
   font-weight: bold;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color 0.2s;
   display: inline-flex;
@@ -103,7 +108,7 @@ main {
   color: var(--accent-blue);
   border: 1px solid var(--accent-blue);
   font-weight: bold;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -113,7 +118,7 @@ main {
   background-color: var(--danger-red);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   margin-top: 1rem;
   cursor: pointer;
   font-weight: bold;
@@ -138,6 +143,7 @@ main {
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: bold;
+  z-index: 10;
 }
 
 .close-btn {
@@ -173,6 +179,7 @@ main {
 .auth-logo {
   max-height: 70px;
   margin-bottom: 1.5rem;
+  object-fit: contain;
 }
 
 .landing-hero h1 {
@@ -197,7 +204,7 @@ main {
   width: 100%;
   background: var(--card-bg);
   padding: 1.5rem;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--bar-border);
 }
 
@@ -205,7 +212,7 @@ main {
   width: 100%;
   padding: 0.9rem;
   margin: 0.4rem 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--bar-border);
   background: var(--bg-dark);
   color: var(--text-light);
@@ -229,6 +236,7 @@ main {
 
 .logo-img {
   max-height: 38px;
+  object-fit: contain;
 }
 
 .profile-btn {
@@ -262,7 +270,7 @@ main {
   background: linear-gradient(135deg, #0b112c 0%, #1a2550 100%);
   color: var(--text-light);
   padding: 1.2rem;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   margin-bottom: 1.5rem;
 }
 
@@ -312,10 +320,10 @@ main {
 .book-cover {
   width: 130px;
   height: 130px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background-color: #131b3e;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
   position: relative;
 }
 
@@ -324,6 +332,7 @@ main {
   height: 100%;
   object-fit: cover;
   display: block;
+  border-radius: var(--radius-md);
 }
 
 .generated-cover {
@@ -336,6 +345,7 @@ main {
   justify-content: center;
   padding: 0.8rem;
   text-align: center;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(174, 194, 247, 0.2);
 }
 
@@ -369,7 +379,7 @@ main {
 .account-card {
   background: var(--card-content);
   padding: 1.5rem;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(0,0,0,0.08);
   margin-top: 1rem;
   color: var(--text-dark);
@@ -390,7 +400,7 @@ main {
   height: 100vh;
   background-color: var(--bg-content);
   color: var(--text-dark);
-  z-index: 1000;
+  z-index: 1500; /* Ligger over bunnmeny og minispiller */
   overflow-y: auto;
   padding: 2rem 1.5rem;
   box-sizing: border-box;
@@ -406,16 +416,16 @@ main {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding-bottom: 140px; /* God plass til at mini-spilleren ikke dekker innholdet */
+  padding-bottom: 2rem;
 }
 
 .details-cover-img {
   width: 160px;
   height: 220px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   margin-bottom: 1.5rem;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
 .details-sub {
@@ -428,14 +438,14 @@ main {
 .details-desc {
   color: var(--text-muted-dark);
   font-size: 0.9rem;
-  line-height: 1.4;
-  margin-bottom: 2rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
 }
 
 /* Episodeliste på detaljsiden */
 .episode-list-container {
   width: 100%;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   text-align: left;
   border-top: 1px solid rgba(0,0,0,0.08);
   padding-top: 1.5rem;
@@ -450,22 +460,22 @@ main {
 .episode-item {
   display: flex;
   gap: 12px;
-  padding: 0.8rem 0;
+  padding: 0.8rem;
   border-bottom: 1px solid rgba(0,0,0,0.05);
   cursor: pointer;
   transition: background 0.2s;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   align-items: center;
 }
 
 .episode-item:hover {
-  background: rgba(0,0,0,0.03);
+  background: rgba(0,0,0,0.04);
 }
 
 .episode-poster {
   width: 60px;
   height: 60px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
   flex-shrink: 0;
   background-color: #eee;
@@ -549,7 +559,7 @@ main {
 #mini-cover-container {
   width: 44px;
   height: 44px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -558,6 +568,7 @@ main {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: var(--radius-sm);
 }
 
 .player-info {
@@ -649,7 +660,7 @@ main {
   height: 100vh;
   background-color: var(--bg-dark);
   color: var(--text-light);
-  z-index: 2000;
+  z-index: 2000; /* Ligger øverst av alt */
   overflow-y: auto;
   padding: 2rem 1.5rem;
   box-sizing: border-box;
@@ -691,7 +702,7 @@ main {
   width: 230px;
   height: 230px;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   margin-bottom: 2rem;
   box-shadow: 0 12px 30px rgba(0,0,0,0.5);
   background-color: #1a2550;
@@ -768,7 +779,19 @@ main {
 }
 
 /* ==========================================================================
-   10. MODALER (Generelle sprettoppvinduer)
+   10. SKJUL BUNNMENY & MINI-SPILLER VED OVERLAY / FULLSKJERM SPILLER
+   ========================================================================== */
+/* Skjul bunnmeny og minispiller når fullskjermspilleren er aktiv */
+body:has(#fullscreen-player.active) .bottom-bar,
+body:has(#fullscreen-player.active) .player,
+/* Skjul bunnmeny og minispiller når detaljsiden er aktiv */
+body:has(#details-page.active) .bottom-bar,
+body:has(#details-page.active) .player {
+  display: none !important;
+}
+
+/* ==========================================================================
+   11. MODALER (Generelle sprettoppvinduer)
    ========================================================================== */
 .modal {
   display: none;
@@ -782,7 +805,7 @@ main {
   max-height: 100vh;
   background: var(--bg-content);
   color: var(--text-dark);
-  z-index: 1000;
+  z-index: 1500;
   padding: 2rem 1.5rem;
   flex-direction: column;
   overflow-y: auto;
