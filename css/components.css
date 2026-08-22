@@ -238,3 +238,24 @@
 .modal.active {
   display: flex;
 }
+
+/* Nullstill bakgrunn og ramme på Tale-logoen i toppbaren */
+#nav-home-logo-btn {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+#nav-home-logo-btn img,
+#nav-home-logo-btn svg {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: block;
+}
