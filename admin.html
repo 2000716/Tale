@@ -3,249 +3,267 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tale – Admin Control Panel</title>
+  <title>Tale – Visual App Builder & Admin</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: #090d16; color: #f1f5f9; padding: 2rem 1rem; min-height: 100vh; }
-    
-    .container { max-width: 1200px; margin: 0 auto; }
-    
-    header { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      margin-bottom: 2rem; 
-      border-bottom: 1px solid #1e293b; 
-      padding-bottom: 1.5rem; 
-    }
-    h1 { color: #ffffff; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
-    p.subtitle { color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; }
-    
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
-    
-    .card { background: #0f172a; padding: 1.5rem; border-radius: 8px; border: 1px solid #1e293b; }
-    .card.full-width { grid-column: 1 / -1; }
-    
-    h3 { margin-bottom: 1.25rem; color: #f8fafc; font-size: 1rem; font-weight: 600; border-bottom: 1px solid #1e293b; padding-bottom: 0.75rem; }
-    
-    .form-group { margin-bottom: 1rem; }
-    .checkbox-group-container { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem; background: #020617; padding: 0.8rem; border-radius: 6px; border: 1px solid #334155; }
-    .checkbox-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.875rem; color: #cbd5e1; cursor: pointer; }
-    .checkbox-item input { width: auto; cursor: pointer; }
+    body { background: #070a12; color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; }
 
-    label { display: block; font-size: 0.8rem; font-weight: 500; color: #94a3b8; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    input, select, textarea { width: 100%; padding: 0.65rem 0.8rem; background: #020617; border: 1px solid #334155; color: #f8fafc; border-radius: 6px; font-size: 0.875rem; transition: border-color 0.2s; }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: #38bdf8; }
-    
-    button { background: #0284c7; color: #ffffff; padding: 0.65rem 1rem; border: none; border-radius: 6px; font-weight: 500; font-size: 0.875rem; cursor: pointer; width: 100%; transition: background-color 0.2s; }
-    button:hover { background: #0369a1; }
-    
-    .btn-secondary { background: #334155; color: #f8fafc; width: auto; padding: 0.4rem 0.8rem; }
-    .btn-secondary:hover { background: #475569; }
-
-    .btn-delete { background: #dc2626; color: white; padding: 0.35rem 0.75rem; font-size: 0.75rem; width: auto; }
-    .btn-delete:hover { background: #b91c1c; }
-    
-    .section-card { background: #020617; border: 1px solid #1e293b; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
-    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #0f172a; }
-    
-    .item-row { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 0.6rem 0.8rem; border-radius: 4px; margin-top: 0.5rem; font-size: 0.85rem; }
-    .item-info { display: flex; align-items: center; gap: 0.75rem; }
-    .item-thumbnail { width: 32px; height: 32px; background: #1e293b; border-radius: 4px; object-fit: cover; }
-    
-    .status-msg { font-size: 0.85rem; color: #38bdf8; margin-top: 0.75rem; text-align: center; min-height: 1.2rem; }
-    .badge { display: inline-block; padding: 0.15rem 0.4rem; background: #1e293b; border-radius: 4px; font-size: 0.7rem; color: #38bdf8; font-weight: 600; text-transform: uppercase; margin-right: 0.25rem; }
-    .badge-layout { background: #0284c7; color: white; }
-    
-    .api-box {
-      background: #020617;
-      border: 1px solid #0284c7;
-      border-radius: 6px;
-      padding: 1rem;
-      margin-bottom: 1.25rem;
-    }
-    .api-search-row { display: flex; gap: 0.5rem; }
-    .api-search-row input { flex: 1; }
-    .api-search-row button { width: auto; white-space: nowrap; }
-    
-    .api-results-container {
-      max-height: 200px;
-      overflow-y: auto;
-      margin-top: 0.75rem;
+    /* Top Navigation Header */
+    header.admin-header {
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      padding: 0.8rem 1.5rem;
       display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-    .api-result-item {
-      display: flex;
-      align-items: center;
       justify-content: space-between;
-      background: #0f172a;
-      padding: 0.4rem 0.6rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
+      align-items: center;
+      z-index: 100;
     }
-    .api-result-item img { width: 28px; height: 28px; border-radius: 4px; object-fit: cover; }
-    .api-result-left { display: flex; align-items: center; gap: 0.5rem; overflow: hidden; }
-    .api-result-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .brand-title { font-size: 1.1rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 0.5rem; }
     
-    .btn-api-select { background: #10b981; color: white; padding: 0.25rem 0.6rem; font-size: 0.75rem; width: auto; }
-    .btn-api-select:hover { background: #059669; }
+    .nav-tabs { display: flex; gap: 0.5rem; background: #020617; padding: 0.25rem; border-radius: 8px; border: 1px solid #1e293b; }
+    .tab-btn { background: transparent; color: #94a3b8; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+    .tab-btn.active { background: #0284c7; color: #ffffff; }
 
-    .selected-queue {
-      margin-top: 0.75rem;
-      padding: 0.5rem;
-      background: #0f172a;
-      border-radius: 4px;
-      border: 1px dashed #334155;
-      font-size: 0.8rem;
-    }
+    /* Login Screen */
+    #login-card { max-width: 380px; margin: 5rem auto; background: #0f172a; padding: 2rem; border-radius: 12px; border: 1px solid #1e293b; width: 100%; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.75rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.35rem; text-transform: uppercase; }
+    input, select, textarea { width: 100%; padding: 0.65rem 0.8rem; background: #020617; border: 1px solid #334155; color: #f8fafc; border-radius: 6px; font-size: 0.875rem; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #38bdf8; }
+    button { background: #0284c7; color: #ffffff; padding: 0.65rem 1rem; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    button:hover { background: #0369a1; }
 
     .hidden { display: none !important; }
+
+    /* Builder Layout (3 Columns / Wix style) */
+    .builder-layout {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+
+    /* Left Sidebar: Components Drawer */
+    .sidebar-drawer {
+      width: 280px;
+      background: #0f172a;
+      border-right: 1px solid #1e293b;
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      overflow-y: auto;
+    }
+    .drawer-title { font-size: 0.85rem; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 0.05em; }
+    
+    .component-btn {
+      background: #020617;
+      border: 1px solid #334155;
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      color: #e2e8f0;
+      text-align: left;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.2s;
+    }
+    .component-btn:hover { border-color: #38bdf8; background: #1e293b; color: #38bdf8; transform: translateY(-2px); }
+
+    /* Center Area: App Live Canvas / Simulator */
+    .canvas-container {
+      flex: 1;
+      background: #020617;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow-y: auto;
+    }
+    
+    /* Phone / Screen Frame */
+    .app-screen-frame {
+      width: 100%;
+      max-width: 420px;
+      min-height: 700px;
+      background: #0b112c;
+      border: 2px solid #1e293b;
+      border-radius: 24px;
+      padding: 1.2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+    }
+
+    .canvas-dropzone {
+      min-height: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Rendered Dragged Blocks on Canvas */
+    .canvas-block {
+      position: relative;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed #334155;
+      border-radius: 8px;
+      padding: 0.8rem;
+      transition: all 0.2s;
+    }
+    .canvas-block:hover { border-color: #38bdf8; background: rgba(56, 189, 248, 0.05); }
+    
+    .block-controls {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      display: flex;
+      gap: 0.3rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .canvas-block:hover .block-controls { opacity: 1; }
+    .btn-ctrl { background: #1e293b; color: white; border: none; padding: 0.2rem 0.5rem; font-size: 0.7rem; border-radius: 4px; cursor: pointer; }
+    .btn-ctrl.delete { background: #dc2626; }
+
+    /* Right Sidebar: Settings for Selected Element */
+    .settings-drawer {
+      width: 320px;
+      background: #0f172a;
+      border-left: 1px solid #1e293b;
+      padding: 1.2rem;
+      overflow-y: auto;
+    }
+
+    /* Dummy preview items */
+    .dummy-grid { display: grid; gap: 0.5rem; }
+    .dummy-grid.g-2 { grid-template-columns: repeat(2, 1fr); }
+    .dummy-grid.g-3 { grid-template-columns: repeat(3, 1fr); }
+    .dummy-grid.g-4 { grid-template-columns: repeat(4, 1fr); }
+    .dummy-box { background: #1e293b; aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #64748b; }
+    .dummy-banner { width: 100%; height: 100px; background: linear-gradient(135deg, #0284c7, #3b82f6); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+    /* Search & Content Tab */
+    .content-panel { max-width: 1000px; margin: 2rem auto; width: 100%; padding: 0 1rem; }
+    .api-results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .api-card { background: #0f172a; border: 1px solid #1e293b; padding: 0.8rem; border-radius: 8px; font-size: 0.85rem; }
+    .api-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; margin-bottom: 0.5rem; }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <header>
-      <div>
-        <h1>Tale — Admin Control Panel</h1>
-        <p class="subtitle">Full kontroll over oppsett, seksjoner og layout</p>
-      </div>
-      <button id="logout-btn" class="btn-secondary hidden">Logg ut</button>
-    </header>
-
-    <!-- INNLOGGINGSSKJEMA -->
-    <div id="login-card" class="card" style="max-width: 380px; margin: 4rem auto;">
-      <h3>Administrator Autentisering</h3>
-      <form id="login-form">
-        <div class="form-group">
-          <label>E-postadresse</label>
-          <input type="email" id="login-email" placeholder="admin@tale.no" required>
-        </div>
-        <div class="form-group">
-          <label>Passord</label>
-          <input type="password" id="login-password" placeholder="••••••••" required>
-        </div>
-        <button type="submit">Logg inn</button>
-        <div id="login-msg" class="status-msg"></div>
-      </form>
+  <!-- ADMIN HEADER -->
+  <header class="admin-header">
+    <div class="brand-title">Tale Studio Builder</div>
+    
+    <div id="nav-tabs" class="nav-tabs hidden">
+      <button class="tab-btn active" onclick="switchTab('builder')"> Visuell Sidebygger</button>
+      <button class="tab-btn" onclick="switchTab('content')"> Innholdsdatabase & API</button>
     </div>
 
-    <!-- ADMIN PANELS -->
-    <div id="admin-content" class="grid hidden">
+    <button id="logout-btn" class="hidden" style="background:#334155; padding:0.4rem 0.8rem; font-size:0.8rem;">Logg ut</button>
+  </header>
+
+  <!-- INNLOGGING -->
+  <div id="login-card">
+    <h3 style="margin-bottom: 1rem;">Admin Innlogging</h3>
+    <form id="login-form">
+      <div class="form-group">
+        <label>E-post</label>
+        <input type="email" id="login-email" placeholder="admin@tale.no" required>
+      </div>
+      <div class="form-group">
+        <label>Passord</label>
+        <input type="password" id="login-password" required>
+      </div>
+      <button type="submit" style="width: 100%;">Åpne Studio</button>
+      <div id="login-msg" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem;"></div>
+    </form>
+  </div>
+
+  <!-- TAB 1: VISUELL SIDEBYGGER (WIX-STYLE) -->
+  <div id="tab-builder" class="builder-layout hidden">
+    
+    <!-- VENSTRE: BLOKKER / MODULER -->
+    <div class="sidebar-drawer">
+      <div class="drawer-title">Legg til Moduler</div>
       
-      <!-- 1. OPPRETT SEKSJON / LAYOUT -->
-      <div class="card">
-        <h3>1. Opprett / Konfigurer Seksjonsoppsett</h3>
-        <form id="add-section-form">
-          <div class="form-group">
-            <label>Navn på Seksjon</label>
-            <input type="text" id="sec-title" placeholder="f.eks. Ukens Utvalgte / Stort Banner" required>
-          </div>
+      <button class="component-btn" onclick="addBlockToCanvas('header')">
+        <span> Tittel / Overskrift</span>
+      </button>
 
-          <div class="form-group">
-            <label>Velg Design / Layout-oppsett</label>
-            <select id="sec-layout" required>
-              <option value="grid-2">Todelt galleri (2 store kolonner)</option>
-              <option value="grid-3" selected>Standard galleri (3 kolonner)</option>
-              <option value="grid-4">Kompakt galleri (4 små kolonner)</option>
-              <option value="banner">Stort fremhevet banner (Full bredde)</option>
-              <option value="spotlight">Spotlight-visning (Stort bilde til venstre)</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label>Vis på følgende sider:</label>
-            <div class="checkbox-group-container">
-              <label class="checkbox-item"><input type="checkbox" value="home" class="sec-target-pages" checked> Hjem</label>
-              <label class="checkbox-item"><input type="checkbox" value="audiobooks" class="sec-target-pages"> Lydbøker</label>
-              <label class="checkbox-item"><input type="checkbox" value="podcasts" class="sec-target-pages"> Podkaster</label>
-              <label class="checkbox-item"><input type="checkbox" value="radio" class="sec-target-pages"> Radio</label>
-            </div>
-          </div>
+      <button class="component-btn" onclick="addBlockToCanvas('search')">
+        <span> Søkefelt</span>
+      </button>
 
-          <div class="form-group">
-            <label>Visningsrekkefølge (Tall)</label>
-            <input type="number" id="sec-order" value="1" required>
-          </div>
+      <button class="component-btn" onclick="addBlockToCanvas('banner')">
+        <span> Stort Banner / Hero</span>
+      </button>
 
-          <button type="submit">Opprett Ny Seksjon</button>
-        </form>
-      </div>
+      <button class="component-btn" onclick="addBlockToCanvas('grid-2')">
+        <span> 2 Kolonner (Galleri)</span>
+      </button>
 
-      <!-- 2. LEGG TIL INNHOLD -->
-      <div class="card">
-        <h3>2. Legg til Innhold i Seksjon</h3>
+      <button class="component-btn" onclick="addBlockToCanvas('grid-3')">
+        <span> 3 Kolonner (Standard)</span>
+      </button>
+
+      <button class="component-btn" onclick="addBlockToCanvas('grid-4')">
+        <span> 4 Kolonner (Kompakt)</span>
+      </button>
+
+      <button class="component-btn" onclick="addBlockToCanvas('spacer')">
+        <span> Tomrom / Spacer</span>
+      </button>
+    </div>
+
+    <!-- MIDTEN: LIVE SKJERM SIMULATOR (CANVAS) -->
+    <div class="canvas-container">
+      <div class="app-screen-frame">
+        <div style="font-size: 0.75rem; color: #64748b; text-align: center; margin-bottom: 0.5rem;">
+           Live Forhåndsvisning (Hjem-skjerm)
+        </div>
         
-        <div class="form-group">
-          <label>Innholdstype</label>
-          <select id="content-type-select">
-            <option value="podcast">Podkast (Søk via Apple API)</option>
-            <option value="audiobook">Lydbok / Manuell</option>
-            <option value="radio">Radio Kanal / Stream</option>
-          </select>
+        <div id="canvas-dropzone" class="canvas-dropzone">
+          <!-- Moduler blir lagt til dynamisk her -->
         </div>
-
-        <div id="podcast-search-box" class="api-box">
-          <label style="color: #38bdf8;">Søk og hent fra Apple Podkaster</label>
-          <div class="api-search-row">
-            <input type="text" id="api-search-input" placeholder="Søk tittel...">
-            <button type="button" id="api-search-btn">Søk</button>
-          </div>
-          <div id="api-results" class="api-results-container"></div>
-        </div>
-
-        <form id="add-item-form">
-          <div class="form-group">
-            <label>Velg Målseksjon i Appen</label>
-            <select id="item-section-select" required>
-              <option value="">Laster seksjoner...</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Tittel</label>
-            <input type="text" id="item-title" placeholder="Tittel" required>
-          </div>
-
-          <div class="form-group">
-            <label>Undertekst / Utgiver</label>
-            <input type="text" id="item-sub" placeholder="f.eks. Forfatter eller kanal" required>
-          </div>
-
-          <div class="form-group">
-            <label>Cover Bilde-URL (HTTPS)</label>
-            <input type="url" id="item-cover" placeholder="https://...">
-          </div>
-
-          <div class="form-group">
-            <label id="url-label-text">RSS Feed URL / Stream URL</label>
-            <input type="url" id="item-rss" placeholder="https://...">
-          </div>
-
-          <div class="form-group">
-            <label>Beskrivelse</label>
-            <textarea id="item-desc" placeholder="Beskrivelse..." rows="2"></textarea>
-          </div>
-
-          <button type="submit" id="save-btn">Legg til i Seksjon</button>
-          <div id="status-msg" class="status-msg"></div>
-        </form>
       </div>
+    </div>
 
-      <!-- 3. OVERSIKT -->
-      <div class="card full-width">
-        <h3>Aktive Seksjoner og Layout-struktur i Firestore</h3>
-        <div id="sections-list">Laster inn struktur...</div>
+    <!-- HØYRE: PROPERTIES / INNSTILLINGER -->
+    <div class="settings-drawer">
+      <div class="drawer-title" style="margin-bottom: 1rem;">Modul-innstillinger</div>
+      <div id="settings-content" style="color: #64748b; font-size: 0.85rem;">
+        Klikk på en modul i midten for å redigere farger, kobling og tekst.
       </div>
+      
+      <button id="save-layout-btn" style="margin-top: 2rem; width: 100%; background: #10b981;">
+         Publiser Layout til Appen
+      </button>
     </div>
   </div>
 
+  <!-- TAB 2: INNHOLDSDATABASE (PODKAST / BØKER) -->
+  <div id="tab-content" class="content-panel hidden">
+    <div style="background: #0f172a; padding: 1.5rem; border-radius: 12px; border: 1px solid #1e293b;">
+      <h3>Søk og Legg til Innhold (Apple API)</h3>
+      <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <input type="text" id="api-search-input" placeholder="Søk etter podkast eller tittel...">
+        <button id="api-search-btn" style="width: auto;">Søk</button>
+      </div>
+      <div id="api-results" class="api-results-grid"></div>
+    </div>
+  </div>
+
+  <!-- FIREBASE SCRIPTS -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, getDoc, arrayUnion, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -261,15 +279,22 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
 
+    let activeLayout = [];
+    let selectedBlockIndex = null;
+
+    // Autentisering
     onAuthStateChanged(auth, (user) => {
       if (user) {
         document.getElementById("login-card").classList.add("hidden");
-        document.getElementById("admin-content").classList.remove("hidden");
+        document.getElementById("nav-tabs").classList.remove("hidden");
         document.getElementById("logout-btn").classList.remove("hidden");
-        loadDatabaseContent();
+        switchTab('builder');
+        loadLayoutFromFirebase();
       } else {
         document.getElementById("login-card").classList.remove("hidden");
-        document.getElementById("admin-content").classList.add("hidden");
+        document.getElementById("tab-builder").classList.add("hidden");
+        document.getElementById("tab-content").classList.add("hidden");
+        document.getElementById("nav-tabs").classList.add("hidden");
         document.getElementById("logout-btn").classList.add("hidden");
       }
     });
@@ -279,138 +304,163 @@
       try {
         await signInWithEmailAndPassword(auth, document.getElementById("login-email").value, document.getElementById("login-password").value);
       } catch (err) {
-        document.getElementById("login-msg").innerText = "Feil ved innlogging.";
+        document.getElementById("login-msg").innerText = "Feil passord eller e-post.";
       }
     });
 
     document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
 
-    let searchResultsCache = [];
-    document.getElementById("api-search-btn").addEventListener("click", async () => {
-      const term = document.getElementById("api-search-input").value.trim();
-      const resultsContainer = document.getElementById("api-results");
-      if (!term) return;
+    // Skifte faner
+    window.switchTab = (tab) => {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById("tab-builder").classList.add("hidden");
+      document.getElementById("tab-content").classList.add("hidden");
 
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=10`);
-      const data = await res.json();
-      searchResultsCache = data.results || [];
-      resultsContainer.innerHTML = '';
-
-      searchResultsCache.forEach((pod, index) => {
-        const row = document.createElement("div");
-        row.className = "api-result-item";
-        row.innerHTML = `
-          <div class="api-result-left">
-            <img src="${pod.artworkUrl100 || ''}" alt="">
-            <div class="api-result-text"><strong>${pod.collectionName}</strong></div>
-          </div>
-          <button type="button" class="btn-api-select" onclick="selectApiPodcast(${index})">Velg</button>
-        `;
-        resultsContainer.appendChild(row);
-      });
-    });
-
-    window.selectApiPodcast = (index) => {
-      const pod = searchResultsCache[index];
-      if (!pod) return;
-      document.getElementById("item-title").value = pod.collectionName || "";
-      document.getElementById("item-sub").value = pod.artistName || "";
-      document.getElementById("item-cover").value = pod.artworkUrl600 || "";
-      document.getElementById("item-rss").value = pod.feedUrl || "";
-      document.getElementById("item-desc").value = pod.primaryGenreName || "";
+      if (tab === 'builder') {
+        document.getElementById("tab-builder").classList.remove("hidden");
+        event.target.classList.add('active');
+      } else {
+        document.getElementById("tab-content").classList.remove("hidden");
+        event.target.classList.add('active');
+      }
     };
 
-    function loadDatabaseContent() {
-      const sectionsSelect = document.getElementById("item-section-select");
-      const sectionsList = document.getElementById("sections-list");
+    // --- VISUELL BYGGE-LOGIKK (CANVAS) ---
 
-      const q = query(collection(db, "sections"), orderBy("order", "asc"));
-      onSnapshot(q, (snapshot) => {
-        sectionsSelect.innerHTML = '<option value="">-- Velg Seksjon --</option>';
-        sectionsList.innerHTML = '';
+    window.addBlockToCanvas = (type) => {
+      const newBlock = {
+        id: 'block_' + Date.now(),
+        type: type,
+        title: type === 'header' ? 'Ny Overskrift' : 'Seksjonstittel',
+        layout: type.startsWith('grid') ? type : 'standard'
+      };
+      activeLayout.push(newBlock);
+      renderCanvas();
+    };
 
-        snapshot.forEach((docSnap) => {
-          const sec = docSnap.data();
-          const id = docSnap.id;
-          const pages = Array.isArray(sec.pages) ? sec.pages : [sec.page || 'home'];
-          const layout = sec.layout || 'grid-3';
+    window.removeBlock = (index) => {
+      activeLayout.splice(index, 1);
+      renderCanvas();
+      document.getElementById("settings-content").innerHTML = "Modul slettet.";
+    };
 
-          const opt = document.createElement("option");
-          opt.value = id;
-          opt.textContent = `[${pages.join(", ").toUpperCase()}] ${sec.title} (${layout})`;
-          sectionsSelect.appendChild(opt);
+    window.moveBlock = (index, direction) => {
+      if (direction === -1 && index > 0) {
+        const temp = activeLayout[index];
+        activeLayout[index] = activeLayout[index - 1];
+        activeLayout[index - 1] = temp;
+      } else if (direction === 1 && index < activeLayout.length - 1) {
+        const temp = activeLayout[index];
+        activeLayout[index] = activeLayout[index + 1];
+        activeLayout[index + 1] = temp;
+      }
+      renderCanvas();
+    };
 
-          const secCard = document.createElement("div");
-          secCard.className = "section-card";
+    window.selectBlock = (index) => {
+      selectedBlockIndex = index;
+      const block = activeLayout[index];
+      const settings = document.getElementById("settings-content");
 
-          let itemsHtml = (sec.items || []).map((item, index) => `
-            <div class="item-row">
-              <div class="item-info">
-                ${item.coverUrl ? `<img src="${item.coverUrl}" class="item-thumbnail" alt="">` : `<div class="item-thumbnail"></div>`}
-                <div><strong>${item.title}</strong> <span style="color:#64748b">(${item.sub})</span></div>
-              </div>
-              <button class="btn-delete" onclick="deleteItem('${id}', ${index})">Slett element</button>
+      settings.innerHTML = `
+        <div class="form-group">
+          <label>Tittel / Tekst</label>
+          <input type="text" value="${block.title || ''}" oninput="updateBlockTitle(${index}, this.value)">
+        </div>
+        <div class="form-group">
+          <label>Modultype</label>
+          <input type="text" value="${block.type}" disabled style="opacity: 0.6;">
+        </div>
+      `;
+    };
+
+    window.updateBlockTitle = (index, val) => {
+      activeLayout[index].title = val;
+      renderCanvas();
+    };
+
+    function renderCanvas() {
+      const zone = document.getElementById("canvas-dropzone");
+      zone.innerHTML = "";
+
+      if (activeLayout.length === 0) {
+        zone.innerHTML = `<div style="text-align:center; padding: 3rem 0; color:#475569; font-size: 0.85rem;">Canvas er tomt.<br>Trykk på knappene til venstre for å bygge.</div>`;
+        return;
+      }
+
+      activeLayout.forEach((block, index) => {
+        const el = document.createElement("div");
+        el.className = "canvas-block";
+        el.onclick = () => selectBlock(index);
+
+        let content = '';
+        if (block.type === 'header') {
+          content = `<h3 style="color:#ffffff;">${block.title}</h3>`;
+        } else if (block.type === 'search') {
+          content = `<div style="background:#1e293b; padding:0.5rem; border-radius:8px; color:#64748b; font-size:0.8rem;">🔍 Søk etter lydbøker, podkaster...</div>`;
+        } else if (block.type === 'banner') {
+          content = `<div class="dummy-banner">${block.title}</div>`;
+        } else if (block.type.startsWith('grid')) {
+          const cols = block.type.split('-')[1];
+          content = `
+            <div style="font-weight:bold; margin-bottom:0.4rem; font-size:0.85rem; color:#38bdf8;">${block.title} (${cols} kolonner)</div>
+            <div class="dummy-grid g-${cols}">
+              ${'<div class="dummy-box">Bilde</div>'.repeat(parseInt(cols))}
             </div>
-          `).join("") || '<div style="color: #475569; font-size: 0.8rem;">Ingen elementer her ennå.</div>';
-
-          secCard.innerHTML = `
-            <div class="section-header">
-              <div>
-                ${pages.map(p => `<span class="badge">${p}</span>`).join("")}
-                <span class="badge badge-layout">${layout}</span>
-                <strong style="margin-left: 0.5rem;">${sec.title}</strong>
-              </div>
-              <button class="btn-delete" onclick="deleteSection('${id}')">Slett Seksjon</button>
-            </div>
-            ${itemsHtml}
           `;
-          sectionsList.appendChild(secCard);
-        });
+        } else if (block.type === 'spacer') {
+          content = `<div style="text-align:center; color:#475569; font-size:0.7rem;">--- Tomrom / Avstand ---</div>`;
+        }
+
+        el.innerHTML = `
+          <div class="block-controls">
+            <button class="btn-ctrl" onclick="event.stopPropagation(); moveBlock(${index}, -1)">▲</button>
+            <button class="btn-ctrl" onclick="event.stopPropagation(); moveBlock(${index}, 1)">▼</button>
+            <button class="btn-ctrl delete" onclick="event.stopPropagation(); removeBlock(${index})">✕</button>
+          </div>
+          ${content}
+        `;
+        zone.appendChild(el);
       });
     }
 
-    document.getElementById("add-section-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const title = document.getElementById("sec-title").value;
-      const order = parseInt(document.getElementById("sec-order").value);
-      const layout = document.getElementById("sec-layout").value;
-      const selectedPages = Array.from(document.querySelectorAll('.sec-target-pages:checked')).map(cb => cb.value);
-
-      await addDoc(collection(db, "sections"), { title, pages: selectedPages, order, layout, items: [] });
-      document.getElementById("sec-title").value = '';
-        
-    });
-
-    document.getElementById("add-item-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const sectionId = document.getElementById("item-section-select").value;
-      if (!sectionId) return alert("Velg seksjon!");
-
-      const sectionRef = doc(db, "sections", sectionId);
-      await updateDoc(sectionRef, {
-        items: arrayUnion({
-          title: document.getElementById("item-title").value,
-          sub: document.getElementById("item-sub").value,
-          coverUrl: document.getElementById("item-cover").value,
-          rssUrl: document.getElementById("item-rss").value,
-          desc: document.getElementById("item-desc").value
-        })
-      });
-      document.getElementById("add-item-form").reset();
-      document.getElementById("status-msg").innerText = "Lagt til!";
-      setTimeout(() => document.getElementById("status-msg").innerText = "", 2000);
-    });
-
-    window.deleteSection = async (id) => { if (confirm("Slett seksjon?")) await deleteDoc(doc(db, "sections", id)); };
-    window.deleteItem = async (sectionId, itemIndex) => {
-      const sectionRef = doc(db, "sections", sectionId);
-      const docSnap = await getDoc(sectionRef);
-      if (docSnap.exists()) {
-        const currentItems = docSnap.data().items || [];
-        currentItems.splice(itemIndex, 1);
-        await updateDoc(sectionRef, { items: currentItems });
+    // Lagre layout til Firebase Firestore
+    document.getElementById("save-layout-btn").addEventListener("click", async () => {
+      try {
+        await setDoc(doc(db, "app_config", "home_layout"), { blocks: activeLayout });
+        alert("Suksess! Ny layout er publisert til appen.");
+      } catch (e) {
+        alert("Feil ved lagring: " + e.message);
       }
-    };
+    });
+
+    async function loadLayoutFromFirebase() {
+      const snap = await getDoc(doc(db, "app_config", "home_layout"));
+      if (snap.exists() && snap.data().blocks) {
+        activeLayout = snap.data().blocks;
+        renderCanvas();
+      }
+    }
+
+    // --- APPLE API SØK (INNHOLD) ---
+    document.getElementById("api-search-btn").addEventListener("click", async () => {
+      const term = document.getElementById("api-search-input").value;
+      if (!term) return;
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=8`);
+      const data = await res.json();
+      
+      const grid = document.getElementById("api-results");
+      grid.innerHTML = "";
+      (data.results || []).forEach(pod => {
+        grid.innerHTML += `
+          <div class="api-card">
+            <img src="${pod.artworkUrl600}">
+            <strong>${pod.collectionName}</strong>
+            <p style="color:#64748b; font-size:0.75rem;">${pod.artistName}</p>
+          </div>
+        `;
+      });
+    });
   </script>
 </body>
 </html>
