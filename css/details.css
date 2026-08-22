@@ -1,12 +1,6 @@
 /* ==========================================
-   EGEN CSS FOR INFORMASJONS- / DETALJSIDEN (STORYTEL / FABEL STIL)
+   EGEN CSS FOR INFORMASJONS- / DETALJSIDEN 
    ========================================== */
-
-/* Låser siden slik at den kun kan scrolle vertikalt (opp og ned), aldri til sidene */
-html, body {
-  overflow-x: hidden;
-  max-width: 100vw;
-}
 
 #details-page {
   position: fixed;
@@ -16,27 +10,23 @@ html, body {
   max-width: 480px;
   height: 100vh;
   height: 100dvh;
-  /* Ren mørk farge uten glød/fade */
-  background-color: var(--bg-content, #141414);
-  color: var(--text-dark, #ffffff);
+  background-color: var(--bg-content, #ffffff);
+  color: var(--text-dark, #111827);
   z-index: 1500;
-  
-  /* Kun vertikal scrolling, hindrer sideveis bevegelse */
   overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-
-  padding: calc(env(safe-area-inset-top, 20px) + 1rem) 1.25rem 3rem 1.25rem;
+  
+  padding: calc(env(safe-area-inset-top, 20px) + 1rem) 1.5rem 3rem 1.5rem;
   box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
 
   transform: translate(-50%, 100%);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 
-  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
-              opacity 0.25s ease,
-              visibility 0.25s ease;
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
+              opacity 0.3s ease,
+              visibility 0.3s ease;
 }
 
 #details-page.active {
@@ -46,217 +36,127 @@ html, body {
   pointer-events: auto;
 }
 
-/* Innholdsboks uten unødvendige skygger eller glød */
 .details-content {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  padding: 0;
-  width: 100%;
-  background-color: transparent;
-  box-sizing: border-box;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-/* --- Lukkeknapp --- */
-.close-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: #fff;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  margin-bottom: 1rem;
-  transition: background 0.2s;
+  text-align: center;
+  padding-bottom: 2rem;
+  width: 100%;
 }
 
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* --- Hero / Cover og Tittel (Horisontal layout) --- */
+/* --- Hero / Cover og Toppseksjon --- */
 .details-hero {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
   width: 100%;
-  margin-top: 0.2rem;
-  margin-bottom: 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .details-cover-container {
-  width: 110px;
-  height: 110px;
-  min-width: 110px;
-  max-height: 110px;
+  width: 160px;
+  height: 160px;
+  max-width: 160px;
+  max-height: 160px;
+  margin-bottom: 1.2rem;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
 }
 
+/* Sørger for at bilde og generert cover-boks sitter perfekt */
 .details-cover-container img,
 .details-cover-img,
 .details-cover-container .generated-cover {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px; /* Litt skarpere hjørner, typisk for lydbokapper */
-  box-shadow: none; /* Ingen glød eller skygge */
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
 .details-header-info {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  overflow: hidden;
-}
-
-.details-badges {
-  margin-bottom: 0.25rem;
-}
-
-.badge-tag {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #a0a0a0;
-  font-weight: 600;
+  align-items: center;
+  text-align: center;
 }
 
 .details-content h2, 
 .details-title {
-  font-size: 1.15rem;
+  font-size: 1.3rem;
   font-weight: 700;
-  margin: 0 0 0.25rem 0;
-  color: #ffffff;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
+  margin-bottom: 0.3rem;
+  color: var(--text-dark, #111827);
+  line-height: 1.3;
 }
 
 .details-sub {
-  /* Beholdt den blå fargen du ønsket */
-  color: var(--accent-blue, #3b82f6);
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
+  color: var(--accent-blue, #3b62c4);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
-/* --- Handlingsknapper --- */
+/* --- Handlingsknapper (Action Bar / Spill av) --- */
 .details-action-bar {
   width: 100%;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.75rem;
+  gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
 .btn-primary {
-  width: auto;
-  flex: 1;
-  max-width: 150px;
-  /* Beholdt den blå fargen */
-  background-color: var(--accent-blue, #3b82f6);
+  width: 100%;
+  background-color: var(--accent-blue, #3b62c4);
   color: #ffffff;
   border: none;
-  border-radius: 8px;
-  padding: 0.7rem 1rem;
-  font-size: 0.9rem;
+  border-radius: 12px;
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: none; /* Ingen skygge/glød */
-  transition: opacity 0.2s ease;
+  box-shadow: 0 4px 12px rgba(59, 98, 196, 0.3);
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 .btn-primary:active {
-  opacity: 0.8;
+  transform: scale(0.98);
 }
 
 .secondary-actions {
   display: flex;
-  gap: 0.5rem;
-  justify-content: flex-start;
+  gap: 1rem;
+  justify-content: center;
 }
 
 .btn-action-icon {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.04);
   border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px; /* Firkantede knapper med runde hjørner gir Storytel-følelse */
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: var(--text-dark, #111827);
   cursor: pointer;
   transition: background 0.2s ease;
-  flex-shrink: 0;
 }
 
 .btn-action-icon:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.08);
 }
-
-/* --- Om innholdet-boks --- */
-.details-body {
-  width: 100%;
-  margin-bottom: 1.5rem;
-}
-
-.details-desc-box {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 10px;
-  padding: 1rem;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.details-desc-box h3 {
-  font-size: 0.9rem;
-  margin: 0 0 0.5rem 0;
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.details-desc {
-  font-size: 0.8rem;
-  color: #b0b0b0;
-  line-height: 1.4;
-  margin: 0 0 0.5rem 0;
-}
-
-.details-read-more-btn {
-  background: none;
-  border: none;
-  color: var(--accent-blue, #3b82f6);
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0;
-  cursor: pointer;
-}
-
 /* ==========================================
    EPISODELISTE 
    ========================================== */
