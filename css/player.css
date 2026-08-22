@@ -1,7 +1,7 @@
 /* Mini-spiller */
 .player {
   position: fixed;
-  bottom: 60px;
+  bottom: calc(60px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -85,7 +85,7 @@
   color: #AEC2F7;
 }
 
-/* Fullskjerm-spiller (Animasjon opp og ned) */
+/* Fullskjerm-spiller (Fastlåst skjerm som dras ned) */
 #fullscreen-player {
   display: flex;
   position: fixed;
@@ -94,11 +94,19 @@
   width: 100%;
   max-width: 480px;
   height: 100vh;
+  height: 100dvh; /* Sikrer eksakt skjermhøyde på mobil */
   background-color: var(--bg-dark);
   color: var(--text-light);
   z-index: 2000;
-  overflow-y: auto;
-  padding: 0.8rem 1.5rem 2rem;
+  
+  /* Låser innebygd scrolling slik at hele kortet dras ned i stedet */
+  overflow: hidden;
+  touch-action: none;
+
+  padding-top: calc(0.8rem + env(safe-area-inset-top));
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
   box-sizing: border-box;
   flex-direction: column;
   align-items: center;
@@ -108,9 +116,8 @@
   opacity: 0;
   pointer-events: none;
 
-  /* Myk overgangseffekt og berøringshåndtering */
+  /* Myk overgangseffekt */
   transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
-  touch-action: pan-y;
 }
 
 /* Aktiv status (Glir opp til synlig posisjon) */
@@ -132,17 +139,17 @@
   flex-shrink: 0;
 }
 
-/* Lukke-knapp plassert absolut i venstre hjørne */
+/* Lukke-knapp plassert absolutt i venstre hjørne */
 #fullscreen-player .close-btn {
   position: absolute;
-  top: 1.2rem;
+  top: calc(1.2rem + env(safe-area-inset-top));
   left: 1.5rem;
   color: var(--accent-blue);
   cursor: pointer;
   z-index: 10;
 }
 
-/* Sentrerer hele innholdet vertikalt på skjermen */
+/* Sentrerer hele innholdet vertikalt på skjermen uten scrolling */
 .player-full-content {
   display: flex;
   flex-direction: column;
