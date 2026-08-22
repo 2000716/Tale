@@ -102,6 +102,11 @@
   display: flex;
   flex-direction: column;
   scroll-snap-align: start;
+  transition: transform 0.2s ease;
+}
+
+.book-card:active {
+  transform: scale(0.96);
 }
 
 .book-cover {
@@ -173,13 +178,12 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
-/* Detaljside & Episoder */
+/* Detaljside & Episoder - Med Glide-animasjon */
 #details-page {
-  display: none;
+  display: block; /* Må være synlig slik at transition kan animeres */
   position: fixed;
   top: 0;
   left: 50%;
-  transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
   height: 100vh;
@@ -190,10 +194,22 @@
   padding: 2rem 1.5rem;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
+
+  /* Startstatus: Skjult under skjermen */
+  transform: translate(-50%, 100%);
+  opacity: 0;
+  pointer-events: none;
+
+  /* Myk fjærende overgang */
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
+              opacity 0.3s ease;
 }
 
 #details-page.active {
-  display: block;
+  /* Aktiv status: Glir opp på skjermen */
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .details-content {
@@ -247,13 +263,17 @@
   padding: 0.8rem;
   border-bottom: 1px solid rgba(0,0,0,0.05);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s ease, transform 0.15s ease;
   border-radius: var(--radius-sm);
   align-items: center;
 }
 
 .episode-item:hover {
   background: rgba(0,0,0,0.04);
+}
+
+.episode-item:active {
+  transform: scale(0.98);
 }
 
 .episode-poster {
