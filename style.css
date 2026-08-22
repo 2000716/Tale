@@ -683,12 +683,12 @@ main {
 }
 
 .details-cover-container {
-  width: 160px;
-  height: 160px;
-  border-radius: 14px;
+  width: 240px; /* Økt fra 160px til 240px */
+  height: 240px; /* Økt fra 160px til 240px */
+  border-radius: 16px;
   overflow: hidden;
-  margin-bottom: 1.2rem;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.25);
 }
 
 #mini-cover-container {
@@ -715,7 +715,6 @@ main {
   height: 100%;
   object-fit: cover;
 }
-
 /* ==========================================================================
    9. EPISODELISTE (Nye stiler for "Melking av RSS")
    ========================================================================== */
