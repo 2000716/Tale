@@ -121,7 +121,6 @@ const toggleAuthModeBtn = document.getElementById("toggle-auth-mode");
 const authForm = document.getElementById("auth-form");
 const logoutBtn = document.getElementById("logout-btn");
 
-// Hjem-knapp på Tale-logoen
 const navHomeLogoBtn = document.getElementById("nav-home-logo-btn");
 if (navHomeLogoBtn) {
   navHomeLogoBtn.onclick = () => {
@@ -208,7 +207,6 @@ function buildCoverMarkup(src, title) {
 async function loadUserHistory() {
   if (!currentUser) return;
 
-  // 1. Les fra localStorage umiddelbart for umiddelbar oppstart uten treghet
   const cachedHistory = localStorage.getItem(`userHistory_${currentUser.uid}`);
   if (cachedHistory) {
     try {
@@ -220,7 +218,6 @@ async function loadUserHistory() {
     }
   }
 
-  // 2. Oppdater fra Firestore i bakgrunnen
   try {
     const historyRef = collection(db, "users", currentUser.uid, "history");
     const snapshot = await getDocs(historyRef);
@@ -229,7 +226,6 @@ async function loadUserHistory() {
       userHistory[docSnap.id] = docSnap.data();
     });
 
-    // Lagre til lokalt lager
     localStorage.setItem(`userHistory_${currentUser.uid}`, JSON.stringify(userHistory));
 
     renderContinueListening();
@@ -250,13 +246,11 @@ async function saveProgressToFirestore(itemId, data) {
       updatedAt: new Date()
     };
 
-    // Lagre lokalt med én gang
     userHistory[cleanId] = payload;
     localStorage.setItem(`userHistory_${currentUser.uid}`, JSON.stringify(userHistory));
     renderContinueListening();
     updateDetailPlayButtonState();
 
-    // Send deretter til databasen
     const historyRef = doc(db, "users", currentUser.uid, "history", cleanId);
     await setDoc(historyRef, payload, { merge: true });
   } catch (err) {
@@ -269,13 +263,11 @@ async function removeFromFirestoreHistory(itemId) {
   try {
     const cleanId = itemId.replace(/[^a-zA-Z0-9-_]/g, '_');
     
-    // Fjern lokalt umiddelbart
     delete userHistory[cleanId];
     localStorage.setItem(`userHistory_${currentUser.uid}`, JSON.stringify(userHistory));
     renderContinueListening();
     updateDetailPlayButtonState();
 
-    // Slett fra Firestore
     const historyRef = doc(db, "users", currentUser.uid, "history", cleanId);
     await deleteDoc(historyRef);
   } catch (err) {
@@ -335,7 +327,6 @@ function updateDetailPlayButtonState() {
 function loadContentFromFirestore() {
   const pages = ["home", "audiobooks", "podcasts", "radio"];
 
-  // Helper-funksjon for å bygge/tegne seksjonene
   const renderSectionsData = (sectionsList) => {
     pages.forEach(p => {
       const container = document.getElementById(`${p}-sections`);
@@ -359,7 +350,7 @@ function loadContentFromFirestore() {
             const sub = item.sub || '';
             const rssUrl = item.rssUrl || item.rss || '';
             const manualCover = item.coverUrl || item.cover || item.image || '';
-            const audioUrl = item.audioUrl || item.audio || '';
+            const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
             itemsHTML += `
@@ -397,7 +388,6 @@ function loadContentFromFirestore() {
     bindCardClickEvents();
   };
 
-  // 1. Vis fra localStorage først hvis tilgjengelig
   const cachedSections = localStorage.getItem("app_sections_cache");
   if (cachedSections) {
     try {
@@ -408,7 +398,6 @@ function loadContentFromFirestore() {
     }
   }
 
-  // 2. Lytt på Firestore og oppdater mellomlager + skjerm når ny data ankommer
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
     
   onSnapshot(q, (snapshot) => {
@@ -421,10 +410,7 @@ function loadContentFromFirestore() {
       });
     });
 
-    // Lagre nyeste snapshot i localStorage
     localStorage.setItem("app_sections_cache", JSON.stringify(sectionsData));
-
-    // Rendrer oppdatert grensesnitt
     renderSectionsData(sectionsData);
   });
 }
@@ -566,7 +552,6 @@ function bindSearchCardClickEvents() {
   });
 }
 
-// --- "Se mer" funksjon for beskrivelsen ---
 window.toggleReadMore = function() {
   const box = document.getElementById('descBox');
   const btn = document.getElementById('readMoreBtn');
@@ -612,14 +597,14 @@ async function openDetailsView(item) {
   }
 
   if (episodeListContainer) {
-    if (selectedItem.rssUrl) {
+    if (selectedItem.rssUrl && selectedItem.rssUrl.trim() !== "") {
       episodeListContainer.innerHTML = "<p class='loading-episodes'>Henter alle episoder fra RSS...</p>";
-    } else if (selectedItem.audioUrl) {
+    } else if (selectedItem.audioUrl && selectedItem.audioUrl.trim() !== "") {
       episodeListContainer.innerHTML = `
         <div class="episode-item" style="cursor: pointer;">
           <div class="episode-info">
-            <div class="episode-title">${selectedItem.title} (Spill av direkte)</div>
-            <div class="ep-desc">Klikk for å starte avspilling av denne strømmen.</div>
+            <div class="episode-title"><i class="fa-solid fa-radio"></i> Spill av direktestrøm</div>
+            <div class="ep-desc">Klikk for å starte avspilling av denne strømmen direkte.</div>
           </div>
         </div>
       `;
@@ -627,11 +612,11 @@ async function openDetailsView(item) {
         playSpecificEpisode(selectedItem, 0);
       };
     } else {
-      episodeListContainer.innerHTML = "<p>Ingen strøm eller RSS-kilde tilgjengelig.</p>";
+      episodeListContainer.innerHTML = "<p>Ingen gyldig lyd- eller radiokilde tilgjengelig.</p>";
     }
   }
 
-  if (selectedItem.rssUrl) {
+  if (selectedItem.rssUrl && selectedItem.rssUrl.trim() !== "") {
     try {
       const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(selectedItem.rssUrl)}`);
       const data = await res.json();
@@ -735,8 +720,10 @@ function playSpecificEpisode(epData, startPosition = 0) {
       }
       globalAudio.play();
       updatePlayIcons(true);
-      if (totalTimeSpan && globalAudio.duration) {
+      if (totalTimeSpan && globalAudio.duration && !isNaN(globalAudio.duration)) {
         totalTimeSpan.innerText = formatTime(globalAudio.duration);
+      } else if (totalTimeSpan) {
+        totalTimeSpan.innerText = "Direkte";
       }
     };
     globalAudio.play().catch(e => console.log("Auto-play avbrutt av nettleser:", e));
@@ -807,7 +794,7 @@ function formatTime(seconds) {
 
 if (startPlayBtn) {
   startPlayBtn.onclick = () => {
-    if (selectedItem.audioUrl && !selectedItem.rssUrl) {
+    if (selectedItem.audioUrl && (!selectedItem.rssUrl || selectedItem.rssUrl.trim() === "")) {
       playSpecificEpisode(selectedItem, 0);
       return;
     }
@@ -839,13 +826,13 @@ function togglePlay() {
 if (miniPlayBtn) miniPlayBtn.onclick = (e) => { e.stopPropagation(); togglePlay(); };
 if (fullPlayBtn) fullPlayBtn.onclick = () => togglePlay();
 
-if (skipBackBtn) skipBackBtn.onclick = () => { if (globalAudio.src) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); };
-if (skipForwardBtn) skipForwardBtn.onclick = () => { if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
+if (skipBackBtn) skipBackBtn.onclick = () => { if (globalAudio.src && !isNaN(globalAudio.duration)) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); };
+if (skipForwardBtn) skipForwardBtn.onclick = () => { if (globalAudio.src && !isNaN(globalAudio.duration)) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
 
 if (globalAudio) {
   let saveTimer = null;
   globalAudio.ontimeupdate = () => {
-    if (!isUserSeeking && globalAudio.duration) {
+    if (!isUserSeeking && globalAudio.duration && !isNaN(globalAudio.duration)) {
       const progressPercent = (globalAudio.currentTime / globalAudio.duration) * 100;
       if (progressBar) progressBar.value = progressPercent;
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(globalAudio.currentTime);
@@ -883,14 +870,14 @@ if (globalAudio) {
 if (progressBar) {
   progressBar.oninput = () => {
     isUserSeeking = true;
-    if (globalAudio.duration) {
+    if (globalAudio.duration && !isNaN(globalAudio.duration)) {
       const seekTime = (progressBar.value / 100) * globalAudio.duration;
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(seekTime);
     }
   };
 
   progressBar.onchange = () => {
-    if (globalAudio.duration) {
+    if (globalAudio.duration && !isNaN(globalAudio.duration)) {
       globalAudio.currentTime = (progressBar.value / 100) * globalAudio.duration;
       if (selectedItem.title) {
         saveProgressToFirestore(selectedItem.title, selectedItem);
@@ -914,46 +901,4 @@ if (playerCloseBtn) {
     const lastPage = localStorage.getItem("lastActivePage") || "home";
     switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
   };
-}
-
-const fullscreenPlayer = document.getElementById("fullscreen-player");
-if (fullscreenPlayer) {
-  let startY = 0;
-  let currentY = 0;
-  let isDragging = false;
-
-  fullscreenPlayer.addEventListener("touchstart", (e) => {
-    if (fullscreenPlayer.scrollTop === 0) {
-      startY = e.touches[0].clientY;
-      isDragging = true;
-      fullscreenPlayer.style.transition = "none";
-    }
-  }, { passive: true });
-
-  fullscreenPlayer.addEventListener("touchmove", (e) => {
-    if (!isDragging) return;
-    currentY = e.touches[0].clientY - startY;
-
-    if (currentY > 0) {
-      fullscreenPlayer.style.transform = `translate(-50%, ${currentY}px)`;
-    }
-  }, { passive: true });
-
-  fullscreenPlayer.addEventListener("touchend", () => {
-    if (!isDragging) return;
-    isDragging = false;
-
-    fullscreenPlayer.style.transition = "transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease";
-
-    if (currentY > 120) {
-      fullscreenPlayer.classList.remove("active");
-      fullscreenPlayer.style.transform = "";
-      const lastPage = localStorage.getItem("lastActivePage") || "home";
-      switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
-    } else {
-      fullscreenPlayer.style.transform = "translate(-50%, 0)";
-    }
-
-    currentY = 0;
-  });
 }
