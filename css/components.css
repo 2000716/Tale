@@ -80,18 +80,28 @@
   margin-top: 0.5rem;
 }
 
-/* Toppbar - Justert for statusbar/notch */
+/* Utvidet toppbar med buet bunn */
 .top-bar {
   background-color: var(--bar-bg);
-  padding: calc(0.8rem + env(safe-area-inset-top)) 1.2rem 0.8rem 1.2rem;
+  padding: calc(0.8rem + env(safe-area-inset-top)) 1.2rem 1.4rem 1.2rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.9rem;
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1px solid var(--bar-border);
   color: var(--text-light);
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid var(--bar-border);
+}
+
+.top-bar-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .logo-img {
@@ -121,6 +131,48 @@
   align-items: center;
   justify-content: center;
   font-weight: bold;
+}
+
+/* Søkedel plassert i toppbaren */
+.search-container {
+  width: 100%;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  padding: 0.65rem 1rem 0.65rem 2.4rem;
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.search-input-wrapper input:focus {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(174, 194, 247, 0.15);
+}
+
+.search-input-wrapper input::placeholder {
+  color: var(--text-muted);
 }
 
 /* Bunnmeny - Løftet over bunnstreken */
