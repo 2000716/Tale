@@ -19,7 +19,6 @@ import {
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// 1. Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyDfJ3IXqeJUkCVcMnPt3ya37Co7Du-f1WU",
   authDomain: "tale-8cadc.firebaseapp.com",
@@ -38,10 +37,10 @@ let isUserSeeking = false;
 let currentUser = null;
 let userHistory = {}; 
 let selectedItem = {};
+let searchTimeout = null;
 
 setPersistence(auth, browserLocalPersistence);
 
-// --- SYNLIGHET FOR BUNNMENY ---
 function updateBottomNavVisibility() {
   const bottomNav = document.getElementById("bottom-nav") || document.querySelector(".bottom-bar");
   const detailsPage = document.getElementById("details-page");
@@ -59,7 +58,6 @@ function updateBottomNavVisibility() {
   }
 }
 
-// 2. Visningsbehandling med URL/Hash-støtte
 function showView(viewId) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById(viewId)?.classList.add("active");
@@ -75,7 +73,6 @@ function updateUrlHash(pageOrView) {
   localStorage.setItem("lastActivePage", pageOrView);
 }
 
-// Gjenopprett aktiv side ved sideoppdatering (F5)
 function restoreLastPage() {
   const hash = window.location.hash.replace("#", "");
   const savedPage = localStorage.getItem("lastActivePage");
@@ -104,10 +101,11 @@ onAuthStateChanged(auth, (user) => {
     const userAvatar = document.getElementById("user-avatar");
     if (emailDisplay) emailDisplay.innerText = user.email;
     if (userAvatar) userAvatar.innerText = user.email.charAt(0).toUpperCase();
-       
+      
     loadContentFromFirestore();
     loadUserHistory();
     restoreLastPage();
+    setupSearchListener();
   } else {
     showView("landing-view");
     currentUser = null;
@@ -115,7 +113,6 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// 3. Innlogging / Registrering
 const goToLoginBtn = document.getElementById("go-to-login-btn");
 const goToRegisterBtn = document.getElementById("go-to-register-btn");
 const authBackBtn = document.getElementById("auth-back-btn");
@@ -163,14 +160,13 @@ if (logoutBtn) logoutBtn.onclick = () => {
   signOut(auth);
 };
 
-// 4. Navigasjon
 function switchPage(pageId) {
   const targetEl = document.getElementById(pageId);
   if (!targetEl) pageId = "home";
 
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-     
+    
   document.getElementById(pageId)?.classList.add("active");
   const activeBtn = document.querySelector(`.nav-btn[data-target="${pageId}"]`);
   if (activeBtn) activeBtn.classList.add("active");
@@ -186,7 +182,6 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 const navAccountBtn = document.getElementById("nav-account-btn");
 if (navAccountBtn) navAccountBtn.onclick = () => switchPage("account");
 
-// Hjelpefunksjon for å bygge poster-bilde
 function buildCoverMarkup(src, title) {
   if (src && src.trim() !== '') {
     return `<img src="${src}" alt="${title}" class="book-cover-img" loading="lazy">`;
@@ -199,7 +194,6 @@ function buildCoverMarkup(src, title) {
   `;
 }
 
-// Last ned brukerens historikk fra Firestore
 async function loadUserHistory() {
   if (!currentUser) return;
   try {
@@ -216,7 +210,6 @@ async function loadUserHistory() {
   }
 }
 
-// Lagre fremdrift til Firebase
 async function saveProgressToFirestore(itemId, data) {
   if (!currentUser || !itemId) return;
   try {
@@ -237,7 +230,6 @@ async function saveProgressToFirestore(itemId, data) {
   }
 }
 
-// Vis "Fortsett å lytte"-galleriet på Hjem-siden
 function renderContinueListening() {
   const section = document.getElementById("continue-listening-section");
   const container = document.getElementById("continue-listening-container");
@@ -270,7 +262,6 @@ function renderContinueListening() {
   });
 }
 
-// Oppdater start-knappen i detaljvisningen
 function updateDetailPlayButtonState() {
   const startBtn = document.getElementById("start-play-btn");
   if (!startBtn || !selectedItem || !selectedItem.title) return;
@@ -283,13 +274,12 @@ function updateDetailPlayButtonState() {
   }
 }
 
-// 5. Last innhold fra Firestore & Automatisk hente bilde fra RSS
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
-     
+    
   onSnapshot(q, (snapshot) => {
     const pages = ["home", "audiobooks", "podcasts", "radio"];
-     
+    
     pages.forEach(p => {
       const container = document.getElementById(`${p}-sections`);
       if (container) container.innerHTML = "";
@@ -350,7 +340,6 @@ function loadContentFromFirestore() {
   });
 }
 
-// Henter automatisk cover-bilde fra RSS-koden
 async function fetchRSSImageData(rssUrl, cardId, title) {
   try {
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
@@ -381,20 +370,114 @@ async function fetchRSSImageData(rssUrl, cardId, title) {
   }
 }
 
-// --- NY: Apple / iTunes API Søk i appen ---
-window.searchPodcastsInApp = async function(searchTerm) {
+// --- Søkefunksjonalitet (Apple Podcast API + lokal filtrering) ---
+function setupSearchListener() {
+  const searchInput = document.getElementById("global-search-input");
+  if (!searchInput) return;
+
+  searchInput.oninput = (e) => {
+    const queryTerm = e.target.value.trim();
+    clearTimeout(searchTimeout);
+
+    if (queryTerm.length === 0) {
+      removeSearchResultsView();
+      return;
+    }
+
+    searchTimeout = setTimeout(() => {
+      executeAppSearch(queryTerm);
+    }, 400);
+  };
+}
+
+async function executeAppSearch(term) {
+  let resultsContainer = document.getElementById("search-results-page");
+  
+  if (!resultsContainer) {
+    resultsContainer = document.createElement("section");
+    resultsContainer.id = "search-results-page";
+    resultsContainer.className = "page active search-results-overlay";
+    document.querySelector("main").appendChild(resultsContainer);
+  }
+
+  resultsContainer.classList.add("active");
+  resultsContainer.innerHTML = `<h2>Søkeresultater for "${term}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster...</p></div>`;
+
+  // Skjul andre sider midlertidig under søk
+  document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => {
+    sec.style.display = "none";
+  });
+
   try {
-    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&media=podcast&country=NO&limit=20`;
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`;
     const res = await fetch(url);
     const data = await res.json();
-    return data.results || [];
-  } catch (err) {
-    console.error("Feil ved søk i Apple Podcast API:", err);
-    return [];
-  }
-};
+    const podcasts = data.results || [];
 
-// Åpne Detaljside
+    let htmlContent = "";
+    if (podcasts.length === 0) {
+      htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet på "${term}".</p>`;
+    } else {
+      let gridHTML = "";
+      podcasts.forEach((podcast, index) => {
+        const title = podcast.trackName || podcast.collectionName;
+        const sub = podcast.artistName || "Podkast";
+        const cover = podcast.artworkUrl600 || podcast.artworkUrl100;
+        const feedUrl = podcast.feedUrl || "";
+        const cardId = `search-card-${index}`;
+
+        gridHTML += `
+          <div class="book-card search-result-item" 
+               id="${cardId}"
+               data-title="${title}" 
+               data-sub="${sub}" 
+               data-desc="Hentet via Apple Podcast API" 
+               data-cover="${cover}"
+               data-rss="${feedUrl}"
+               data-audio="">
+            <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
+            <div class="book-title">${title}</div>
+            <div class="book-author">${sub}</div>
+          </div>
+        `;
+      });
+      htmlContent = `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${gridHTML}</div>`;
+    }
+
+    resultsContainer.innerHTML = `<h2>Søkeresultater for "${term}"</h2><div class="dynamic-container">${htmlContent}</div>`;
+    bindSearchCardClickEvents();
+
+  } catch (err) {
+    console.error("Feil under søk:", err);
+    resultsContainer.innerHTML = `<h2>Søk</h2><p style="padding:20px; color:red;">Kunne ikke utføre søk akkurat nå.</p>`;
+  }
+}
+
+function removeSearchResultsView() {
+  const resultsContainer = document.getElementById("search-results-page");
+  if (resultsContainer) {
+    resultsContainer.remove();
+  }
+  document.querySelectorAll("main > section").forEach(sec => {
+    sec.style.display = "";
+  });
+}
+
+function bindSearchCardClickEvents() {
+  document.querySelectorAll(".search-result-item").forEach(card => {
+    card.onclick = () => {
+      openDetailsView({
+        title: card.dataset.title,
+        sub: card.dataset.sub,
+        desc: card.dataset.desc,
+        cover: card.dataset.cover,
+        rssUrl: card.dataset.rss,
+        audioUrl: card.dataset.audio
+      });
+    };
+  });
+}
+
 async function openDetailsView(item) {
   selectedItem = item;
   localStorage.setItem("lastSelectedItem", JSON.stringify(selectedItem));
@@ -406,7 +489,7 @@ async function openDetailsView(item) {
   if (dTitle) dTitle.innerText = selectedItem.title;
   if (dSub) dSub.innerText = selectedItem.sub;
   if (dDesc) dDesc.innerText = selectedItem.desc || "Laster inn...";
-     
+    
   const detailsCoverContainer = document.getElementById("details-cover-container");
   if (detailsCoverContainer) {
     detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
@@ -428,7 +511,7 @@ async function openDetailsView(item) {
   if (episodeListContainer) {
     episodeListContainer.innerHTML = selectedItem.rssUrl 
       ? "<p class='loading-episodes'>Henter alle episoder fra RSS...</p>" 
-      : "";
+      : "<p>Ingen RSS-strøm tilgjengelig for denne tittelen.</p>";
   }
 
   if (selectedItem.rssUrl) {
@@ -506,9 +589,8 @@ async function openDetailsView(item) {
   updateBottomNavVisibility();
 }
 
-// 6. Klikk på kort
 function bindCardClickEvents() {
-  document.querySelectorAll(".book-card").forEach(card => {
+  document.querySelectorAll(".book-card:not(.search-result-item)").forEach(card => {
     card.onclick = () => {
       openDetailsView({
         title: card.dataset.title,
@@ -522,13 +604,12 @@ function bindCardClickEvents() {
   });
 }
 
-// 7. Spiller-håndtering
 function playSpecificEpisode(epData, startPosition = 0) {
   selectedItem.title = epData.title;
   selectedItem.audioUrl = epData.audioUrl;
   if (epData.cover) selectedItem.cover = epData.cover;
   if (epData.sub) selectedItem.sub = epData.sub;
-     
+    
   if (selectedItem.audioUrl) {
     globalAudio.src = selectedItem.audioUrl;
     globalAudio.onloadedmetadata = () => {
@@ -702,7 +783,6 @@ if (playerCloseBtn) {
   };
 }
 
-// --- Apple-stil Dra-ned-funksjonalitet for storspiller ---
 const fullscreenPlayer = document.getElementById("fullscreen-player");
 if (fullscreenPlayer) {
   let startY = 0;
