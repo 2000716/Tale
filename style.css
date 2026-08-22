@@ -598,3 +598,118 @@ main {
 .bottom-bar .nav-btn.active {
   color: var(--accent-blue);
 }
+/* ==========================================================================
+   FIRKANTEDE BILDE-POSTERE (Ruter)
+   ========================================================================== */
+.horizontal-scroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.8rem;
+  scrollbar-width: none;
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.book-card {
+  flex: 0 0 130px;
+  width: 130px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.book-cover {
+  width: 130px;
+  height: 130px;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #131b3e;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  position: relative;
+}
+
+.book-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Generert stilren bilde-poster dersom bilde mangler */
+.generated-cover {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1e295d 0%, #070b1e 100%);
+  color: #AEC2F7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem;
+  text-align: center;
+  border: 1px solid rgba(174, 194, 247, 0.2);
+}
+
+.generated-cover span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  word-break: break-word;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.book-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  color: var(--text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.book-author {
+  font-size: 0.75rem;
+  color: var(--text-muted-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Omslagsbilder i Detaljer, Minispiller og Fullskjerm */
+.details-cover-container {
+  width: 160px;
+  height: 160px;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1.2rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+#mini-cover-container {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+#full-cover-container {
+  width: 230px;
+  height: 230px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+
+#mini-cover-container .book-cover-img,
+#full-cover-container .book-cover-img,
+.details-cover-container .book-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
