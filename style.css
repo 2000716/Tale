@@ -280,16 +280,22 @@ main {
   color: var(--text-dark);
 }
 
-.horizontal-scroll {
+/* Containeren som holder på kortene */
+.horizontal-scroll-container {
   display: flex;
-  gap: 1rem;
+  flex-direction: row;
+  flex-wrap: nowrap;
   overflow-x: auto;
-  padding-bottom: 0.8rem;
-  scrollbar-width: none;
+  overflow-y: hidden;
+  gap: 16px;
+  padding-bottom: 10px; /* Gir plass til scrollelinje eller skygger */
+  -webkit-overflow-scrolling: touch; /* Sørger for myk rulling på iOS */
 }
 
-.horizontal-scroll::-webkit-scrollbar {
-  display: none;
+/* Kortene/posterne inni containeren (juster klassenavnet hvis du bruker noe annet enn .card / .poster-card) */
+.horizontal-scroll-container > * {
+  flex: 0 0 auto; /* Forhindrer at kortene krymper eller strekker seg */
+  width: 140px;   /* Sett ønsket bredde på posterne */
 }
 
 .book-card {
