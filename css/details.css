@@ -1,6 +1,6 @@
 /* ==========================================
    EGEN CSS FOR INFORMASJONS- / DETALJSIDEN 
-   (Inkludert episodeliste)
+   (Tilpasset mobilapp med safe-area & lesemodus)
    ========================================== */
 
 #details-page {
@@ -15,7 +15,9 @@
   color: var(--text-dark, #111827);
   z-index: 1500;
   overflow-y: auto;
-  padding: 1.2rem 1.8rem 3rem 1.8rem;
+  
+  /* Viktig for app: Legger til plass øverst slik at klokke/batteri ikke dekker innholdet */
+  padding: calc(env(safe-area-inset-top, 20px) + 1rem) 1.5rem 3rem 1.5rem;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 
@@ -37,11 +39,11 @@
 }
 
 .details-drag-handle {
-  width: 48px;
-  height: 5px;
-  background-color: rgba(0, 0, 0, 0.15);
+  width: 40px;
+  height: 4px;
+  background-color: rgba(0, 0, 0, 0.2);
   border-radius: 10px;
-  margin: 0 auto 1.8rem auto;
+  margin: 0 auto 1.2rem auto;
   cursor: grab;
 }
 
@@ -54,38 +56,72 @@
 }
 
 .details-cover-img {
-  width: 180px;
-  height: 260px;
+  width: 150px;
+  height: 220px;
   object-fit: cover;
-  border-radius: var(--radius-lg, 12px);
-  margin-bottom: 1.5rem;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  margin-bottom: 1.2rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
 .details-content h2, 
 .details-title {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
   color: var(--text-dark, #111827);
   line-height: 1.3;
 }
 
 .details-sub {
   color: var(--accent-blue, #3b62c4);
-  margin-bottom: 1.2rem;
-  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
+}
+
+/* ==========================================
+   INNHOLD I BOKS MED "SE MER" / LENGDEBEGRENSNING
+   ========================================== */
+.details-desc-box {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  box-sizing: border-box;
 }
 
 .details-desc {
   color: var(--text-muted-dark, #4b5563);
-  font-size: 0.95rem;
-  line-height: 1.6;
-  margin-bottom: 1.8rem;
-  text-align: left;
-  width: 100%;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* Viser maks 3 linjer som standard */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Når boksen er utvidet via JS */
+.details-desc-box.expanded .details-desc {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.details-read-more-btn {
+  background: none;
+  border: none;
+  color: var(--accent-blue, #3b62c4);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  display: inline-block;
 }
 
 /* ==========================================
@@ -93,31 +129,31 @@
    ========================================== */
 .episode-list-container {
   width: 100%;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   text-align: left;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
-  padding-top: 1.5rem;
+  padding-top: 1.2rem;
 }
 
 .episode-list-container h3 {
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
   color: var(--text-dark);
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .episode-item {
   display: flex;
-  gap: 12px;
-  padding: 0.8rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  gap: 10px;
+  padding: 0.7rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   cursor: pointer;
   transition: background 0.2s ease, transform 0.15s ease;
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   align-items: center;
 }
 
 .episode-item:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .episode-item:active {
@@ -125,9 +161,9 @@
 }
 
 .episode-poster {
-  width: 60px;
-  height: 60px;
-  border-radius: var(--radius-sm);
+  width: 55px;
+  height: 55px;
+  border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
   background-color: #eee;
@@ -142,35 +178,34 @@
 
 .episode-title {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-dark);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.15rem;
 }
 
 .ep-desc {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-muted-dark);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
   display: -webkit-box;
-  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .episode-footer-meta {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted-dark);
   display: flex;
-  gap: 15px;
+  gap: 12px;
   opacity: 0.8;
 }
 
 .loading-episodes {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-muted-dark);
   font-style: italic;
   text-align: center;
