@@ -30,9 +30,9 @@
     h3 { margin-bottom: 1.25rem; color: #f8fafc; font-size: 1rem; font-weight: 600; border-bottom: 1px solid #1e293b; padding-bottom: 0.75rem; }
     
     .form-group { margin-bottom: 1rem; }
-    .checkbox-group { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.8rem; }
-    .checkbox-group input { width: auto; cursor: pointer; }
-    .checkbox-group label { margin: 0; cursor: pointer; color: #cbd5e1; }
+    .checkbox-group-container { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem; background: #020617; padding: 0.8rem; border-radius: 6px; border: 1px solid #334155; }
+    .checkbox-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.875rem; color: #cbd5e1; cursor: pointer; }
+    .checkbox-item input { width: auto; cursor: pointer; }
 
     label { display: block; font-size: 0.8rem; font-weight: 500; color: #94a3b8; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em; }
     input, select, textarea { width: 100%; padding: 0.65rem 0.8rem; background: #020617; border: 1px solid #334155; color: #f8fafc; border-radius: 6px; font-size: 0.875rem; transition: border-color 0.2s; }
@@ -55,7 +55,7 @@
     .item-thumbnail { width: 32px; height: 32px; background: #1e293b; border-radius: 4px; object-fit: cover; }
     
     .status-msg { font-size: 0.85rem; color: #38bdf8; margin-top: 0.75rem; text-align: center; min-height: 1.2rem; }
-    .badge { display: inline-block; padding: 0.15rem 0.4rem; background: #1e293b; border-radius: 4px; font-size: 0.7rem; color: #38bdf8; font-weight: 600; text-transform: uppercase; }
+    .badge { display: inline-block; padding: 0.15rem 0.4rem; background: #1e293b; border-radius: 4px; font-size: 0.7rem; color: #38bdf8; font-weight: 600; text-transform: uppercase; margin-right: 0.25rem; }
     
     .hidden { display: none !important; }
   </style>
@@ -92,7 +92,7 @@
     <div id="admin-content" class="grid hidden">
       <!-- 1. OPPRETT KATEGORI / SEKSJON -->
       <div class="card">
-        <h3>1. Opprett Kategori / Seksjon</h3>
+        <h3>1. Opprett Seksjon</h3>
         <form id="add-section-form">
           <div class="form-group">
             <label>Navn på Seksjon</label>
@@ -100,21 +100,16 @@
           </div>
           
           <div class="form-group">
-            <label>Plassering (Hovedkategori)</label>
-            <select id="sec-page">
-              <option value="audiobooks">Lydbøker</option>
-              <option value="podcasts">Podkaster</option>
-              <option value="radio">Radio (Direkte)</option>
-              <option value="home">Kun Hjem-skjerm</option>
-            </select>
+            <label>Vis på følgende sider:</label>
+            <div class="checkbox-group-container">
+              <label class="checkbox-item"><input type="checkbox" value="home" class="sec-target-pages" checked> Hjem</label>
+              <label class="checkbox-item"><input type="checkbox" value="audiobooks" class="sec-target-pages"> Lydbøker</label>
+              <label class="checkbox-item"><input type="checkbox" value="podcasts" class="sec-target-pages"> Podkaster</label>
+              <label class="checkbox-item"><input type="checkbox" value="radio" class="sec-target-pages"> Radio</label>
+            </div>
           </div>
 
-          <div class="checkbox-group" id="sync-home-wrapper">
-            <input type="checkbox" id="sec-sync-home" checked>
-            <label for="sec-sync-home">Synkroniser automatisk til Hjem-skjermen</label>
-          </div>
-
-          <div class="form-group" style="margin-top: 1rem;">
+          <div class="form-group">
             <label>Visningsrekkefølge (Sorteringstall)</label>
             <input type="number" id="sec-order" value="1" required>
           </div>
@@ -183,6 +178,8 @@
       doc, 
       deleteDoc, 
       updateDoc, 
+      getDoc,
+      arrayUnion,
       query, 
       orderBy 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -210,17 +207,6 @@
     const adminContent = document.getElementById("admin-content");
     const loginMsg = document.getElementById("login-msg");
     const logoutBtn = document.getElementById("logout-btn");
-    const secPageSelect = document.getElementById("sec-page");
-    const syncHomeWrapper = document.getElementById("sync-home-wrapper");
-
-    // Skjul "Synkroniser med Hjem" dersom brukeren manuelt velger "Kun Hjem-skjerm"
-    secPageSelect.addEventListener("change", (e) => {
-      if (e.target.value === "home") {
-        syncHomeWrapper.classList.add("hidden");
-      } else {
-        syncHomeWrapper.classList.remove("hidden");
-      }
-    });
 
     // Autentiseringsstatus
     onAuthStateChanged(auth, (user) => {
@@ -270,14 +256,15 @@
         snapshot.forEach((docSnap) => {
           const sec = docSnap.data();
           const id = docSnap.id;
+          const pages = Array.isArray(sec.pages) ? sec.pages : [sec.page || 'home'];
 
-          // Dropdown valg
+          // Dropdown valg for publisering av innhold
           const opt = document.createElement("option");
           opt.value = id;
-          opt.textContent = `[${sec.page.toUpperCase()}] ${sec.title}`;
+          opt.textContent = `[${pages.join(", ").toUpperCase()}] ${sec.title}`;
           sectionsSelect.appendChild(opt);
 
-          // Render Seksjonskort
+          // Render Seksjonskort i adminoversikt
           const secCard = document.createElement("div");
           secCard.className = "section-card";
 
@@ -299,10 +286,12 @@
             itemsHtml = `<div style="color: #475569; font-size: 0.8rem; padding: 0.5rem 0;">Ingen elementer lagt til i denne seksjonen ennå.</div>`;
           }
 
+          const badgesHtml = pages.map(p => `<span class="badge">${p}</span>`).join("");
+
           secCard.innerHTML = `
             <div class="section-header">
               <div>
-                <span class="badge">${sec.page}</span>
+                ${badgesHtml}
                 <strong style="margin-left: 0.5rem; font-size: 1rem;">${sec.title}</strong>
                 <span style="color: #64748b; font-size: 0.8rem; margin-left: 0.5rem;">(Rekkefølge: ${sec.order})</span>
               </div>
@@ -315,32 +304,26 @@
       });
     }
 
-    // Opprett Seksjon (Med automatisk synkronisering til Hjem om valgt)
+    // Opprett én enkelt seksjon med kobling til valgte sider
     document.getElementById("add-section-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = document.getElementById("sec-title").value;
-      const page = document.getElementById("sec-page").value;
       const order = parseInt(document.getElementById("sec-order").value);
-      const syncHome = document.getElementById("sec-sync-home").checked;
+      
+      const selectedPages = Array.from(document.querySelectorAll('.sec-target-pages:checked')).map(cb => cb.value);
+
+      if (selectedPages.length === 0) {
+        alert("Velg minst én side seksjonen skal vises på.");
+        return;
+      }
 
       try {
-        // Legg til i hovedkategori
         await addDoc(collection(db, "sections"), {
           title,
-          page,
+          pages: selectedPages,
           order,
           items: []
         });
-
-        // Hvis opprettet under feks Podkaster OG syncHome er valgt: Opprett kopi på Home
-        if (page !== "home" && syncHome) {
-          await addDoc(collection(db, "sections"), {
-            title,
-            page: "home",
-            order,
-            items: []
-          });
-        }
 
         document.getElementById("sec-title").value = '';
       } catch (err) {
@@ -348,7 +331,7 @@
       }
     });
 
-    // Legg til innhold/RSS i en seksjon
+    // Legg til innhold/media direkte i valgt seksjon
     document.getElementById("add-item-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const sectionId = document.getElementById("item-section-select").value;
@@ -367,19 +350,13 @@
 
         const sectionRef = doc(db, "sections", sectionId);
         
-        // Hent eksisterende matrise for å oppdatere den trygt
-        const snap = await doc(db, "sections", sectionId);
-        
-        // Bruker array-append via oppdatering
         await updateDoc(sectionRef, {
-          items: firebase.firestore.FieldValue ? firebase.firestore.FieldValue.arrayUnion({
-            title, sub, coverUrl: coverUrl || "", rssUrl: rssUrl || "", desc
-          }) : (await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js")).arrayUnion({
+          items: arrayUnion({
             title, sub, coverUrl: coverUrl || "", rssUrl: rssUrl || "", desc
           })
         });
 
-        statusMsg.innerText = "Innhold var vellykket lagret!";
+        statusMsg.innerText = "Innhold ble lagret!";
         document.getElementById("add-item-form").reset();
       } catch (err) {
         statusMsg.innerText = "Feil ved lagring: " + err.message;
@@ -388,7 +365,7 @@
       }
     });
 
-    // Slett hel seksjon
+    // Slett seksjon
     window.deleteSection = async (id) => {
       if (confirm("Er du sikker på at du vil slette denne seksjonen og alt innholdet i den?")) {
         await deleteDoc(doc(db, "sections", id));
@@ -398,7 +375,6 @@
     // Slett enkelt-element i en seksjon
     window.deleteItem = async (sectionId, itemIndex) => {
       if (confirm("Vil du slette dette elementet?")) {
-        const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         const sectionRef = doc(db, "sections", sectionId);
         const docSnap = await getDoc(sectionRef);
 
