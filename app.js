@@ -43,7 +43,7 @@ setPersistence(auth, browserLocalPersistence);
 
 // --- SYNLIGHET FOR BUNNMENY ---
 function updateBottomNavVisibility() {
-  const bottomNav = document.getElementById("bottom-nav") || document.querySelector(".bottom-nav");
+  const bottomNav = document.getElementById("bottom-nav") || document.querySelector(".bottom-bar");
   const detailsPage = document.getElementById("details-page");
   const fullPlayer = document.getElementById("fullscreen-player");
 
@@ -684,4 +684,47 @@ if (playerCloseBtn) {
     const lastPage = localStorage.getItem("lastActivePage") || "home";
     switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
   };
+}
+
+// --- Apple-stil Dra-ned-funksjonalitet for storspiller ---
+const fullscreenPlayer = document.getElementById("fullscreen-player");
+if (fullscreenPlayer) {
+  let startY = 0;
+  let currentY = 0;
+  let isDragging = false;
+
+  fullscreenPlayer.addEventListener("touchstart", (e) => {
+    if (fullscreenPlayer.scrollTop === 0) {
+      startY = e.touches[0].clientY;
+      isDragging = true;
+      fullscreenPlayer.style.transition = "none";
+    }
+  }, { passive: true });
+
+  fullscreenPlayer.addEventListener("touchmove", (e) => {
+    if (!isDragging) return;
+    currentY = e.touches[0].clientY - startY;
+
+    if (currentY > 0) {
+      fullscreenPlayer.style.transform = `translate(-50%, ${currentY}px)`;
+    }
+  }, { passive: true });
+
+  fullscreenPlayer.addEventListener("touchend", () => {
+    if (!isDragging) return;
+    isDragging = false;
+
+    fullscreenPlayer.style.transition = "transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease";
+
+    if (currentY > 120) {
+      fullscreenPlayer.classList.remove("active");
+      fullscreenPlayer.style.transform = "";
+      const lastPage = localStorage.getItem("lastActivePage") || "home";
+      switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
+    } else {
+      fullscreenPlayer.style.transform = "translate(-50%, 0)";
+    }
+
+    currentY = 0;
+  });
 }
