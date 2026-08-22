@@ -36,7 +36,9 @@ const db = getFirestore(app);
 let globalAudio = new Audio();
 let isUserSeeking = false;
 let currentUser = null;
-let userHistory = {}; // Holder styr på brukers historikk lokalt
+let userHistory = {};
+let selectedItem = {};
+let saveTimer = null;
 
 setPersistence(auth, browserLocalPersistence);
 
@@ -54,7 +56,7 @@ onAuthStateChanged(auth, (user) => {
     const userAvatar = document.getElementById("user-avatar");
     if (emailDisplay) emailDisplay.innerText = user.email;
     if (userAvatar) userAvatar.innerText = user.email.charAt(0).toUpperCase();
-     
+      
     loadContentFromFirestore();
     loadUserHistory();
   } else {
@@ -114,7 +116,7 @@ if (logoutBtn) logoutBtn.onclick = () => {
 function switchPage(pageId) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-   
+    
   document.getElementById(pageId)?.classList.add("active");
   const activeBtn = document.querySelector(`.nav-btn[data-target="${pageId}"]`);
   if (activeBtn) activeBtn.classList.add("active");
@@ -127,7 +129,6 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 const navAccountBtn = document.getElementById("nav-account-btn");
 if (navAccountBtn) navAccountBtn.onclick = () => switchPage("account");
 
-// Hjelpefunksjon for å bygge poster-bilde
 function buildCoverMarkup(src, title) {
   if (src && src.trim() !== '') {
     return `<img src="${src}" alt="${title}" class="book-cover-img" loading="lazy">`;
@@ -140,7 +141,7 @@ function buildCoverMarkup(src, title) {
   `;
 }
 
-// Last ned brukerens historikk fra Firestore
+// Last ned brukerens historikk
 async function loadUserHistory() {
   if (!currentUser) return;
   try {
@@ -157,7 +158,7 @@ async function loadUserHistory() {
   }
 }
 
-// Lagre fremdrift til Firebase
+// Lagre fremdrift
 async function saveProgressToFirestore(itemId, data) {
   if (!currentUser || !itemId) return;
   try {
@@ -165,7 +166,7 @@ async function saveProgressToFirestore(itemId, data) {
     const historyRef = doc(db, "users", currentUser.uid, "history", cleanId);
     const payload = {
       ...data,
-      currentTime: globalAudio.currentTime,
+      currentTime: globalAudio.currentTime || 0,
       duration: globalAudio.duration || 0,
       updatedAt: new Date()
     };
@@ -178,7 +179,6 @@ async function saveProgressToFirestore(itemId, data) {
   }
 }
 
-// Vis "Fortsett å lytte"-galleriet på Hjem-siden
 function renderContinueListening() {
   const section = document.getElementById("continue-listening-section");
   const container = document.getElementById("continue-listening-container");
@@ -190,7 +190,6 @@ function renderContinueListening() {
     return;
   }
 
-  // Sorter etter sist oppdatert
   items.sort((a, b) => (b[1].updatedAt?.seconds || 0) - (a[1].updatedAt?.seconds || 0));
 
   container.innerHTML = "";
@@ -212,7 +211,6 @@ function renderContinueListening() {
   });
 }
 
-// Oppdater start-knappen i detaljvisningen til "Fortsett" eller "Spill av"
 function updateDetailPlayButtonState() {
   const startBtn = document.getElementById("start-play-btn");
   if (!startBtn || !selectedItem.title) return;
@@ -225,25 +223,23 @@ function updateDetailPlayButtonState() {
   }
 }
 
-// 5. Last innhold fra Firestore & Automatisk hente bilde fra RSS
+// 5. Last innhold fra Firestore
 function loadContentFromFirestore() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
-   
+    
   onSnapshot(q, (snapshot) => {
     const pages = ["home", "audiobooks", "podcasts", "radio"];
-     
+      
     pages.forEach(p => {
       const container = document.getElementById(p);
       if (container) {
-        const dynamicElements = container.querySelectorAll(".dynamic-section");
-        dynamicElements.forEach(el => el.remove());
+        container.querySelectorAll(".dynamic-section").forEach(el => el.remove());
       }
     });
 
-    snapshot.forEach((doc) => {
-      const sec = doc.data();
-      const pageTarget = sec.page || "home";
-      const targetContainer = document.getElementById(pageTarget);
+    snapshot.forEach((docSnap) => {
+      const sec = docSnap.data();
+      const targetContainer = document.getElementById(sec.page || "home");
 
       if (targetContainer) {
         const sectionWrapper = document.createElement("div");
@@ -255,14 +251,14 @@ function loadContentFromFirestore() {
           const sub = item.sub || '';
           const rssUrl = item.rssUrl || item.rss || '';
           const manualCover = item.cover || item.image || item.imageUrl || '';
-          const cardId = `card-${doc.id}-${index}`;
+          const cardId = `card-${docSnap.id}-${index}`;
 
           itemsHTML += `
             <div class="book-card" 
                  id="${cardId}"
-                 data-title="${title}" 
-                 data-sub="${sub}" 
-                 data-desc="${item.desc || ''}" 
+                 data-title="${encodeURIComponent(title)}" 
+                 data-sub="${encodeURIComponent(sub)}" 
+                 data-desc="${encodeURIComponent(item.desc || '')}" 
                  data-cover="${manualCover}"
                  data-rss="${rssUrl}"
                  data-audio="${item.audioUrl || item.audio || ''}">
@@ -287,166 +283,154 @@ function loadContentFromFirestore() {
         targetContainer.appendChild(sectionWrapper);
       }
     });
-
-    bindCardClickEvents();
   });
 }
 
-// Henter automatisk cover-bilde fra RSS-koden
+// Event delegation for kortklikk (hindrer dupliserte event-lyttere)
+document.addEventListener("click", (e) => {
+  const card = e.target.closest(".book-card");
+  if (card && !card.closest("#continue-listening-container")) {
+    handleCardClick(card);
+  }
+});
+
+async function handleCardClick(card) {
+  selectedItem = {
+    title: decodeURIComponent(card.dataset.title || ""),
+    sub: decodeURIComponent(card.dataset.sub || ""),
+    desc: decodeURIComponent(card.dataset.desc || ""),
+    cover: card.dataset.cover,
+    rssUrl: card.dataset.rss,
+    audioUrl: card.dataset.audio
+  };
+
+  document.getElementById("details-title").innerText = selectedItem.title;
+  document.getElementById("details-sub").innerText = selectedItem.sub;
+  document.getElementById("details-desc").innerText = selectedItem.desc || "Laster inn...";
+    
+  const detailsCoverContainer = document.getElementById("details-cover-container");
+  if (detailsCoverContainer) {
+    detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
+  }
+
+  updateDetailPlayButtonState();
+
+  let episodeListContainer = document.getElementById("episode-list");
+  if (!episodeListContainer) {
+    const detailsContent = document.querySelector(".details-content");
+    if (detailsContent) {
+      const div = document.createElement("div");
+      div.className = "episode-list-container";
+      div.innerHTML = `<h3>Alle episoder</h3><div id="episode-list"></div>`;
+      detailsContent.appendChild(div);
+      episodeListContainer = document.getElementById("episode-list");
+    }
+  }
+
+  if (episodeListContainer) {
+    episodeListContainer.innerHTML = "<p class='loading-episodes'>Henter episoder...</p>";
+  }
+
+  if (selectedItem.rssUrl) {
+    try {
+      const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(selectedItem.rssUrl)}`);
+      const data = await res.json();
+
+      if (data.status === 'ok') {
+        if (data.feed?.description) {
+          document.getElementById("details-desc").innerHTML = data.feed.description;
+        }
+
+        const rssImg = data.feed?.image || (data.items.length > 0 ? data.items[0].thumbnail : "");
+        if (rssImg) {
+          selectedItem.cover = rssImg;
+          if (detailsCoverContainer) {
+            detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
+          }
+        }
+
+        if (data.items.length > 0 && data.items[0].enclosure?.link) {
+          selectedItem.audioUrl = data.items[0].enclosure.link;
+        }
+
+        if (episodeListContainer && data.items.length > 0) {
+          episodeListContainer.innerHTML = "";
+          data.items.forEach(ep => {
+            const epDiv = document.createElement("div");
+            epDiv.className = "episode-item";
+
+            const epImage = ep.itunes?.image || ep.thumbnail || selectedItem.cover;
+            const durationSec = ep.enclosure?.duration;
+            const durationFormatted = durationSec ? `• ${Math.round(durationSec / 60)} min` : "";
+            const pubDate = ep.pubDate ? new Date(ep.pubDate).toLocaleDateString() : "";
+            const cleanSnippet = ep.description ? ep.description.replace(/<[^>]*>?/gm, '').substring(0, 70) + "..." : "";
+
+            epDiv.innerHTML = `
+              <img src="${epImage}" class="episode-poster" alt="Cover" loading="lazy">
+              <div class="episode-info">
+                <div class="episode-title">${ep.title}</div>
+                <div class="ep-desc">${cleanSnippet}</div>
+                <div class="episode-footer-meta">
+                  <span><i class="fa-regular fa-calendar"></i> ${pubDate}</span>
+                  <span>${durationFormatted}</span>
+                </div>
+              </div>
+            `;
+
+            epDiv.onclick = () => {
+              const epData = {
+                title: ep.title,
+                audioUrl: ep.enclosure?.link || selectedItem.audioUrl,
+                cover: epImage,
+                sub: selectedItem.sub
+              };
+              const cleanId = ep.title.replace(/[^a-zA-Z0-9-_]/g, '_');
+              const savedTime = userHistory[cleanId]?.currentTime || 0;
+              playSpecificEpisode(epData, savedTime);
+            };
+
+            episodeListContainer.appendChild(epDiv);
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Feil ved RSS-uthenting:", err);
+      if (episodeListContainer) {
+        episodeListContainer.innerHTML = "<p>Kunne ikke laste episoder.</p>";
+      }
+    }
+  }
+
+  document.getElementById("details-page")?.classList.add("active");
+}
+
 async function fetchRSSImageData(rssUrl, cardId, title) {
   try {
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
     const data = await res.json();
 
     if (data.status === 'ok') {
-      let imageUrl = "";
-
-      if (data.feed && data.feed.image) {
-        imageUrl = data.feed.image;
-      } else if (data.items && data.items.length > 0) {
-        imageUrl = data.items[0].thumbnail || data.items[0].enclosure?.thumbnail || "";
-      }
+      let imageUrl = data.feed?.image || (data.items?.length > 0 ? (data.items[0].thumbnail || data.items[0].enclosure?.thumbnail) : "");
 
       if (imageUrl) {
         const cardContainer = document.getElementById(cardId);
         const coverContainer = document.getElementById(`cover-${cardId}`);
-        if (coverContainer) {
-          coverContainer.innerHTML = buildCoverMarkup(imageUrl, title);
-        }
-        if (cardContainer) {
-          cardContainer.dataset.cover = imageUrl;
-        }
+        if (coverContainer) coverContainer.innerHTML = buildCoverMarkup(imageUrl, title);
+        if (cardContainer) cardContainer.dataset.cover = imageUrl;
       }
     }
   } catch (err) {
-    console.warn("Kunne ikke hente RSS-bilde for:", rssUrl, err);
+    console.warn("Kunne ikke hente RSS-bilde:", rssUrl, err);
   }
 }
 
-// 6. Klikk på kort
-let selectedItem = {};
-
-function bindCardClickEvents() {
-  document.querySelectorAll(".book-card").forEach(card => {
-    card.onclick = async () => {
-      selectedItem = {
-        title: card.dataset.title,
-        sub: card.dataset.sub,
-        desc: card.dataset.desc,
-        cover: card.dataset.cover,
-        rssUrl: card.dataset.rss,
-        audioUrl: card.dataset.audio
-      };
-
-      document.getElementById("details-title").innerText = selectedItem.title;
-      document.getElementById("details-sub").innerText = selectedItem.sub;
-      document.getElementById("details-desc").innerText = selectedItem.desc || "Laster inn...";
-       
-      const detailsCoverContainer = document.getElementById("details-cover-container");
-      if (detailsCoverContainer) {
-        detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
-      }
-
-      updateDetailPlayButtonState();
-
-      let episodeListContainer = document.getElementById("episode-list");
-      if (!episodeListContainer) {
-        const detailsContent = document.querySelector(".details-content");
-        if (detailsContent) {
-          const div = document.createElement("div");
-          div.className = "episode-list-container";
-          div.innerHTML = `<h3>Alle episoder</h3><div id="episode-list"></div>`;
-          detailsContent.appendChild(div);
-          episodeListContainer = document.getElementById("episode-list");
-        }
-      }
-
-      if (episodeListContainer) {
-        episodeListContainer.innerHTML = "<p class='loading-episodes'>Henter alle episoder fra RSS...</p>";
-      }
-
-      if (selectedItem.rssUrl) {
-        try {
-          const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(selectedItem.rssUrl)}`);
-          const data = await res.json();
-
-          if (data.status === 'ok') {
-            if (data.feed && data.feed.description) {
-              document.getElementById("details-desc").innerHTML = data.feed.description;
-            }
-
-            const rssImg = data.feed?.image || (data.items.length > 0 ? data.items[0].thumbnail : "");
-            if (rssImg) {
-              selectedItem.cover = rssImg;
-              if (detailsCoverContainer) {
-                detailsCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
-              }
-            }
-
-            if (data.items.length > 0 && data.items[0].enclosure && data.items[0].enclosure.link) {
-              selectedItem.audioUrl = data.items[0].enclosure.link;
-            }
-
-            if (episodeListContainer && data.items.length > 0) {
-              episodeListContainer.innerHTML = "";
-              data.items.forEach(ep => {
-                const epDiv = document.createElement("div");
-                epDiv.className = "episode-item";
-
-                const epImage = ep.itunes?.image || ep.thumbnail || selectedItem.cover;
-                const durationSec = ep.enclosure?.duration;
-                const durationFormatted = durationSec ? `• ${Math.round(durationSec / 60)} min` : "";
-                const pubDate = ep.pubDate ? new Date(ep.pubDate).toLocaleDateString() : "";
-                const cleanSnippet = ep.description ? ep.description.replace(/<[^>]*>?/gm, '').substring(0, 70) + "..." : "";
-
-                epDiv.innerHTML = `
-                  <img src="${epImage}" class="episode-poster" alt="Cover" loading="lazy">
-                  <div class="episode-info">
-                    <div class="episode-title">${ep.title}</div>
-                    <div class="ep-desc">${cleanSnippet}</div>
-                    <div class="episode-footer-meta">
-                      <span><i class="fa-regular fa-calendar"></i> ${pubDate}</span>
-                      <span>${durationFormatted}</span>
-                    </div>
-                  </div>
-                `;
-
-                epDiv.onclick = () => {
-                  const epData = {
-                    title: ep.title,
-                    audioUrl: ep.enclosure?.link || selectedItem.audioUrl,
-                    cover: epImage,
-                    sub: selectedItem.sub
-                  };
-                  const cleanId = ep.title.replace(/[^a-zA-Z0-9-_]/g, '_');
-                  const savedTime = userHistory[cleanId]?.currentTime || 0;
-                  playSpecificEpisode(epData, savedTime);
-                };
-
-                episodeListContainer.appendChild(epDiv);
-              });
-            }
-          }
-        } catch (err) {
-          console.error("Feil ved full RSS-uthenting:", err);
-          if (episodeListContainer) {
-            episodeListContainer.innerHTML = "<p>Kunne ikke laste episoder fra kilden.</p>";
-          }
-        }
-      }
-
-      document.getElementById("details-page")?.classList.add("active");
-    };
-  });
-}
-
-// 7. Spiller-håndtering
+// 6. Spiller-håndtering
 function playSpecificEpisode(epData, startPosition = 0) {
   selectedItem.title = epData.title;
   selectedItem.audioUrl = epData.audioUrl;
   if (epData.cover) selectedItem.cover = epData.cover;
   if (epData.sub) selectedItem.sub = epData.sub;
-   
+    
   if (selectedItem.audioUrl) {
     globalAudio.src = selectedItem.audioUrl;
     globalAudio.onloadedmetadata = () => {
@@ -464,17 +448,13 @@ function playSpecificEpisode(epData, startPosition = 0) {
   document.getElementById("mini-player-title").innerText = selectedItem.title;
   document.getElementById("mini-player-sub").innerText = selectedItem.sub || "";
   const miniCoverContainer = document.getElementById("mini-cover-container");
-  if (miniCoverContainer) {
-    miniCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
-  }
+  if (miniCoverContainer) miniCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
   document.getElementById("audio-player-bar")?.classList.remove("hidden");
 
   document.getElementById("full-title").innerText = selectedItem.title;
   document.getElementById("full-sub").innerText = selectedItem.sub || "";
   const fullCoverContainer = document.getElementById("full-cover-container");
-  if (fullCoverContainer) {
-    fullCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
-  }
+  if (fullCoverContainer) fullCoverContainer.innerHTML = buildCoverMarkup(selectedItem.cover, selectedItem.title);
 
   document.getElementById("details-page")?.classList.remove("active");
   document.getElementById("fullscreen-player")?.classList.add("active");
@@ -541,7 +521,6 @@ if (skipBackBtn) skipBackBtn.onclick = () => { if (globalAudio.src) globalAudio.
 if (skipForwardBtn) skipForwardBtn.onclick = () => { if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
 
 if (globalAudio) {
-  let saveTimer = null;
   globalAudio.ontimeupdate = () => {
     if (!isUserSeeking && globalAudio.duration) {
       const progressPercent = (globalAudio.currentTime / globalAudio.duration) * 100;
@@ -549,7 +528,6 @@ if (globalAudio) {
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(globalAudio.currentTime);
       if (totalTimeSpan) totalTimeSpan.innerText = formatTime(globalAudio.duration);
 
-      // Lagre automatisk til Firebase hvert 10. sekund under avspilling
       if (!saveTimer && selectedItem.title) {
         saveTimer = setTimeout(() => {
           saveProgressToFirestore(selectedItem.title, selectedItem);
