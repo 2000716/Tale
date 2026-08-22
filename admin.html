@@ -56,6 +56,7 @@
     
     .status-msg { font-size: 0.85rem; color: #38bdf8; margin-top: 0.75rem; text-align: center; min-height: 1.2rem; }
     .badge { display: inline-block; padding: 0.15rem 0.4rem; background: #1e293b; border-radius: 4px; font-size: 0.7rem; color: #38bdf8; font-weight: 600; text-transform: uppercase; margin-right: 0.25rem; }
+    .badge-layout { background: #0284c7; color: white; }
     
     /* API Søke-boks elementer */
     .api-box {
@@ -144,6 +145,16 @@
           <div class="form-group">
             <label>Navn på Seksjon</label>
             <input type="text" id="sec-title" placeholder="f.eks. Populære Podkaster" required>
+          </div>
+
+          <div class="form-group">
+            <label>Visningsoppsett (Layout)</label>
+            <select id="sec-layout" required>
+              <option value="grid-2">Todelt galleri (2 kolonner)</option>
+              <option value="grid-3" selected>Tredelt galleri (3 kolonner)</option>
+              <option value="grid-4">Firedelt galleri (4 kolonner)</option>
+              <option value="banner">Promoteringsbanner (Full bredde)</option>
+            </select>
           </div>
           
           <div class="form-group">
@@ -366,7 +377,7 @@
       setTimeout(() => statusMsg.innerText = "", 4000);
     };
 
-    // Last inn databasen i sanntid (uten antall visning)
+    // Last inn databasen i sanntid
     function loadDatabaseContent() {
       const sectionsSelect = document.getElementById("item-section-select");
       const sectionsList = document.getElementById("sections-list");
@@ -384,6 +395,7 @@
           const sec = docSnap.data();
           const id = docSnap.id;
           const pages = Array.isArray(sec.pages) ? sec.pages : [sec.page || 'home'];
+          const layout = sec.layout || 'grid-3';
 
           const opt = document.createElement("option");
           opt.value = id;
@@ -412,11 +424,13 @@
           }
 
           const badgesHtml = pages.map(p => `<span class="badge">${p}</span>`).join("");
+          const layoutBadge = `<span class="badge badge-layout">${layout}</span>`;
 
           secCard.innerHTML = `
             <div class="section-header">
               <div>
                 ${badgesHtml}
+                ${layoutBadge}
                 <strong style="margin-left: 0.5rem; font-size: 1rem;">${sec.title}</strong>
               </div>
               <button class="btn-delete" onclick="deleteSection('${id}')">Slett Seksjon</button>
@@ -428,17 +442,18 @@
       });
     }
 
-    // Opprett seksjon
+    // Opprett seksjon med valgt Layout
     document.getElementById("add-section-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = document.getElementById("sec-title").value;
       const order = parseInt(document.getElementById("sec-order").value);
+      const layout = document.getElementById("sec-layout").value;
       const selectedPages = Array.from(document.querySelectorAll('.sec-target-pages:checked')).map(cb => cb.value);
 
       if (selectedPages.length === 0) return alert("Velg minst én side.");
 
       try {
-        await addDoc(collection(db, "sections"), { title, pages: selectedPages, order, items: [] });
+        await addDoc(collection(db, "sections"), { title, pages: selectedPages, order, layout, items: [] });
         document.getElementById("sec-title").value = '';
       } catch (err) {
         alert("Feil: " + err.message);
