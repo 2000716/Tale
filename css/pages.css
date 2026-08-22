@@ -196,7 +196,7 @@
 }
 
 /* ==========================================
-   3. DETALJSIDE (Modal / Glide-in)
+   3. DETALJSIDE (Modal / Glide-in) - FORBEDRET
    ========================================== */
 #details-page {
   position: fixed;
@@ -205,11 +205,12 @@
   width: 100%;
   max-width: 480px;
   height: 100vh;
-  background-color: var(--bg-content);
-  color: var(--text-dark);
+  height: 100dvh;
+  background-color: var(--bg-content, #ffffff);
+  color: var(--text-dark, #111827);
   z-index: 1500;
   overflow-y: auto;
-  padding: 1rem 1.5rem 2rem 1.5rem;
+  padding: 1.2rem 1.8rem 3rem 1.8rem;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 
@@ -231,11 +232,11 @@
 }
 
 .details-drag-handle {
-  width: 40px;
+  width: 48px;
   height: 5px;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-  margin: 0 auto 1.5rem auto;
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  margin: 0 auto 1.8rem auto;
   cursor: grab;
 }
 
@@ -248,28 +249,40 @@
 }
 
 .details-cover-img {
-  width: 160px;
-  height: 220px;
+  width: 180px;
+  height: 260px;
   object-fit: cover;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg, 12px);
   margin-bottom: 1.5rem;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Tittel på boken inne på detaljsiden */
+.details-content h2, 
+.details-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  color: var(--text-dark, #111827);
+  line-height: 1.3;
 }
 
 .details-sub {
-  color: #3b62c4;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+  color: var(--accent-blue, #3b62c4);
+  margin-bottom: 1.2rem;
+  font-size: 0.95rem;
   font-weight: 600;
 }
 
 .details-desc {
-  color: var(--text-muted-dark);
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin-bottom: 1.5rem;
+  color: var(--text-muted-dark, #4b5563);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 1.8rem;
+  text-align: left; /* Lettere å lese brødtekst når den er venstrejustert */
+  width: 100%;
 }
-
 /* ==========================================
    4. EPISODELISTE
    ========================================== */
