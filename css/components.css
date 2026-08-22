@@ -53,7 +53,7 @@
 
 .back-btn {
   position: absolute;
-  top: 1rem;
+  top: calc(1rem + env(safe-area-inset-top));
   left: 1rem;
   background: none;
   border: none;
@@ -80,10 +80,10 @@
   margin-top: 0.5rem;
 }
 
-/* Toppbar */
+/* Toppbar - Justert for statusbar/notch */
 .top-bar {
   background-color: var(--bar-bg);
-  padding: 0.8rem 1.2rem;
+  padding: calc(0.8rem + env(safe-area-inset-top)) 1.2rem 0.8rem 1.2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -123,7 +123,7 @@
   font-weight: bold;
 }
 
-/* Bunnmeny */
+/* Bunnmeny - Løftet over bunnstreken */
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -131,7 +131,8 @@
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  height: 60px;
+  height: calc(60px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   background-color: var(--bar-bg);
   display: flex;
   justify-content: space-around;
@@ -160,7 +161,7 @@
   color: var(--accent-blue);
 }
 
-/* Modaler */
+/* Modaler / Detalj-sider - Beskyttet mot topp og bunn */
 .modal {
   display: none;
   position: fixed;
@@ -174,7 +175,7 @@
   background: var(--bg-content);
   color: var(--text-dark);
   z-index: 1500;
-  padding: 2rem 1.5rem;
+  padding: calc(2rem + env(safe-area-inset-top)) 1.5rem calc(1.5rem + env(safe-area-inset-bottom)) 1.5rem;
   flex-direction: column;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
