@@ -332,164 +332,174 @@ main {
 }
 
 /* ==========================================================================
-   7. MODALER & MØRKEBLÅ FULLSKJERMSPILLER (#070b1e)
+   7. MODALER & OVERLAY (AVANSERT DETALJSIDE)
    ========================================================================== */
-.modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  height: 100vh;
-  max-height: 100vh; /* FIKS: Hindrer modalen i å bli lengre enn skjermen */
-  background: var(--bg-content);
-  color: var(--text-dark);
-  z-index: 100;
-  padding: 2rem 1.5rem;
-  flex-direction: column;
-  overflow-y: auto; /* Aktiverer scrolling */
-  -webkit-overflow-scrolling: touch;
-}
 
-.modal.active {
-  display: flex;
-}
-
-/* Detaljside */
+/* Overstyrer details-content for vertikal flyt */
 .details-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding-bottom: 120px; /* FIKS: Gir luft til innholdet så det ikke skjules av spillere */
+  align-items: stretch;
+  text-align: left;
+  padding-bottom: 140px; /* God plass over mini-spiller */
 }
 
-.details-cover-img {
-  width: 160px;
-  height: 220px;
-  object-fit: cover;
+/* Hero / Toppseksjon med cover og titler */
+.details-hero {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+
+.details-cover-container {
+  width: 140px;
+  height: 140px;
   border-radius: 12px;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  margin-bottom: 0; /* Overstyrer den gamle 1.5rem marginen */
+}
+
+.details-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.details-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.badge-tag {
+  background: var(--bar-bg);
+  color: var(--accent-blue);
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-tag.alt {
+  background: rgba(174, 194, 247, 0.2);
+  color: #2b4ba2;
+}
+
+#details-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.25;
+  margin: 0;
 }
 
 .details-sub {
-  color: #3b62c4;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+  color: var(--text-muted-dark);
+  font-size: 0.85rem;
   font-weight: 600;
+  margin: 0;
+}
+
+/* Handlingsknapper (Action Bar) */
+.details-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+.details-action-bar .btn-primary {
+  flex: 1;
+  padding: 0.8rem 1rem;
+}
+
+.secondary-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-action-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--card-content);
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.btn-action-icon:hover {
+  background: rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
+.btn-action-icon.active {
+  color: var(--danger-red);
+  border-color: var(--danger-red);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Beskrivelse & Struktur */
+.details-description-box {
+  background: var(--card-content);
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.details-description-box h3,
+.recommendations-container h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
 }
 
 .details-desc {
   color: var(--text-muted-dark);
-  font-size: 0.9rem;
-  line-height: 1.4;
-  margin-bottom: 2rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 0;
 }
 
-/* Fullskjerm Spiller - Mørkeblå Bakgrunn (#070b1e) */
-#fullscreen-player {
-  background-color: var(--bg-dark);
-  color: var(--text-light);
-}
-
-.player-full-content {
+/* Tittelrad for episoder */
+.section-title-wrapper {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  text-align: center;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.8rem;
 }
 
-#fullscreen-player h2 {
-  color: #ffffff;
+.meta-small {
+  font-size: 0.75rem;
+  color: var(--text-muted-dark);
 }
 
-#fullscreen-player p {
-  color: var(--text-muted);
+/* Anbefalinger nederst */
+.recommendations-container {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.full-cover-img {
-  width: 230px;
-  height: 230px;
-  object-fit: cover;
-  border-radius: 16px;
-  margin-bottom: 2rem;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
-  background-color: #1a2550;
-}
-
-/* Tidslinje (Spolingslinje) i #AEC2F7 */
-.progress-container {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin: 2rem 0;
-  font-size: 0.85rem;
-  color: var(--accent-blue);
-  font-weight: 600;
-}
-
-.progress-container input[type="range"] {
-  flex: 1;
-  height: 5px;
-  border-radius: 5px;
-  accent-color: #AEC2F7;
-  cursor: pointer;
-}
-
-/* Kontroller & Knapper i #AEC2F7 */
-.full-controls {
-  display: flex;
-  align-items: center;
-  gap: 1.8rem;
-}
-
-.skip-btn {
-  background: transparent;
-  border: 1.5px solid #AEC2F7;
-  color: #AEC2F7;
-  padding: 0.6rem 1.1rem;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: all 0.2s ease;
-}
-
-.skip-btn i {
-  color: #AEC2F7;
-}
-
-.skip-btn:hover {
-  background-color: rgba(174, 194, 247, 0.15);
-}
-
-.main-play-btn {
-  width: 65px;
-  height: 65px;
-  border-radius: 50%;
-  background: #AEC2F7;
-  color: #070b1e;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 16px rgba(174, 194, 247, 0.3);
-  transition: transform 0.15s ease;
-}
-
-.main-play-btn:active {
-  transform: scale(0.95);
+.recommendations-container .horizontal-scroll {
+  padding-top: 0.5rem;
 }
 
 /* ==========================================================================
