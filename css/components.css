@@ -177,7 +177,7 @@
   color: var(--text-muted);
 }
 
-/* Bunnmeny - Løftet over bunnstreken */
+/* Bunnmeny - Oppdatert med vertikal layout og SVG-fargestyring */
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -185,7 +185,7 @@
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  height: calc(60px + env(safe-area-inset-bottom));
+  height: calc(64px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   background-color: var(--bar-bg);
   display: flex;
@@ -200,19 +200,41 @@
   border: none;
   color: var(--text-muted);
   display: flex;
+  flex-direction: column; /* Ikon øverst, tekst under */
   align-items: center;
   justify-content: center;
-  padding: 10px 12px;
+  padding: 6px 12px;
+  gap: 4px; /* Avstand mellom ikon og tekst */
   cursor: pointer;
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+
+/* SVG-ikoner arver fargen fra teksten via currentColor */
+.bottom-bar .nav-icon {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+  stroke: currentColor;
+  transition: fill 0.2s ease, stroke 0.2s ease;
 }
 
 .bottom-bar .nav-text {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* Hover og aktiv tilstand for bunnmenyen */
+.bottom-bar .nav-btn:hover {
+  color: var(--text-light, #ffffff);
 }
 
 .bottom-bar .nav-btn.active {
   color: var(--accent-blue);
+}
+
+.bottom-bar .nav-btn:active {
+  transform: scale(0.95);
 }
 
 /* Modaler / Detalj-sider - Beskyttet mot topp og bunn */
@@ -355,10 +377,10 @@
 /* Responsiv tilpasning for mindre skjermer (mobil) */
 @media (max-width: 480px) {
   .layout-grid-3 {
-    grid-template-columns: repeat(3, 1fr); /* Beholder 3 på mobil hvis du ønsker, eller endre til 2 */
+    grid-template-columns: repeat(3, 1fr);
   }
   .layout-grid-4 {
-    grid-template-columns: repeat(2, 1fr); /* Gjør 4-kolonner om til 2 på mobil for lesbarhet */
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
