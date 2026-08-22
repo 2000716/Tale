@@ -2,9 +2,9 @@
    1. VARIABLER & RESET
    ========================================================================== */
 :root {
-  --bg-dark: #070b1e;        /* Mørkeblå for innlogging/forside/spiller */
-  --bar-bg: #0b112c;         /* Mørk topp- og bunnmeny / mini-spiller */
-  --card-bg: #131b3e;        /* Mørkeblå kort for innlogging */
+  --bg-dark: #070b1e;         /* Mørkeblå for innlogging/forside/spiller */
+  --bar-bg: #0b112c;          /* Mørk topp- og bunnmeny / mini-spiller */
+  --card-bg: #131b3e;         /* Mørkeblå kort for innlogging */
   --bar-border: #1e293b;
   
   --accent-blue: #AEC2F7;     /* Spillerfarge, ikoner, knapper og tidslinje */
@@ -17,8 +17,8 @@
 
   /* Lys/varmhvit innholdsdel */
   --bg-content: #fbf9f5;        
-  --card-content: #ffffff;     
-  --text-dark: #1e1b18;        
+  --card-content: #ffffff;      
+  --text-dark: #1e1b18;         
   --text-muted-dark: #635b52;  
 }
 
@@ -284,341 +284,6 @@ main {
   display: flex;
   gap: 1rem;
   overflow-x: auto;
-  padding-bottom: 0.5rem;
-  scrollbar-width: none;
-}
-
-.horizontal-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.book-card {
-  flex: 0 0 120px;
-  cursor: pointer;
-}
-
-.book-cover-img {
-  width: 120px;
-  height: 160px;
-  border-radius: 8px;
-  object-fit: cover;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  background-color: #eae6df;
-}
-
-.book-title {
-  font-size: 0.85rem;
-  font-weight: bold;
-  margin-top: 0.4rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text-dark);
-}
-
-.book-author {
-  font-size: 0.75rem;
-  color: var(--text-muted-dark);
-}
-
-.account-card {
-  background: var(--card-content);
-  padding: 1.5rem;
-  border-radius: 12px;
-  border: 1px solid rgba(0,0,0,0.08);
-  margin-top: 1rem;
-  color: var(--text-dark);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-/* ==========================================================================
-   7. MODALER & OVERLAY (AVANSERT DETALJSIDE)
-   ========================================================================== */
-
-/* Overstyrer details-content for vertikal flyt */
-.details-content {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  text-align: left;
-  padding-bottom: 140px; /* God plass over mini-spiller */
-}
-
-/* Hero / Toppseksjon med cover og titler */
-.details-hero {
-  display: flex;
-  gap: 1.2rem;
-  align-items: center;
-  margin-bottom: 1.2rem;
-}
-
-.details-cover-container {
-  width: 140px;
-  height: 140px;
-  border-radius: 12px;
-  overflow: hidden;
-  flex-shrink: 0;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  margin-bottom: 0; /* Overstyrer den gamle 1.5rem marginen */
-}
-
-.details-header-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  flex: 1;
-}
-
-.details-badges {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.badge-tag {
-  background: var(--bar-bg);
-  color: var(--accent-blue);
-  padding: 0.25rem 0.6rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge-tag.alt {
-  background: rgba(174, 194, 247, 0.2);
-  color: #2b4ba2;
-}
-
-#details-title {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text-dark);
-  line-height: 1.25;
-  margin: 0;
-}
-
-.details-sub {
-  color: var(--text-muted-dark);
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-/* Handlingsknapper (Action Bar) */
-.details-action-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 1rem 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  margin-bottom: 1.5rem;
-}
-
-.details-action-bar .btn-primary {
-  flex: 1;
-  padding: 0.8rem 1rem;
-}
-
-.secondary-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn-action-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: var(--card-content);
-  color: var(--text-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s ease;
-}
-
-.btn-action-icon:hover {
-  background: rgba(0, 0, 0, 0.04);
-  transform: translateY(-1px);
-}
-
-.btn-action-icon.active {
-  color: var(--danger-red);
-  border-color: var(--danger-red);
-  background: rgba(239, 68, 68, 0.08);
-}
-
-/* Beskrivelse & Struktur */
-.details-description-box {
-  background: var(--card-content);
-  padding: 1rem 1.2rem;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
-}
-
-.details-description-box h3,
-.recommendations-container h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-dark);
-  margin-bottom: 0.5rem;
-}
-
-.details-desc {
-  color: var(--text-muted-dark);
-  font-size: 0.88rem;
-  line-height: 1.5;
-  margin-bottom: 0;
-}
-
-/* Tittelrad for episoder */
-.section-title-wrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 0.8rem;
-}
-
-.meta-small {
-  font-size: 0.75rem;
-  color: var(--text-muted-dark);
-}
-
-/* Anbefalinger nederst */
-.recommendations-container {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.recommendations-container .horizontal-scroll {
-  padding-top: 0.5rem;
-}
-
-/* ==========================================================================
-   8. MØRKEBLÅ MINI-SPILLER (#0b112c) & BUNNMENY
-   ========================================================================== */
-.player {
-  position: fixed;
-  bottom: 60px;
-  width: 100%;
-  max-width: 480px;
-  height: 62px;
-  background-color: var(--bar-bg);
-  color: var(--text-light);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1rem;
-  border-top: 1px solid var(--bar-border);
-  box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
-  z-index: 20;
-}
-
-.player-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  flex: 1;
-  overflow: hidden;
-}
-
-.mini-cover-img {
-  width: 44px;
-  height: 44px;
-  object-fit: cover;
-  border-radius: 6px;
-  background-color: #1a2550;
-}
-
-.player-info {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.player-title {
-  font-size: 0.85rem;
-  font-weight: bold;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #ffffff;
-}
-
-.player-sub {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.icon-play-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: rgba(174, 194, 247, 0.15);
-  border: 1.5px solid #AEC2F7;
-  color: #AEC2F7;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.icon-play-btn i {
-  color: #AEC2F7;
-}
-
-.bottom-bar {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  max-width: 480px;
-  height: 60px;
-  background-color: var(--bar-bg);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 10;
-  border-top: 1px solid var(--bar-border);
-}
-
-.bottom-bar .nav-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 12px;
-  cursor: pointer;
-}
-
-.bottom-bar .nav-text {
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.bottom-bar .nav-btn.active {
-  color: var(--accent-blue);
-}
-
-/* ==========================================================================
-   FIRKANTEDE BILDE-POSTERE (Ruter)
-   ========================================================================== */
-.horizontal-scroll {
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
   padding-bottom: 0.8rem;
   scrollbar-width: none;
 }
@@ -692,13 +357,206 @@ main {
   text-overflow: ellipsis;
 }
 
+.account-card {
+  background: var(--card-content);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  margin-top: 1rem;
+  color: var(--text-dark);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+/* ==========================================================================
+   7. MODALER & OVERLAY (AVANSERT DETALJSIDE)
+   ========================================================================== */
+.details-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  padding-bottom: 140px;
+}
+
+.details-hero {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+
 .details-cover-container {
-  width: 240px; /* Økt fra 160px til 240px */
-  height: 240px; /* Økt fra 160px til 240px */
+  width: 160px;
+  height: 160px;
   border-radius: 16px;
   overflow: hidden;
-  margin-bottom: 1.5rem;
+  flex-shrink: 0;
   box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+}
+
+.details-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.details-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.badge-tag {
+  background: var(--bar-bg);
+  color: var(--accent-blue);
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-tag.alt {
+  background: rgba(174, 194, 247, 0.2);
+  color: #2b4ba2;
+}
+
+#details-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.25;
+  margin: 0;
+}
+
+.details-sub {
+  color: var(--text-muted-dark);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.details-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+.details-action-bar .btn-primary {
+  flex: 1;
+  padding: 0.8rem 1rem;
+}
+
+.secondary-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-action-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--card-content);
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.btn-action-icon:hover {
+  background: rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
+.btn-action-icon.active {
+  color: var(--danger-red);
+  border-color: var(--danger-red);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.details-description-box {
+  background: var(--card-content);
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.details-description-box h3,
+.recommendations-container h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+}
+
+.details-desc {
+  color: var(--text-muted-dark);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
+.section-title-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.8rem;
+}
+
+.meta-small {
+  font-size: 0.75rem;
+  color: var(--text-muted-dark);
+}
+
+.recommendations-container {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.recommendations-container .horizontal-scroll {
+  padding-top: 0.5rem;
+}
+
+/* ==========================================================================
+   8. MINI-SPILLER & BUNNMENY
+   ========================================================================== */
+.player {
+  position: fixed;
+  bottom: 60px;
+  width: 100%;
+  max-width: 480px;
+  height: 62px;
+  background-color: var(--bar-bg);
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  border-top: 1px solid var(--bar-border);
+  box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
+  z-index: 20;
+}
+
+.player-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  flex: 1;
+  overflow: hidden;
 }
 
 #mini-cover-container {
@@ -707,6 +565,53 @@ main {
   border-radius: 6px;
   overflow: hidden;
   flex-shrink: 0;
+}
+
+.mini-cover-img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  background-color: #1a2550;
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.player-title {
+  font-size: 0.85rem;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ffffff;
+}
+
+.player-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.icon-play-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(174, 194, 247, 0.15);
+  border: 1.5px solid #AEC2F7;
+  color: #AEC2F7;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.icon-play-btn i {
+  color: #AEC2F7;
 }
 
 #full-cover-container {
@@ -725,10 +630,44 @@ main {
   height: 100%;
   object-fit: cover;
 }
-/* ==========================================================================
-   9. EPISODELISTE (Nye stiler for "Melking av RSS")
-   ========================================================================== */
 
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  max-width: 480px;
+  height: 60px;
+  background-color: var(--bar-bg);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 10;
+  border-top: 1px solid var(--bar-border);
+}
+
+.bottom-bar .nav-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.bottom-bar .nav-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.bottom-bar .nav-btn.active {
+  color: var(--accent-blue);
+}
+
+/* ==========================================================================
+   9. EPISODELISTE
+   ========================================================================== */
 .episode-list-container {
   width: 100%;
   margin-top: 2rem;
@@ -789,6 +728,7 @@ main {
   color: var(--text-muted-dark);
   margin-bottom: 0.3rem;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
