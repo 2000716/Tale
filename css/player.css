@@ -148,8 +148,8 @@
 /* Bilde i storspilleren */
 .full-cover-img,
 #full-cover-container img {
-  width: 200px;
-  height: 200px;
+  width: 210px;
+  height: 210px;
   object-fit: cover;
   border-radius: var(--radius-lg);
   box-shadow: 0 12px 30px rgba(0,0,0,0.5);
