@@ -260,48 +260,92 @@
   display: block;
 }
 
-/* --- DYNAMISKE DYNAMISKE LAYOUT-KLASSER (LAGT TIL) --- */
+/* --- DYNAMISKE LAYOUT-KLASSER (KORRIGERT DYNAMIKK) --- */
 
 .section-wrapper {
+  display: flex;
+  flex-direction: column; /* Tvinger tittel og galleri til å stable seg vertikalt */
+  width: 100%;
   margin-bottom: 1.5rem;
+  box-sizing: border-box;
+  clear: both;
 }
 
 .section-title {
+  width: 100%;
   font-size: 1.1rem;
   font-weight: 700;
+  margin-top: 0;
   margin-bottom: 0.75rem;
   color: var(--text-light, #ffffff);
+  display: block;
+  clear: both;
+}
+
+/* Fellesregler for grid-gallerier */
+.layout-grid-2,
+.layout-grid-3,
+.layout-grid-4 {
+  display: grid;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: start;
 }
 
 /* 2-kolonners visning */
 .layout-grid-2 {
-  display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
 }
 
 /* 3-kolonners visning */
 .layout-grid-3 {
-  display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
 }
 
 /* 4-kolonners visning */
 .layout-grid-4 {
-  display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.5rem;
+}
+
+/* Sikrer at podcast-kort og bilder skalerer ordentlig i rutenettet */
+.media-card,
+.podcast-card,
+.podcast-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 0; /* Forhindrer at grid-elementer sprenger kolonnene */
+}
+
+.media-card img,
+.podcast-card img,
+.podcast-item img,
+.layout-grid-2 img,
+.layout-grid-3 img,
+.layout-grid-4 img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1; /* Sikrer at podcast-omslagene forblir kvadratiske */
+  object-fit: cover;
+  border-radius: var(--radius-sm, 8px);
+  display: block;
 }
 
 /* Banner-visning */
 .layout-banner {
   display: flex;
   flex-direction: column;
+  width: 100%;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 1rem;
   border: 1px solid var(--bar-border, rgba(255, 255, 255, 0.1));
+  box-sizing: border-box;
 }
 
 .layout-banner .media-card {
