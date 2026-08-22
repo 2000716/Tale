@@ -177,7 +177,7 @@
   color: var(--text-muted);
 }
 
-/* Bunnmeny - Oppdatert med vertikal layout og SVG-fargestyring */
+/* Bunnmeny - Justert for større ikoner og romsligere design */
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -185,7 +185,7 @@
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  height: calc(64px + env(safe-area-inset-bottom));
+  height: calc(72px + env(safe-area-inset-bottom)); /* Økt høyde for å gi plass til større ikoner */
   padding-bottom: env(safe-area-inset-bottom);
   background-color: var(--bar-bg);
   display: flex;
@@ -203,16 +203,16 @@
   flex-direction: column; /* Ikon øverst, tekst under */
   align-items: center;
   justify-content: center;
-  padding: 6px 12px;
-  gap: 4px; /* Avstand mellom ikon og tekst */
+  padding: 4px 12px;
+  gap: 5px; /* Litt mer avstand mellom ikon og tekst */
   cursor: pointer;
   transition: color 0.2s ease, transform 0.1s ease;
 }
 
-/* SVG-ikoner arver fargen fra teksten via currentColor */
+/* Større SVG-ikoner som synkroniserer farge via currentColor */
 .bottom-bar .nav-icon {
-  width: 22px;
-  height: 22px;
+  width: 28px;  /* Økt størrelse fra 22px til 28px */
+  height: 28px;
   fill: currentColor;
   stroke: currentColor;
   transition: fill 0.2s ease, stroke 0.2s ease;
