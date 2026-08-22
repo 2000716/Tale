@@ -302,6 +302,7 @@ function loadContentFromFirestore() {
             const sub = item.sub || '';
             const rssUrl = item.rssUrl || item.rss || '';
             const manualCover = item.coverUrl || item.cover || item.image || '';
+            const audioUrl = item.audioUrl || item.audio || '';
             const cardId = `card-${docSnap.id}-${index}-${pageTarget}`;
 
             itemsHTML += `
@@ -312,7 +313,7 @@ function loadContentFromFirestore() {
                    data-desc="${item.desc || ''}" 
                    data-cover="${manualCover}"
                    data-rss="${rssUrl}"
-                   data-audio="${item.audioUrl || item.audio || ''}">
+                   data-audio="${audioUrl}">
                 <div class="book-cover" id="cover-${cardId}">
                   ${buildCoverMarkup(manualCover, title)}
                 </div>
@@ -321,7 +322,8 @@ function loadContentFromFirestore() {
               </div>
             `;
 
-            if (rssUrl) {
+            // Hvis elementet har RSS, forsøk å hente oppdatert bilde derfra hvis det mangler cover
+            if (rssUrl && !manualCover) {
               fetchRSSImageData(rssUrl, cardId, title);
             }
           });
@@ -370,7 +372,7 @@ async function fetchRSSImageData(rssUrl, cardId, title) {
   }
 }
 
-// --- Søkefunksjonalitet (Apple Podcast API + lokal filtrering) ---
+// --- Søkefunksjonalitet ---
 function setupSearchListener() {
   const searchInput = document.getElementById("global-search-input");
   if (!searchInput) return;
@@ -403,7 +405,6 @@ async function executeAppSearch(term) {
   resultsContainer.classList.add("active");
   resultsContainer.innerHTML = `<h2>Søkeresultater for "${term}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster...</p></div>`;
 
-  // Skjul andre sider midlertidig under søk
   document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => {
     sec.style.display = "none";
   });
@@ -503,15 +504,30 @@ async function openDetailsView(item) {
   if (!episodeListContainer && detailsContent) {
     const div = document.createElement("div");
     div.className = "episode-list-container";
-    div.innerHTML = `<h3>Alle episoder</h3><div id="episode-list"></div>`;
+    div.innerHTML = `<h3>Innhold / Episoder</h3><div id="episode-list"></div>`;
     detailsContent.appendChild(div);
     episodeListContainer = document.getElementById("episode-list");
   }
 
   if (episodeListContainer) {
-    episodeListContainer.innerHTML = selectedItem.rssUrl 
-      ? "<p class='loading-episodes'>Henter alle episoder fra RSS...</p>" 
-      : "<p>Ingen RSS-strøm tilgjengelig for denne tittelen.</p>";
+    if (selectedItem.rssUrl) {
+      episodeListContainer.innerHTML = "<p class='loading-episodes'>Henter alle episoder fra RSS...</p>";
+    } else if (selectedItem.audioUrl) {
+      // Hvis det er en direkte lydfil/radio-stream uten RSS
+      episodeListContainer.innerHTML = `
+        <div class="episode-item" style="cursor: pointer;">
+          <div class="episode-info">
+            <div class="episode-title">${selectedItem.title} (Spill av direkte)</div>
+            <div class="ep-desc">Klikk for å starte avspilling av denne strømmen.</div>
+          </div>
+        </div>
+      `;
+      episodeListContainer.firstChild.onclick = () => {
+        playSpecificEpisode(selectedItem, 0);
+      };
+    } else {
+      episodeListContainer.innerHTML = "<p>Ingen strøm eller RSS-kilde tilgjengelig.</p>";
+    }
   }
 
   if (selectedItem.rssUrl) {
@@ -605,8 +621,8 @@ function bindCardClickEvents() {
 }
 
 function playSpecificEpisode(epData, startPosition = 0) {
-  selectedItem.title = epData.title;
-  selectedItem.audioUrl = epData.audioUrl;
+  selectedItem.title = epData.title || selectedItem.title;
+  selectedItem.audioUrl = epData.audioUrl || selectedItem.audioUrl;
   if (epData.cover) selectedItem.cover = epData.cover;
   if (epData.sub) selectedItem.sub = epData.sub;
     
@@ -623,6 +639,9 @@ function playSpecificEpisode(epData, startPosition = 0) {
       }
     };
     globalAudio.play().catch(e => console.log("Auto-play avbrutt av nettleser:", e));
+  } else {
+    alert("Ingen gyldig lyd- eller radiostrøm tilgjengelig for dette elementet.");
+    return;
   }
 
   const miniTitle = document.getElementById("mini-player-title");
@@ -687,7 +706,12 @@ function formatTime(seconds) {
 
 if (startPlayBtn) {
   startPlayBtn.onclick = () => {
-    const cleanId = selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_');
+    // Hvis det er en direkte stream/lydbok (uten RSS-episodoliste, men med audioUrl)
+    if (selectedItem.audioUrl && !selectedItem.rssUrl) {
+      playSpecificEpisode(selectedItem, 0);
+      return;
+    }
+    const cleanId = selectedItem.title ? selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_') : 'item';
     const savedTime = userHistory[cleanId]?.currentTime || 0;
     playSpecificEpisode({
       title: selectedItem.title,
