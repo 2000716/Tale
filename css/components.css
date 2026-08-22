@@ -177,7 +177,7 @@
   color: var(--text-muted);
 }
 
-/* Bunnmeny - Tilpasset for PNG-ikoner med dynamisk fargetilpasning */
+/* Bunnmeny - Oppsett for svarte PNG-ikoner med filter-fargeendring */
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -209,30 +209,13 @@
   transition: color 0.2s ease, transform 0.1s ease;
 }
 
-/* Støtte for både vanlige SVG-ikoner og PNG-masker */
-.bottom-bar .nav-icon,
+/* Standard tilstand: Gjør det svarte PNG-bildet gråaktig */
 .bottom-bar .nav-icon-png {
   width: 28px;
   height: 28px;
-  transition: all 0.2s ease;
-}
-
-.bottom-bar .nav-icon {
-  fill: currentColor;
-  stroke: currentColor;
-}
-
-/* Gjør PNG-bildet om til en maske slik at det skifter farge med teksten */
-.bottom-bar img.nav-icon-png {
-  background-color: currentColor;
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-image: url(attr(src));
-  mask-image: url(attr(src));
+  object-fit: contain;
+  filter: brightness(0) invert(0.6); /* Konverterer sort til dempet grå */
+  transition: filter 0.2s ease;
 }
 
 .bottom-bar .nav-text {
@@ -241,13 +224,22 @@
   line-height: 1;
 }
 
-/* Hover og aktiv tilstand for bunnmenyen */
+/* Hover-tilstand: Gjør teksten og ikonet kritthvitt */
 .bottom-bar .nav-btn:hover {
   color: var(--text-light, #ffffff);
 }
 
+.bottom-bar .nav-btn:hover .nav-icon-png {
+  filter: brightness(0) invert(1);
+}
+
+/* Aktiv tilstand: Gjør teksten og ikonet blått (accent-blue) */
 .bottom-bar .nav-btn.active {
   color: var(--accent-blue);
+}
+
+.bottom-bar .nav-btn.active .nav-icon-png {
+  filter: invert(74%) sepia(31%) saturate(927%) hue-rotate(190deg) brightness(101%) contrast(93%);
 }
 
 .bottom-bar .nav-btn:active {
