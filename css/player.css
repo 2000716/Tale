@@ -126,10 +126,12 @@
   display: flex;
   position: fixed;
   top: 0;
-  left: 50%;
+  left: 0;
+  right: 0;
+  margin: 0 auto; /* Sentrerer rent uten X-konflikt */
   
   --y-offset: 100%;
-  transform: translate3d(-50%, var(--y-offset), 0);
+  transform: translate3d(0, var(--y-offset), 0);
 
   width: 100%;
   max-width: 480px;
@@ -155,10 +157,10 @@
   visibility: hidden;
   will-change: transform, opacity;
 
-  /* Ekte native iOS-følelse på overgangen */
-  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.1, 1), 
+  /* Native iOS / Storytel-fjøring på overgangen */
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
               opacity 0.25s ease,
-              visibility 0.4s;
+              visibility 0.38s;
 }
 
 /* Aktiv status */
@@ -169,27 +171,21 @@
   visibility: visible;
 }
 
-/* Dra-strek øverst */
-.drag-handle {
-  width: 36px;
-  height: 5px;
-  background-color: rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
-  margin-top: 0.2rem;
-  margin-bottom: 0.8rem;
-  cursor: grab;
-  flex-shrink: 0;
+/* Deaktiver animasjon mens fingeren drar kortet slik at det følger 1:1 */
+#fullscreen-player.is-dragging {
+  transition: none !important;
 }
 
-/* Lukke-knapp */
-#fullscreen-player .close-btn {
-  position: absolute;
-  top: calc(1.2rem + env(safe-area-inset-top));
-  left: 1.5rem;
-  color: var(--accent-blue, #AEC2F7);
-  cursor: pointer;
-  z-index: 10;
-  font-size: 1.2rem;
+/* Dra-strek øverst (Fabel/Storytel stil) */
+.drag-handle {
+  width: 40px;
+  height: 5px;
+  background-color: rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  margin-top: 0.4rem;
+  margin-bottom: 1.2rem;
+  cursor: grab;
+  flex-shrink: 0;
 }
 
 .player-full-content {
@@ -298,7 +294,6 @@
 .main-play-btn:active {
   transform: scale(0.93);
 }
-
 
 /* ==========================================
    ROBUST SKJULING AV BUNNMENY & MINI-SPILLER
