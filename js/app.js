@@ -5,12 +5,25 @@ import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { openDetailsView, playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Hjelpefunksjon for å unngå XSS og HTML-attributtfeil (f.eks. hermetegn i titler)
+function escapeHtml(str) {
+  if (typeof str !== "string") return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // Oppstart
 document.addEventListener("DOMContentLoaded", () => {
   initAuth();
   setupAudioListeners();
   setupEventListeners();
+  setupSearchListener(); // Fikset: Søkelytter ble aldri krevd tidligere
   setupTouchDrag();
+  setupGlobalCardDelegation(); // Event delegation for korthåndtering
 });
 
 export function loadContentFromFirestore() {
@@ -50,18 +63,18 @@ export function loadContentFromFirestore() {
             itemsHTML += `
               <div class="book-card" 
                    id="${cardId}"
-                   data-title="${title}" 
-                   data-sub="${sub}" 
-                   data-desc="${item.desc || ''}" 
-                   data-cover="${manualCover}"
-                   data-rss="${rssUrl}"
-                   data-audio="${audioUrl}"
+                   data-title="${escapeHtml(title)}" 
+                   data-sub="${escapeHtml(sub)}" 
+                   data-desc="${escapeHtml(item.desc || '')}" 
+                   data-cover="${escapeHtml(manualCover)}"
+                   data-rss="${escapeHtml(rssUrl)}"
+                   data-audio="${escapeHtml(audioUrl)}"
                    data-isradio="${isRadio}">
                 <div class="book-cover" id="cover-${cardId}">
                   ${buildCoverMarkup(manualCover, title)}
                 </div>
-                <div class="book-title">${title}</div>
-                <div class="book-author">${sub}</div>
+                <div class="book-title">${escapeHtml(title)}</div>
+                <div class="book-author">${escapeHtml(sub)}</div>
               </div>
             `;
 
@@ -71,7 +84,7 @@ export function loadContentFromFirestore() {
           });
 
           sectionWrapper.innerHTML = `
-            <div class="section-header"><h3>${sec.title}</h3></div>
+            <div class="section-header"><h3>${escapeHtml(sec.title || '')}</h3></div>
             <div class="${containerClass}">${itemsHTML}</div>
           `;
 
@@ -79,8 +92,6 @@ export function loadContentFromFirestore() {
         }
       });
     });
-
-    bindCardClickEvents();
   };
 
   const cachedSections = localStorage.getItem("app_sections_cache");
@@ -100,12 +111,15 @@ export function loadContentFromFirestore() {
     });
     localStorage.setItem("app_sections_cache", JSON.stringify(sectionsData));
     renderSectionsData(sectionsData);
+  }, (err) => {
+    console.error("Feil ved Firestore sanntidshenting:", err);
   });
 }
 
 async function fetchRSSImageData(rssUrl, cardId, title) {
   try {
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+    if (!res.ok) return;
     const data = await res.json();
     if (data.status === 'ok') {
       let imageUrl = data.feed?.image || (data.items?.[0]?.thumbnail || data.items?.[0]?.enclosure?.thumbnail || "");
@@ -151,18 +165,19 @@ async function executeAppSearch(term) {
   }
 
   resultsContainer.classList.add("active");
-  resultsContainer.innerHTML = `<h2>Søkeresultater for "${term}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster...</p></div>`;
+  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeHtml(term)}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster...</p></div>`;
 
   document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => sec.style.display = "none");
 
   try {
     const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`);
+    if (!res.ok) throw new Error("Nettverksfeil ved søk");
     const data = await res.json();
     const podcasts = data.results || [];
 
     let htmlContent = "";
     if (podcasts.length === 0) {
-      htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet på "${term}".</p>`;
+      htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet på "${escapeHtml(term)}".</p>`;
     } else {
       let gridHTML = "";
       podcasts.forEach((podcast, index) => {
@@ -175,24 +190,23 @@ async function executeAppSearch(term) {
         gridHTML += `
           <div class="book-card search-result-item" 
                id="${cardId}"
-               data-title="${title}" 
-               data-sub="${sub}" 
+               data-title="${escapeHtml(title)}" 
+               data-sub="${escapeHtml(sub)}" 
                data-desc="Hentet via Apple Podcast API" 
-               data-cover="${cover}"
-               data-rss="${feedUrl}"
+               data-cover="${escapeHtml(cover)}"
+               data-rss="${escapeHtml(feedUrl)}"
                data-audio=""
                data-isradio="false">
             <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
-            <div class="book-title">${title}</div>
-            <div class="book-author">${sub}</div>
+            <div class="book-title">${escapeHtml(title)}</div>
+            <div class="book-author">${escapeHtml(sub)}</div>
           </div>
         `;
       });
       htmlContent = `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${gridHTML}</div>`;
     }
 
-    resultsContainer.innerHTML = `<h2>Søkeresultater for "${term}"</h2><div class="dynamic-container">${htmlContent}</div>`;
-    bindSearchCardClickEvents();
+    resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeHtml(term)}"</h2><div class="dynamic-container">${htmlContent}</div>`;
   } catch (err) {
     console.error("Feil under søk:", err);
     resultsContainer.innerHTML = `<h2>Søk</h2><p style="padding:20px; color:red;">Kunne ikke utføre søk akkurat nå.</p>`;
@@ -205,15 +219,18 @@ function removeSearchResultsView() {
   document.querySelectorAll("main > section").forEach(sec => sec.style.display = "");
 }
 
-function bindSearchCardClickEvents() {
-  document.querySelectorAll(".search-result-item").forEach(card => {
-    card.onclick = () => openDetailsView({ ...card.dataset, rssUrl: card.dataset.rss, audioUrl: card.dataset.audio, isRadio: card.dataset.isradio === "true" });
-  });
-}
-
-function bindCardClickEvents() {
-  document.querySelectorAll(".book-card:not(.search-result-item)").forEach(card => {
-    card.onclick = () => openDetailsView({ ...card.dataset, rssUrl: card.dataset.rss, audioUrl: card.dataset.audio, isRadio: card.dataset.isradio === "true" });
+// Global event delegation for klikk på alle kort (forhindrer minnelekkasjer og re-binding)
+function setupGlobalCardDelegation() {
+  document.addEventListener("click", (e) => {
+    const card = e.target.closest(".book-card");
+    if (card) {
+      openDetailsView({
+        ...card.dataset,
+        rssUrl: card.dataset.rss,
+        audioUrl: card.dataset.audio,
+        isRadio: card.dataset.isradio === "true"
+      });
+    }
   });
 }
 
@@ -269,7 +286,6 @@ function setupEventListeners() {
       const isRadio = state.selectedItem.isRadio || !state.selectedItem.rssUrl;
       
       if (isRadio) {
-        // Direkteradio spilles alltid av fra start uten historikk-offset
         playSpecificEpisode(state.selectedItem, 0);
         return;
       }
@@ -288,7 +304,6 @@ function setupEventListeners() {
   if (el("mini-play-btn")) el("mini-play-btn").onclick = (e) => { e.stopPropagation(); togglePlay(); };
   if (el("full-play-btn")) el("full-play-btn").onclick = () => togglePlay();
 
-  // Forhindrer spoling dersom lydkilden er direkteradio (Infinity duration)
   if (el("skip-back-btn")) {
     el("skip-back-btn").onclick = () => { 
       if (globalAudio.src && globalAudio.duration !== Infinity) {
