@@ -1,7 +1,7 @@
 import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
-import { initAuth, setAuthMode, handleLogout } from "./auth.js";
+import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { openDetailsView, playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -213,8 +213,8 @@ function bindCardClickEvents() {
 function setupEventListeners() {
   const el = id => document.getElementById(id);
 
-  if (el("goToLoginBtn")) el("goToLoginBtn").onclick = () => { setAuthMode(false); showView("auth-view"); };
-  if (el("goToRegisterBtn")) el("goToRegisterBtn").onclick = () => { setAuthMode(true); showView("auth-view"); };
+  if (el("go-to-login-btn")) el("go-to-login-btn").onclick = () => { setAuthMode(false); showView("auth-view"); };
+  if (el("go-to-register-btn")) el("go-to-register-btn").onclick = () => { setAuthMode(true); showView("auth-view"); };
   if (el("auth-back-btn")) el("auth-back-btn").onclick = () => showView("landing-view");
   if (el("toggle-auth-mode")) el("toggle-auth-mode").onclick = () => setAuthMode(!state.isSignUp);
   if (el("logout-btn")) el("logout-btn").onclick = handleLogout;
@@ -236,11 +236,7 @@ function setupEventListeners() {
       if (errorMsg) errorMsg.innerText = "";
 
       try {
-        if (state.isSignUp) {
-          await createUserWithEmailAndPassword(auth, email, password);
-        } else {
-          await signInWithEmailAndPassword(auth, email, password);
-        }
+        await submitAuthForm(email, password);
       } catch (err) {
         if (errorMsg) errorMsg.innerText = "Feil ved innlogging eller registrering.";
       }
