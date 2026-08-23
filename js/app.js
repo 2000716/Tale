@@ -1,8 +1,8 @@
 import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
-import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
+import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility, openDetailsPage } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
-import { openDetailsView, playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
+import { playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Hjelpefunksjon for å unngå XSS og HTML-attributtfeil (f.eks. hermetegn i titler)
@@ -21,9 +21,9 @@ document.addEventListener("DOMContentLoaded", () => {
   initAuth();
   setupAudioListeners();
   setupEventListeners();
-  setupSearchListener(); // Fikset: Søkelytter ble aldri krevd tidligere
+  setupSearchListener();
   setupTouchDrag();
-  setupGlobalCardDelegation(); // Event delegation for korthåndtering
+  setupGlobalCardDelegation();
 });
 
 export function loadContentFromFirestore() {
@@ -60,6 +60,9 @@ export function loadContentFromFirestore() {
             const isRadio = item.isRadio || pageTarget === "radio";
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
+            // Bestem type dynamisk basert på data eller side
+            const contentType = item.type || (pageTarget === "radio" ? "radio" : pageTarget === "audiobooks" ? "audiobook" : "podcast");
+
             itemsHTML += `
               <div class="book-card" 
                    id="${cardId}"
@@ -69,7 +72,8 @@ export function loadContentFromFirestore() {
                    data-cover="${escapeHtml(manualCover)}"
                    data-rss="${escapeHtml(rssUrl)}"
                    data-audio="${escapeHtml(audioUrl)}"
-                   data-isradio="${isRadio}">
+                   data-isradio="${isRadio}"
+                   data-type="${contentType}">
                 <div class="book-cover" id="cover-${cardId}">
                   ${buildCoverMarkup(manualCover, title)}
                 </div>
@@ -196,7 +200,8 @@ async function executeAppSearch(term) {
                data-cover="${escapeHtml(cover)}"
                data-rss="${escapeHtml(feedUrl)}"
                data-audio=""
-               data-isradio="false">
+               data-isradio="false"
+               data-type="podcast">
             <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
             <div class="book-title">${escapeHtml(title)}</div>
             <div class="book-author">${escapeHtml(sub)}</div>
@@ -219,16 +224,21 @@ function removeSearchResultsView() {
   document.querySelectorAll("main > section").forEach(sec => sec.style.display = "");
 }
 
-// Global event delegation for klikk på alle kort (forhindrer minnelekkasjer og re-binding)
+// Global event delegation for klikk på alle kort
 function setupGlobalCardDelegation() {
   document.addEventListener("click", (e) => {
     const card = e.target.closest(".book-card");
     if (card) {
-      openDetailsView({
-        ...card.dataset,
+      openDetailsPage({
+        id: card.id,
+        title: card.dataset.title,
+        subtitle: card.dataset.sub,
+        description: card.dataset.desc,
+        coverUrl: card.dataset.cover,
         rssUrl: card.dataset.rss,
         audioUrl: card.dataset.audio,
-        isRadio: card.dataset.isradio === "true"
+        isRadio: card.dataset.isradio === "true",
+        type: card.dataset.type || "podcast"
       });
     }
   });
