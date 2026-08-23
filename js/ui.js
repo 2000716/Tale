@@ -1,5 +1,77 @@
 import { state } from "./state.js";
 
+/* ==========================================
+   DETALJSIDE & TYPER (Radio / Lydbok / Podcast)
+   ========================================== */
+
+/**
+ * Åpner detaljsiden og oppdaterer innholdet dynamisk.
+ * @param {Object} item - Objektet som inneholder data (title, description, coverUrl, type, etc.)
+ */
+export function openDetailsPage(item) {
+  if (!item) return;
+
+  const detailsPage = document.getElementById("details-page");
+  if (!detailsPage) return;
+
+  // 1. Hent DOM-elementene
+  const typeBadge = document.getElementById("details-type-text");
+  const titleEl = document.querySelector(".details-title");
+  const subEl = document.querySelector(".details-sub");
+  const descEl = document.getElementById("details-desc-text");
+  const coverContainer = document.querySelector(".details-cover-container");
+
+  // 2. Bestem type (radio, audiobook, podcast)
+  const contentType = (item.type || "podcast").toLowerCase();
+  
+  // Sett attribute på #details-page for CSS-styling
+  detailsPage.setAttribute("data-type", contentType);
+
+  // 3. Sett norsk tekst på merkelappen
+  let typeLabel = "Podcast";
+  if (contentType === "radio") {
+    typeLabel = "Radio";
+  } else if (contentType === "audiobook" || contentType === "lydbok") {
+    typeLabel = "Lydbok";
+  }
+
+  if (typeBadge) {
+    typeBadge.textContent = typeLabel;
+  }
+
+  // 4. Oppdater tekst i overskrifter og beskrivelsesboks
+  if (titleEl) titleEl.textContent = item.title || "Uten tittel";
+  if (subEl) subEl.textContent = item.subtitle || item.author || item.channel || "";
+  if (descEl) descEl.textContent = item.description || "Ingen beskrivelse tilgjengelig.";
+
+  // 5. Oppdater coverbilde
+  if (coverContainer) {
+    coverContainer.innerHTML = buildCoverMarkup(item.coverUrl || item.image, item.title);
+  }
+
+  // 6. Vis detaljsiden og skjul bunn-navigasjonen
+  detailsPage.classList.add("active");
+  updateBottomNavVisibility();
+
+  // Oppdater URL-hash om ønskelig
+  updateUrlHash(`details-${item.id || "view"}`);
+}
+
+/**
+ * Lukker detaljsiden
+ */
+export function closeDetailsPage() {
+  const detailsPage = document.getElementById("details-page");
+  if (detailsPage) {
+    detailsPage.classList.remove("active");
+    updateBottomNavVisibility();
+  }
+}
+
+/* ==========================================
+   NAVIGASJON & VISNING
+   ========================================== */
+
 export function updateBottomNavVisibility() {
   const bottomNav = document.getElementById("bottom-nav") || document.querySelector(".bottom-bar");
   const detailsPage = document.getElementById("details-page");
@@ -42,6 +114,10 @@ export function switchPage(pageId) {
   updateUrlHash(pageId);
   updateBottomNavVisibility();
 }
+
+/* ==========================================
+   HJELPEFUNKSJONER
+   ========================================== */
 
 export function buildCoverMarkup(src, title) {
   if (src && src.trim() !== '') {
