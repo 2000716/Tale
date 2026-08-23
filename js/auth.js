@@ -40,6 +40,15 @@ export function setAuthMode(signUp) {
   if (toggleAuthModeBtn) toggleAuthModeBtn.innerText = state.isSignUp ? "Har du allerede konto? Logg inn" : "Har du ikke konto? Registrer deg";
 }
 
+// NY FUNKSJON: Håndterer både registrering og innlogging
+export async function submitAuthForm(email, password) {
+  if (state.isSignUp) {
+    return await createUserWithEmailAndPassword(auth, email, password);
+  } else {
+    return await signInWithEmailAndPassword(auth, email, password);
+  }
+}
+
 export function restoreLastPage() {
   const hash = window.location.hash.replace("#", "");
   const savedPage = localStorage.getItem("lastActivePage");
