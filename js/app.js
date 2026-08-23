@@ -282,7 +282,11 @@ function setupEventListeners() {
 
   if (el("open-full-player")) {
     el("open-full-player").onclick = () => {
-      el("fullscreen-player")?.classList.add("active");
+      const fullPlayer = el("fullscreen-player");
+      if (fullPlayer) {
+        fullPlayer.style.transform = "";
+        fullPlayer.classList.add("active");
+      }
       updateUrlHash("fullscreen-player");
       updateBottomNavVisibility();
     };
@@ -290,7 +294,11 @@ function setupEventListeners() {
 
   if (el("player-close-btn")) {
     el("player-close-btn").onclick = () => {
-      el("fullscreen-player")?.classList.remove("active");
+      const fullPlayer = el("fullscreen-player");
+      if (fullPlayer) {
+        fullPlayer.classList.remove("active");
+        fullPlayer.style.transform = "";
+      }
       const lastPage = localStorage.getItem("lastActivePage") || "home";
       switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
     };
@@ -306,7 +314,8 @@ function setupTouchDrag() {
   let isDragging = false;
 
   fullscreenPlayer.addEventListener("touchstart", (e) => {
-    if (e.target.closest("input") || e.target.closest("button")) return;
+    if (e.target.closest("input") || e.target.closest("button") || e.target.closest(".close-btn")) return;
+    
     startY = e.touches[0].clientY;
     currentY = startY;
     isDragging = true;
@@ -315,25 +324,34 @@ function setupTouchDrag() {
 
   fullscreenPlayer.addEventListener("touchmove", (e) => {
     if (!isDragging) return;
+    
     currentY = e.touches[0].clientY;
     const diffY = currentY - startY;
 
+    // Låst kun til vertikal retning via translate3d
     if (diffY > 0) {
-      fullscreenPlayer.style.transform = `translateY(${diffY}px)`;
+      fullscreenPlayer.style.transform = `translate3d(0, ${diffY}px, 0)`;
     }
   }, { passive: true });
 
   fullscreenPlayer.addEventListener("touchend", () => {
     if (!isDragging) return;
     isDragging = false;
-    fullscreenPlayer.style.transition = "";
+
+    fullscreenPlayer.style.transition = "transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease";
 
     const diffY = currentY - startY;
-    if (diffY > 150) {
+    
+    if (diffY > 120) {
       fullscreenPlayer.classList.remove("active");
+      fullscreenPlayer.style.transform = "";
+      
       const lastPage = localStorage.getItem("lastActivePage") || "home";
-      switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
+      if (typeof switchPage === "function") {
+        switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
+      }
+    } else {
+      fullscreenPlayer.style.transform = "";
     }
-    fullscreenPlayer.style.transform = "";
   });
 }
