@@ -2,7 +2,6 @@ import { state, globalAudio } from "./state.js";
 import { buildCoverMarkup, updateUrlHash, updateBottomNavVisibility, formatTime, updatePlayIcons, switchPage } from "./ui.js";
 import { saveProgressToFirestore, removeFromFirestoreHistory, updateDetailPlayButtonState } from "./history.js";
 
-// Oppdaterer MediaSession for Låseskjerm/Kontrollsenter (Storytel & Fabel stil)
 export function updateMediaSession(item) {
   if ('mediaSession' in navigator) {
     const coverUrl = item.cover || 'https://via.placeholder.com/512';
@@ -223,8 +222,26 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   }
 
   document.getElementById("details-page")?.classList.remove("active");
-  document.getElementById("fullscreen-player")?.classList.add("active");
+  openFullscreenPlayer();
+}
+
+// Funksjoner for å åpne/lukke storspilleren mykt
+export function openFullscreenPlayer() {
+  const fullPlayer = document.getElementById("fullscreen-player");
+  if (!fullPlayer) return;
+  fullPlayer.style.setProperty('--y-offset', '0%');
+  fullPlayer.classList.remove('is-dragging');
+  fullPlayer.classList.add('active');
   updateUrlHash("fullscreen-player");
+  updateBottomNavVisibility();
+}
+
+export function closeFullscreenPlayer() {
+  const fullPlayer = document.getElementById("fullscreen-player");
+  if (!fullPlayer) return;
+  fullPlayer.classList.remove('is-dragging');
+  fullPlayer.classList.remove('active');
+  fullPlayer.style.removeProperty('--y-offset');
   updateBottomNavVisibility();
 }
 
@@ -244,11 +261,63 @@ export function togglePlay() {
   }
 }
 
+// Oppsett for drag-to-dismiss (Storytel / Fabel stil)
+function setupDragToDismiss() {
+  const fullPlayer = document.getElementById("fullscreen-player");
+  if (!fullPlayer || fullPlayer.dataset.dragInitialized) return;
+  
+  fullPlayer.dataset.dragInitialized = "true"; // Unngår doble event-listeners
+
+  let startY = 0;
+  let dragging = false;
+
+  fullPlayer.addEventListener('touchstart', (e) => {
+    // Unngå å starte drag når du justerer tidslinjen / progress bar
+    if (e.target.closest('input[type="range"]')) return;
+
+    startY = e.touches[0].clientY;
+    dragging = true;
+  }, { passive: true });
+
+  fullPlayer.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+
+    const currentTouchY = e.touches[0].clientY;
+    const deltaY = currentTouchY - startY;
+
+    // Kun tillat å dra nedover
+    if (deltaY > 0) {
+      fullPlayer.classList.add('is-dragging');
+      fullPlayer.style.setProperty('--y-offset', `${deltaY}px`);
+    }
+  }, { passive: true });
+
+  fullPlayer.addEventListener('touchend', (e) => {
+    if (!dragging) return;
+    dragging = false;
+
+    const endY = e.changedTouches[0].clientY;
+    const deltaY = endY - startY;
+
+    fullPlayer.classList.remove('is-dragging');
+
+    // Terskel på 90px for å lukke
+    if (deltaY > 90) {
+      closeFullscreenPlayer();
+    } else {
+      fullPlayer.style.setProperty('--y-offset', '0%');
+    }
+  });
+}
+
 export function setupAudioListeners() {
   const progressBar = document.getElementById("progress-bar");
   const currentTimeSpan = document.getElementById("current-time");
   const totalTimeSpan = document.getElementById("total-time");
   let saveTimer = null;
+
+  // Aktiver drag-to-dismiss
+  setupDragToDismiss();
 
   globalAudio.ontimeupdate = () => {
     if (!state.isUserSeeking && globalAudio.duration) {
@@ -289,7 +358,7 @@ export function setupAudioListeners() {
       await removeFromFirestoreHistory(state.selectedItem.title);
       
       document.getElementById("audio-player-bar")?.classList.add("hidden");
-      document.getElementById("fullscreen-player")?.classList.remove("active");
+      closeFullscreenPlayer();
       
       globalAudio.src = "";
       openDetailsView(itemToOpen);
