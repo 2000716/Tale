@@ -2,15 +2,16 @@
   --bottom-bar-height: 70px;
 }
 
-/* Mini-spiller */
+/* ==========================================
+   MINI-SPILLER (Flytende & Sentrert)
+   ========================================== */
 .player {
   position: fixed;
-  bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 100%;
-  max-width: 480px;
+  bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom) + 8px);
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  width: calc(100% - 24px);
+  max-width: 456px;
   height: 62px;
   background-color: #ffffff;
   color: #000000;
@@ -18,12 +19,27 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 1rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   z-index: 1100;
-  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
-  opacity: 1;
   box-sizing: border-box;
+
+  /* Myk animasjon for visning/skjuling */
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), 
+              opacity 0.3s ease,
+              visibility 0.35s;
+  opacity: 1;
+  visibility: visible;
+  will-change: transform, opacity;
+}
+
+/* Skjul minispiller hvis den har .hidden klasse */
+.player.hidden {
+  transform: translate3d(-50%, 120px, 0);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .player-left {
@@ -38,7 +54,7 @@
 #mini-cover-container {
   width: 44px;
   height: 44px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm, 8px);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -47,7 +63,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm, 8px);
 }
 
 .player-info {
@@ -68,6 +84,9 @@
 .player-sub {
   font-size: 0.75rem;
   color: #666666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .icon-play-btn {
@@ -82,27 +101,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.icon-play-btn:active {
+  transform: scale(0.92);
 }
 
 .icon-play-btn i {
   color: #2b56d0;
 }
 
-/* Fullskjerm-spiller (Sentrert med margin, låst til 100% vertikal bevegelse) */
+
+/* ==========================================
+   STORSTPILLER / FULLSKJERM-SPILLER
+   ========================================== */
 #fullscreen-player {
   display: flex;
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
+  left: 50%;
   width: 100%;
   max-width: 480px;
   height: 100vh;
   height: 100dvh;
-  background-color: var(--bg-dark);
-  color: var(--text-light);
+  background-color: var(--bg-dark, #0b112c);
+  color: var(--text-light, #ffffff);
   z-index: 2000;
   
   overflow: hidden;
@@ -116,20 +141,25 @@
   flex-direction: column;
   align-items: center;
 
-  /* Rent translate3d på Y-aksen tvinger GPU-akselerasjon */
-  transform: translate3d(0, 100%, 0);
+  /* Startposisjon: Ligger helt under skjermen og er usynlig */
+  transform: translate3d(-50%, 100%, 0);
   opacity: 0;
   pointer-events: none;
-  will-change: transform;
+  visibility: hidden;
+  will-change: transform, opacity;
 
-  transition: transform 0.35s cubic-bezier(0.15, 0.85, 0.35, 1.2), opacity 0.25s ease;
+  /* Ultra-smooth IOS-lignende gli-overgang */
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), 
+              opacity 0.3s ease,
+              visibility 0.4s;
 }
 
-/* Aktiv status */
+/* Aktiv status: Glir opp til midten */
 #fullscreen-player.active {
-  transform: translate3d(0, 0, 0);
+  transform: translate3d(-50%, 0, 0);
   opacity: 1;
   pointer-events: auto;
+  visibility: visible;
 }
 
 /* Dra-strek øverst */
@@ -149,9 +179,10 @@
   position: absolute;
   top: calc(1.2rem + env(safe-area-inset-top));
   left: 1.5rem;
-  color: var(--accent-blue);
+  color: var(--accent-blue, #AEC2F7);
   cursor: pointer;
   z-index: 10;
+  font-size: 1.2rem;
 }
 
 .player-full-content {
@@ -173,11 +204,11 @@
 
 .full-cover-img,
 #full-cover-container img {
-  width: 230px;
-  height: 230px;
+  width: 240px;
+  height: 240px;
   object-fit: cover;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
   background-color: #1a2550;
 }
 
@@ -189,7 +220,7 @@
 }
 
 #fullscreen-player p {
-  color: var(--text-muted);
+  color: var(--text-muted, #94a3b8);
   font-size: 0.9rem;
 }
 
@@ -200,7 +231,7 @@
   gap: 0.6rem;
   margin: 2rem 0;
   font-size: 0.85rem;
-  color: var(--accent-blue);
+  color: var(--accent-blue, #AEC2F7);
   font-weight: 600;
 }
 
@@ -258,16 +289,29 @@
 }
 
 .main-play-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.93);
 }
 
-/* Skjul bunnmeny & minispiller mykt ved overlay */
-body:has(#fullscreen-player.active) .bottom-bar {
-  display: none !important;
+
+/* ==========================================
+   MYK SKJULING AV BUNNMENY & MINI-SPILLER
+   ========================================== */
+
+/* Legg til transition på selve .bottom-bar i hoved-CSSen din om den sakner det */
+.bottom-bar {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
 }
 
+/* Skjul minispiller mykt nedover når storspilleren åpnes */
 body:has(#fullscreen-player.active) .player {
-  transform: translate3d(0, 100px, 0);
-  opacity: 0;
-  pointer-events: none;
+  transform: translate3d(-50%, 150px, 0) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Skjul bunnmenyen mykt nedover når storspilleren åpnes */
+body:has(#fullscreen-player.active) .bottom-bar {
+  transform: translate3d(0, 100px, 0) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
