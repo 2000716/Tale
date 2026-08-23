@@ -126,12 +126,11 @@
   display: flex;
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
-  margin: 0 auto; /* Sentrerer rent uten X-konflikt */
+  left: 50%;
   
   --y-offset: 100%;
-  transform: translate3d(0, var(--y-offset), 0);
+  /* -50% X-akser er LÅST permanent her, så JS endrer KUN Y-verdi */
+  transform: translate3d(-50%, var(--y-offset), 0);
 
   width: 100%;
   max-width: 480px;
