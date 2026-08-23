@@ -5,7 +5,7 @@ import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Hjelpefunksjon for å unngå XSS og HTML-attributtfeil (f.eks. hermetegn i titler)
+// Hjelpefunksjon for å unngå XSS og HTML-attributtfeil
 function escapeHtml(str) {
   if (typeof str !== "string") return "";
   return str
@@ -293,7 +293,9 @@ function setupEventListeners() {
 
   if (el("start-play-btn")) {
     el("start-play-btn").onclick = () => {
-      const isRadio = state.selectedItem.isRadio || !state.selectedItem.rssUrl;
+      if (!state.selectedItem) return;
+
+      const isRadio = Boolean(state.selectedItem.isRadio);
       
       if (isRadio) {
         playSpecificEpisode(state.selectedItem, 0);
@@ -301,12 +303,11 @@ function setupEventListeners() {
       }
 
       const cleanId = state.selectedItem.title ? state.selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_') : 'item';
-      const savedTime = state.userHistory[cleanId]?.currentTime || 0;
+      const savedTime = state.userHistory?.[cleanId]?.currentTime || 0;
+
       playSpecificEpisode({
-        title: state.selectedItem.title,
-        audioUrl: state.selectedItem.audioUrl,
-        cover: state.selectedItem.cover,
-        sub: state.selectedItem.sub
+        ...state.selectedItem,
+        cover: state.selectedItem.coverUrl || state.selectedItem.cover
       }, savedTime);
     };
   }
