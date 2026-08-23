@@ -203,7 +203,6 @@ function buildCoverMarkup(src, title) {
   `;
 }
 
-// --- MELLOMLAGRET HISTORIKK ---
 async function loadUserHistory() {
   if (!currentUser) return;
 
@@ -323,7 +322,6 @@ function updateDetailPlayButtonState() {
   }
 }
 
-// --- MELLOMLAGRET SEKSJONS- OG INNHOLDSLASTING ---
 function loadContentFromFirestore() {
   const pages = ["home", "audiobooks", "podcasts", "radio"];
 
@@ -350,7 +348,7 @@ function loadContentFromFirestore() {
             const sub = item.sub || '';
             const rssUrl = item.rssUrl || item.rss || '';
             const manualCover = item.coverUrl || item.cover || item.image || '';
-            const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
+            const audioUrl = item.audioUrl || item.audio || '';
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
             itemsHTML += `
@@ -399,7 +397,7 @@ function loadContentFromFirestore() {
   }
 
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
-    
+  
   onSnapshot(q, (snapshot) => {
     const sectionsData = [];
 
@@ -445,7 +443,6 @@ async function fetchRSSImageData(rssUrl, cardId, title) {
   }
 }
 
-// --- Søkefunksjonalitet ---
 function setupSearchListener() {
   const searchInput = document.getElementById("global-search-input");
   if (!searchInput) return;
@@ -597,14 +594,14 @@ async function openDetailsView(item) {
   }
 
   if (episodeListContainer) {
-    if (selectedItem.rssUrl && selectedItem.rssUrl.trim() !== "") {
+    if (selectedItem.rssUrl) {
       episodeListContainer.innerHTML = "<p class='loading-episodes'>Henter alle episoder fra RSS...</p>";
-    } else if (selectedItem.audioUrl && selectedItem.audioUrl.trim() !== "") {
+    } else if (selectedItem.audioUrl) {
       episodeListContainer.innerHTML = `
         <div class="episode-item" style="cursor: pointer;">
           <div class="episode-info">
-            <div class="episode-title"><i class="fa-solid fa-radio"></i> Spill av direktestrøm</div>
-            <div class="ep-desc">Klikk for å starte avspilling av denne strømmen direkte.</div>
+            <div class="episode-title">${selectedItem.title} (Spill av direkte)</div>
+            <div class="ep-desc">Klikk for å starte avspilling av denne strømmen.</div>
           </div>
         </div>
       `;
@@ -612,11 +609,11 @@ async function openDetailsView(item) {
         playSpecificEpisode(selectedItem, 0);
       };
     } else {
-      episodeListContainer.innerHTML = "<p>Ingen gyldig lyd- eller radiokilde tilgjengelig.</p>";
+      episodeListContainer.innerHTML = "<p>Ingen strøm eller RSS-kilde tilgjengelig.</p>";
     }
   }
 
-  if (selectedItem.rssUrl && selectedItem.rssUrl.trim() !== "") {
+  if (selectedItem.rssUrl) {
     try {
       const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(selectedItem.rssUrl)}`);
       const data = await res.json();
@@ -720,10 +717,8 @@ function playSpecificEpisode(epData, startPosition = 0) {
       }
       globalAudio.play();
       updatePlayIcons(true);
-      if (totalTimeSpan && globalAudio.duration && !isNaN(globalAudio.duration)) {
+      if (totalTimeSpan && globalAudio.duration) {
         totalTimeSpan.innerText = formatTime(globalAudio.duration);
-      } else if (totalTimeSpan) {
-        totalTimeSpan.innerText = "Direkte";
       }
     };
     globalAudio.play().catch(e => console.log("Auto-play avbrutt av nettleser:", e));
@@ -794,7 +789,7 @@ function formatTime(seconds) {
 
 if (startPlayBtn) {
   startPlayBtn.onclick = () => {
-    if (selectedItem.audioUrl && (!selectedItem.rssUrl || selectedItem.rssUrl.trim() === "")) {
+    if (selectedItem.audioUrl && !selectedItem.rssUrl) {
       playSpecificEpisode(selectedItem, 0);
       return;
     }
@@ -826,13 +821,13 @@ function togglePlay() {
 if (miniPlayBtn) miniPlayBtn.onclick = (e) => { e.stopPropagation(); togglePlay(); };
 if (fullPlayBtn) fullPlayBtn.onclick = () => togglePlay();
 
-if (skipBackBtn) skipBackBtn.onclick = () => { if (globalAudio.src && !isNaN(globalAudio.duration)) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); };
-if (skipForwardBtn) skipForwardBtn.onclick = () => { if (globalAudio.src && !isNaN(globalAudio.duration)) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
+if (skipBackBtn) skipBackBtn.onclick = () => { if (globalAudio.src) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); };
+if (skipForwardBtn) skipForwardBtn.onclick = () => { if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
 
 if (globalAudio) {
   let saveTimer = null;
   globalAudio.ontimeupdate = () => {
-    if (!isUserSeeking && globalAudio.duration && !isNaN(globalAudio.duration)) {
+    if (!isUserSeeking && globalAudio.duration) {
       const progressPercent = (globalAudio.currentTime / globalAudio.duration) * 100;
       if (progressBar) progressBar.value = progressPercent;
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(globalAudio.currentTime);
@@ -870,14 +865,14 @@ if (globalAudio) {
 if (progressBar) {
   progressBar.oninput = () => {
     isUserSeeking = true;
-    if (globalAudio.duration && !isNaN(globalAudio.duration)) {
+    if (globalAudio.duration) {
       const seekTime = (progressBar.value / 100) * globalAudio.duration;
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(seekTime);
     }
   };
 
   progressBar.onchange = () => {
-    if (globalAudio.duration && !isNaN(globalAudio.duration)) {
+    if (globalAudio.duration) {
       globalAudio.currentTime = (progressBar.value / 100) * globalAudio.duration;
       if (selectedItem.title) {
         saveProgressToFirestore(selectedItem.title, selectedItem);
@@ -901,4 +896,56 @@ if (playerCloseBtn) {
     const lastPage = localStorage.getItem("lastActivePage") || "home";
     switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
   };
+}
+
+// --- FULLSKJERMSPILLER DRAG-FOR-Å-LUKKE (TOUCH) ---
+const fullscreenPlayer = document.getElementById("fullscreen-player");
+if (fullscreenPlayer) {
+  let startY = 0;
+  let currentY = 0;
+  let isDragging = false;
+
+  fullscreenPlayer.addEventListener("touchstart", (e) => {
+    // Tillat berøring på elementer som sliders/knapper uten at det dras i hytt og pine
+    if (e.target.closest("input") || e.target.closest("button")) return;
+    
+    startY = e.touches[0].clientY;
+    currentY = startY;
+    isDragging = true;
+    fullscreenPlayer.style.transition = "none";
+  }, { passive: true });
+
+  fullscreenPlayer.addEventListener("touchmove", (e) => {
+    if (!isDragging) return;
+    currentY = e.touches[0].clientY;
+    const diffY = currentY - startY;
+
+    // Bare tillat å dra nedover (positive verdier)
+    if (diffY > 0) {
+      fullscreenPlayer.style.transform = `translateY(${diffY}px)`;
+    }
+  }, { passive: true });
+
+  fullscreenPlayer.addEventListener("touchend", () => {
+    if (!isDragging) return;
+    isDragging = false;
+    
+    fullscreenPlayer.style.transition = "transform 0.3s ease";
+    const diffY = currentY - startY;
+
+    // Hvis brukeren har dratt skjermen mer enn 120 piksler nedover, lukk den
+    if (diffY > 120) {
+      fullscreenPlayer.style.transform = "translateY(100%)";
+      setTimeout(() => {
+        fullscreenPlayer.classList.remove("active");
+        fullscreenPlayer.style.transform = "";
+        fullscreenPlayer.style.transition = "";
+        const lastPage = localStorage.getItem("lastActivePage") || "home";
+        switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
+      }, 300);
+    } else {
+      // Ellers spretter den bare tilbake på plass
+      fullscreenPlayer.style.transform = "translateY(0)";
+    }
+  });
 }
