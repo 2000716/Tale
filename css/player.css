@@ -3,16 +3,17 @@
 }
 
 /* ==========================================
-   MINI-SPILLER (Låst sentrert i bunn)
+   MINI-SPILLER (Låst og sentrert i bunn)
    ========================================== */
 .player {
   position: fixed;
   bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom) + 8px);
-  left: 50%;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   
-  /* Definerer Y-akselerasjon separat så -50% X aldri brekker */
-  --y-offset: 0px;
-  transform: translate3d(-50%, var(--y-offset), 0);
+  /* Bruker translateY rent for kun vertikal bevegelse */
+  transform: translateY(0px);
   
   width: calc(100% - 24px);
   max-width: 456px;
@@ -29,7 +30,6 @@
   z-index: 1100;
   box-sizing: border-box;
 
-  /* Myk og robust overgang */
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), 
               opacity 0.3s ease,
               visibility 0.35s;
@@ -38,9 +38,8 @@
   will-change: transform, opacity;
 }
 
-/* Skjul minispiller om den manuelt gis klassen .hidden */
 .player.hidden {
-  --y-offset: 150px;
+  transform: translateY(150px);
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
@@ -52,7 +51,7 @@
   gap: 0.75rem;
   cursor: pointer;
   flex: 1;
-  min-width: 0; /* Hindrer at lang tekst trykker ut layouten */
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -118,32 +117,31 @@
   color: #2b56d0;
 }
 
-
 /* ==========================================
-   STORSPILLER / FULLSKJERM-SPILLER (Låst sentrert & robust drag-down)
+   STORSPILLER / FULLSKJERM (Ren vertikal bevegelse)
    ========================================== */
 #fullscreen-player {
   position: fixed;
   top: 0;
-  left: 50%;
-  
-  /* Låser sentrering på X-aksen permanent via translate.
-     Transform bruker både X (-50%) og dynamic Y-offset */
-  --y-offset: 100vh;
-  transform: translate3d(-50%, var(--y-offset), 0);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+
+  /* Startposisjon skjult nede */
+  transform: translateY(100vh);
 
   width: 100%;
   max-width: 480px;
   height: 100vh;
-  height: 100dvh; /* Dynamic viewport height for mobil */
+  height: 100dvh;
   
   background-color: var(--bg-dark, #0b112c);
   color: var(--text-light, #ffffff);
   z-index: 2000;
   
   overflow: hidden;
-  touch-action: none; /* Forhindrer at mobilnettleseren overstyrer dra-bevegelsen */
-  user-select: none;  /* Gjør dra-opplevelsen mer sømløs */
+  touch-action: none;
+  user-select: none;
 
   padding-top: calc(0.8rem + env(safe-area-inset-top));
   padding-bottom: calc(2rem + env(safe-area-inset-bottom));
@@ -160,26 +158,19 @@
   visibility: hidden;
   will-change: transform, opacity;
 
-  /* Native iOS / Storytel-fjøring på overgangen */
   transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
               opacity 0.25s ease,
               visibility 0.38s;
 }
 
-/* Aktiv status */
+/* Aktiv storspiller glir opp til 0 på Y-aksen */
 #fullscreen-player.active {
-  --y-offset: 0px;
+  transform: translateY(0px);
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
 }
 
-/* Deaktiver animasjon mens fingeren/musen drar kortet slik at det følger 1:1 */
-#fullscreen-player.is-dragging {
-  transition: none !important;
-}
-
-/* Dra-strek øverst (Fabel/Storytel stil) */
 .drag-handle {
   width: 44px;
   height: 5px;
@@ -301,21 +292,18 @@
 /* ==========================================
    ROBUST SKJULING AV BUNNMENY & MINI-SPILLER
    ========================================== */
-
-/* Sikre at selve .bottom-bar har myk overgang i hovedfilen din */
 .bottom-bar {
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
 }
 
-/* Når storspilleren åpnes, skyv minispilleren og bunnmenyen mykt ned uten kollisjoner */
 body:has(#fullscreen-player.active) .player {
-  --y-offset: 160px !important;
+  transform: translateY(160px) !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
 
 body:has(#fullscreen-player.active) .bottom-bar {
-  transform: translate3d(0, 120px, 0) !important;
+  transform: translateY(120px) !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
