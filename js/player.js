@@ -229,7 +229,7 @@ export function playSpecificEpisode(epData, startPosition = 0) {
 export function openFullscreenPlayer() {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer) return;
-  fullPlayer.style.setProperty('--y-offset', '0%');
+  fullPlayer.style.setProperty('--y-offset', '0px');
   fullPlayer.classList.remove('is-dragging');
   fullPlayer.classList.add('active');
   updateUrlHash("fullscreen-player");
@@ -305,7 +305,7 @@ function setupDragToDismiss() {
     if (deltaY > 90) {
       closeFullscreenPlayer();
     } else {
-      fullPlayer.style.setProperty('--y-offset', '0%');
+      fullPlayer.style.setProperty('--y-offset', '0px');
     }
   });
 }
