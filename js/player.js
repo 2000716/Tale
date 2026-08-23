@@ -261,7 +261,7 @@ export function togglePlay() {
   }
 }
 
-// Oppsett for drag-to-dismiss (Storytel / Fabel stil)
+// Robust oppsett for drag-to-dismiss (Fabel / Storytel stil)
 function setupDragToDismiss() {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer || fullPlayer.dataset.dragInitialized) return;
@@ -269,45 +269,55 @@ function setupDragToDismiss() {
   fullPlayer.dataset.dragInitialized = "true"; // Unngår doble event-listeners
 
   let startY = 0;
+  let currentY = 0;
   let dragging = false;
 
-  fullPlayer.addEventListener('touchstart', (e) => {
-    // Unngå å starte drag når du justerer tidslinjen / progress bar
-    if (e.target.closest('input[type="range"]')) return;
+  const onStart = (clientY, target) => {
+    // Unngå å starte drag når du justerer tidslinjen / progress bar eller trykker på knapper
+    if (target.closest('input[type="range"]') || target.closest('button')) return;
 
-    startY = e.touches[0].clientY;
+    startY = clientY;
+    currentY = clientY;
     dragging = true;
-  }, { passive: true });
+  };
 
-  fullPlayer.addEventListener('touchmove', (e) => {
+  const onMove = (clientY) => {
     if (!dragging) return;
 
-    const currentTouchY = e.touches[0].clientY;
-    const deltaY = currentTouchY - startY;
+    currentY = clientY;
+    const deltaY = currentY - startY;
 
-    // Kun tillat å dra nedover
+    // Kun tillat å dra nedover (deltaY > 0)
     if (deltaY > 0) {
       fullPlayer.classList.add('is-dragging');
       fullPlayer.style.setProperty('--y-offset', `${deltaY}px`);
     }
-  }, { passive: true });
+  };
 
-  fullPlayer.addEventListener('touchend', (e) => {
+  const onEnd = () => {
     if (!dragging) return;
     dragging = false;
 
-    const endY = e.changedTouches[0].clientY;
-    const deltaY = endY - startY;
-
+    const deltaY = currentY - startY;
     fullPlayer.classList.remove('is-dragging');
 
-    // Terskel på 90px for å lukke
-    if (deltaY > 90) {
+    // Terskel på 80px for å lukke
+    if (deltaY > 80) {
       closeFullscreenPlayer();
     } else {
       fullPlayer.style.setProperty('--y-offset', '0px');
     }
-  });
+  };
+
+  // Touch Events (Mobil)
+  fullPlayer.addEventListener('touchstart', (e) => onStart(e.touches[0].clientY, e.target), { passive: true });
+  fullPlayer.addEventListener('touchmove', (e) => onMove(e.touches[0].clientY), { passive: true });
+  fullPlayer.addEventListener('touchend', onEnd);
+
+  // Mouse Events (Desktop)
+  fullPlayer.addEventListener('mousedown', (e) => onStart(e.clientY, e.target));
+  window.addEventListener('mousemove', (e) => onMove(e.clientY));
+  window.addEventListener('mouseup', onEnd);
 }
 
 export function setupAudioListeners() {
