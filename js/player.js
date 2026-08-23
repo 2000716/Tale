@@ -2,6 +2,49 @@ import { state, globalAudio } from "./state.js";
 import { buildCoverMarkup, updateUrlHash, updateBottomNavVisibility, formatTime, updatePlayIcons, switchPage } from "./ui.js";
 import { saveProgressToFirestore, removeFromFirestoreHistory, updateDetailPlayButtonState } from "./history.js";
 
+// Oppdaterer MediaSession for Låseskjerm/Kontrollsenter (Storytel & Fabel stil)
+export function updateMediaSession(item) {
+  if ('mediaSession' in navigator) {
+    const coverUrl = item.cover || 'https://via.placeholder.com/512';
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: item.title || 'Innhold',
+      artist: item.sub || item.author || 'Måne',
+      album: 'Måne Audio',
+      artwork: [
+        { src: coverUrl, sizes: '96x96', type: 'image/jpeg' },
+        { src: coverUrl, sizes: '128x128', type: 'image/jpeg' },
+        { src: coverUrl, sizes: '192x192', type: 'image/png' },
+        { src: coverUrl, sizes: '256x256', type: 'image/png' },
+        { src: coverUrl, sizes: '384x384', type: 'image/png' },
+        { src: coverUrl, sizes: '512x512', type: 'image/png' },
+      ]
+    });
+
+    // Lyttere for låseskjerm-knapper
+    try {
+      navigator.mediaSession.setActionHandler('play', () => {
+        globalAudio.play();
+        updatePlayIcons(true);
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        globalAudio.pause();
+        updatePlayIcons(false);
+      });
+      navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+        const skipTime = details.seekOffset || 15;
+        globalAudio.currentTime = Math.max(globalAudio.currentTime - skipTime, 0);
+      });
+      navigator.mediaSession.setActionHandler('seekforward', (details) => {
+        const skipTime = details.seekOffset || 15;
+        globalAudio.currentTime = Math.min(globalAudio.currentTime + skipTime, globalAudio.duration || 0);
+      });
+    } catch (e) {
+      console.warn("MediaSession aksjonshandling feilet:", e);
+    }
+  }
+}
+
 export async function openDetailsView(item) {
   state.selectedItem = item;
   localStorage.setItem("lastSelectedItem", JSON.stringify(state.selectedItem));
@@ -150,6 +193,9 @@ export function playSpecificEpisode(epData, startPosition = 0) {
       }
     };
     globalAudio.play().catch(e => console.log("Auto-play avbrutt av nettleser:", e));
+
+    // Oppdaterer låseskjermen/systemet på enheten
+    updateMediaSession(state.selectedItem);
   } else {
     alert("Ingen gyldig lyd- eller radiostrøm tilgjengelig for dette elementet.");
     return;
@@ -187,9 +233,11 @@ export function togglePlay() {
   if (globalAudio.paused) {
     globalAudio.play();
     updatePlayIcons(true);
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "playing";
   } else {
     globalAudio.pause();
     updatePlayIcons(false);
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "paused";
     if (state.selectedItem.title) {
       saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
     }
@@ -208,6 +256,19 @@ export function setupAudioListeners() {
       if (progressBar) progressBar.value = progressPercent;
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(globalAudio.currentTime);
       if (totalTimeSpan) totalTimeSpan.innerText = formatTime(globalAudio.duration);
+
+      // Oppdaterer tidslinjen på låseskjermen fortløpende
+      if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: globalAudio.duration,
+            playbackRate: globalAudio.playbackRate,
+            position: globalAudio.currentTime
+          });
+        } catch (e) {
+          // Unngår kræsj om duration midlertidig er invalid
+        }
+      }
 
       if (!saveTimer && state.selectedItem.title) {
         saveTimer = setTimeout(() => {
