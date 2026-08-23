@@ -20,15 +20,16 @@ export function updateMediaSession(item) {
       ]
     });
 
-    // Lyttere for låseskjerm-knapper
     try {
       navigator.mediaSession.setActionHandler('play', () => {
         globalAudio.play();
         updatePlayIcons(true);
+        navigator.mediaSession.playbackState = "playing";
       });
       navigator.mediaSession.setActionHandler('pause', () => {
         globalAudio.pause();
         updatePlayIcons(false);
+        navigator.mediaSession.playbackState = "paused";
       });
       navigator.mediaSession.setActionHandler('seekbackward', (details) => {
         const skipTime = details.seekOffset || 15;
@@ -181,19 +182,21 @@ export function playSpecificEpisode(epData, startPosition = 0) {
     
   if (state.selectedItem.audioUrl) {
     globalAudio.src = state.selectedItem.audioUrl;
+    
     globalAudio.onloadedmetadata = () => {
       if (startPosition > 0) {
         globalAudio.currentTime = startPosition;
       }
-      globalAudio.play();
-      updatePlayIcons(true);
+      globalAudio.play().then(() => {
+        updatePlayIcons(true);
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "playing";
+      }).catch(e => console.log("Auto-play avbrutt av nettleser:", e));
+
       if (totalTimeSpan && globalAudio.duration) {
         totalTimeSpan.innerText = formatTime(globalAudio.duration);
       }
     };
-    globalAudio.play().catch(e => console.log("Auto-play avbrutt av nettleser:", e));
 
-    // Oppdaterer låseskjermen/systemet på enheten
     updateMediaSession(state.selectedItem);
   } else {
     alert("Ingen gyldig lyd- eller radiostrøm tilgjengelig for dette elementet.");
@@ -225,7 +228,6 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   openFullscreenPlayer();
 }
 
-// Funksjoner for å åpne/lukke storspilleren mykt
 export function openFullscreenPlayer() {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer) return;
@@ -261,21 +263,18 @@ export function togglePlay() {
   }
 }
 
-// Robust oppsett for drag-to-dismiss (Fabel / Storytel stil)
 function setupDragToDismiss() {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer || fullPlayer.dataset.dragInitialized) return;
   
-  fullPlayer.dataset.dragInitialized = "true"; // Unngår doble event-listeners
+  fullPlayer.dataset.dragInitialized = "true";
 
   let startY = 0;
   let currentY = 0;
   let dragging = false;
 
   const onStart = (clientY, target) => {
-    // Unngå å starte drag når du justerer tidslinjen / progress bar eller trykker på knapper
     if (target.closest('input[type="range"]') || target.closest('button')) return;
-
     startY = clientY;
     currentY = clientY;
     dragging = true;
@@ -283,11 +282,9 @@ function setupDragToDismiss() {
 
   const onMove = (clientY) => {
     if (!dragging) return;
-
     currentY = clientY;
     const deltaY = currentY - startY;
 
-    // Kun tillat å dra nedover (deltaY > 0)
     if (deltaY > 0) {
       fullPlayer.classList.add('is-dragging');
       fullPlayer.style.setProperty('--y-offset', `${deltaY}px`);
@@ -301,13 +298,17 @@ function setupDragToDismiss() {
     const deltaY = currentY - startY;
     fullPlayer.classList.remove('is-dragging');
 
-    // Terskel på 80px for å lukke
     if (deltaY > 80) {
       closeFullscreenPlayer();
     } else {
       fullPlayer.style.setProperty('--y-offset', '0px');
     }
+    
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onEnd);
   };
+
+  const onMouseMove = (e) => onMove(e.clientY);
 
   // Touch Events (Mobil)
   fullPlayer.addEventListener('touchstart', (e) => onStart(e.touches[0].clientY, e.target), { passive: true });
@@ -315,9 +316,11 @@ function setupDragToDismiss() {
   fullPlayer.addEventListener('touchend', onEnd);
 
   // Mouse Events (Desktop)
-  fullPlayer.addEventListener('mousedown', (e) => onStart(e.clientY, e.target));
-  window.addEventListener('mousemove', (e) => onMove(e.clientY));
-  window.addEventListener('mouseup', onEnd);
+  fullPlayer.addEventListener('mousedown', (e) => {
+    onStart(e.clientY, e.target);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onEnd);
+  });
 }
 
 export function setupAudioListeners() {
@@ -326,7 +329,6 @@ export function setupAudioListeners() {
   const totalTimeSpan = document.getElementById("total-time");
   let saveTimer = null;
 
-  // Aktiver drag-to-dismiss
   setupDragToDismiss();
 
   globalAudio.ontimeupdate = () => {
@@ -336,7 +338,6 @@ export function setupAudioListeners() {
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(globalAudio.currentTime);
       if (totalTimeSpan) totalTimeSpan.innerText = formatTime(globalAudio.duration);
 
-      // Oppdaterer tidslinjen på låseskjermen fortløpende
       if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
         try {
           navigator.mediaSession.setPositionState({
@@ -345,7 +346,7 @@ export function setupAudioListeners() {
             position: globalAudio.currentTime
           });
         } catch (e) {
-          // Unngår kræsj om duration midlertidig er invalid
+          // Ignorer om duration er ugyldig under lasting
         }
       }
 
@@ -360,6 +361,7 @@ export function setupAudioListeners() {
 
   globalAudio.onended = async () => {
     updatePlayIcons(false);
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "none";
     if (progressBar) progressBar.value = 0;
     if (currentTimeSpan) currentTimeSpan.innerText = "0:00";
 
