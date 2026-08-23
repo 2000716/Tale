@@ -39,7 +39,12 @@ export function loadContentFromFirestore() {
             const sub = item.sub || '';
             const rssUrl = item.rssUrl || item.rss || '';
             const manualCover = item.coverUrl || item.cover || item.image || '';
-            const audioUrl = item.audioUrl || item.audio || '';
+            
+            // Sikrer HTTPS på lydlenker for å unngå mixed content-feil
+            let audioUrl = item.audioUrl || item.audio || '';
+            if (audioUrl.startsWith("http://")) audioUrl = audioUrl.replace("http://", "https://");
+
+            const isRadio = item.isRadio || pageTarget === "radio";
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
             itemsHTML += `
@@ -50,7 +55,8 @@ export function loadContentFromFirestore() {
                    data-desc="${item.desc || ''}" 
                    data-cover="${manualCover}"
                    data-rss="${rssUrl}"
-                   data-audio="${audioUrl}">
+                   data-audio="${audioUrl}"
+                   data-isradio="${isRadio}">
                 <div class="book-cover" id="cover-${cardId}">
                   ${buildCoverMarkup(manualCover, title)}
                 </div>
@@ -174,7 +180,8 @@ async function executeAppSearch(term) {
                data-desc="Hentet via Apple Podcast API" 
                data-cover="${cover}"
                data-rss="${feedUrl}"
-               data-audio="">
+               data-audio=""
+               data-isradio="false">
             <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
             <div class="book-title">${title}</div>
             <div class="book-author">${sub}</div>
@@ -200,13 +207,13 @@ function removeSearchResultsView() {
 
 function bindSearchCardClickEvents() {
   document.querySelectorAll(".search-result-item").forEach(card => {
-    card.onclick = () => openDetailsView({ ...card.dataset, rssUrl: card.dataset.rss, audioUrl: card.dataset.audio });
+    card.onclick = () => openDetailsView({ ...card.dataset, rssUrl: card.dataset.rss, audioUrl: card.dataset.audio, isRadio: card.dataset.isradio === "true" });
   });
 }
 
 function bindCardClickEvents() {
   document.querySelectorAll(".book-card:not(.search-result-item)").forEach(card => {
-    card.onclick = () => openDetailsView({ ...card.dataset, rssUrl: card.dataset.rss, audioUrl: card.dataset.audio });
+    card.onclick = () => openDetailsView({ ...card.dataset, rssUrl: card.dataset.rss, audioUrl: card.dataset.audio, isRadio: card.dataset.isradio === "true" });
   });
 }
 
@@ -259,10 +266,14 @@ function setupEventListeners() {
 
   if (el("start-play-btn")) {
     el("start-play-btn").onclick = () => {
-      if (state.selectedItem.audioUrl && !state.selectedItem.rssUrl) {
+      const isRadio = state.selectedItem.isRadio || !state.selectedItem.rssUrl;
+      
+      if (isRadio) {
+        // Direkteradio spilles alltid av fra start uten historikk-offset
         playSpecificEpisode(state.selectedItem, 0);
         return;
       }
+
       const cleanId = state.selectedItem.title ? state.selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_') : 'item';
       const savedTime = state.userHistory[cleanId]?.currentTime || 0;
       playSpecificEpisode({
@@ -277,8 +288,21 @@ function setupEventListeners() {
   if (el("mini-play-btn")) el("mini-play-btn").onclick = (e) => { e.stopPropagation(); togglePlay(); };
   if (el("full-play-btn")) el("full-play-btn").onclick = () => togglePlay();
 
-  if (el("skip-back-btn")) el("skip-back-btn").onclick = () => { if (globalAudio.src) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); };
-  if (el("skip-forward-btn")) el("skip-forward-btn").onclick = () => { if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
+  // Forhindrer spoling dersom lydkilden er direkteradio (Infinity duration)
+  if (el("skip-back-btn")) {
+    el("skip-back-btn").onclick = () => { 
+      if (globalAudio.src && globalAudio.duration !== Infinity) {
+        globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); 
+      }
+    };
+  }
+  if (el("skip-forward-btn")) {
+    el("skip-forward-btn").onclick = () => { 
+      if (globalAudio.src && globalAudio.duration && globalAudio.duration !== Infinity) {
+        globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); 
+      }
+    };
+  }
 
   if (el("open-full-player")) {
     el("open-full-player").onclick = () => {
@@ -328,7 +352,6 @@ function setupTouchDrag() {
     currentY = e.touches[0].clientY;
     const diffY = currentY - startY;
 
-    // Låst kun til vertikal retning via translate3d
     if (diffY > 0) {
       fullscreenPlayer.style.transform = `translate3d(0, ${diffY}px, 0)`;
     }
