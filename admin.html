@@ -322,397 +322,398 @@
     </div>
   </div>
 
-  <!-- FIREBASE ENGINE & APP LOGIC -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, getDoc, query, orderBy 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { 
-      getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+<!-- FIREBASE ENGINE & APP LOGIC -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { 
+    getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, getDoc, query, orderBy 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { 
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDfJ3IXqeJUkCVcMnPt3ya37Co7Du-f1WU",
-      authDomain: "tale-8cadc.firebaseapp.com",
-      projectId: "tale-8cadc",
-      storageBucket: "tale-8cadc.firebasestorage.app",
-      messagingSenderId: "326781333063",
-      appId: "1:326781333063:web:c7303967acf8ea79184b62"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyDfJ3IXqeJUkCVcMnPt3ya37Co7Du-f1WU",
+    authDomain: "tale-8cadc.firebaseapp.com",
+    projectId: "tale-8cadc",
+    storageBucket: "tale-8cadc.firebasestorage.app",
+    messagingSenderId: "326781333063",
+    appId: "1:326781333063:web:c7303967acf8ea79184b62"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
 
-    const loginCard = document.getElementById("login-card");
-    const adminContent = document.getElementById("admin-content");
-    const loginMsg = document.getElementById("login-msg");
-    const logoutBtn = document.getElementById("logout-btn");
-    const userDisplay = document.getElementById("user-display");
+  const loginCard = document.getElementById("login-card");
+  const adminContent = document.getElementById("admin-content");
+  const loginMsg = document.getElementById("login-msg");
+  const logoutBtn = document.getElementById("logout-btn");
+  const userDisplay = document.getElementById("user-display");
 
-    let queueItems = [];
-    let rawSectionsData = [];
+  let queueItems = [];
+  let rawSectionsData = [];
 
-    // Authentication State Listener
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        loginCard.classList.add("hidden");
-        adminContent.classList.remove("hidden");
-        logoutBtn.classList.remove("hidden");
-        userDisplay.innerText = user.email;
-        loadDatabaseContent();
-      } else {
-        loginCard.classList.remove("hidden");
-        adminContent.classList.add("hidden");
-        logoutBtn.classList.add("hidden");
-        userDisplay.innerText = "";
-      }
-    });
-
-    // Login Handler
-    document.getElementById("login-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      try {
-        await signInWithEmailAndPassword(auth, document.getElementById("login-email").value, document.getElementById("login-password").value);
-        loginMsg.innerText = "";
-      } catch (err) {
-        loginMsg.innerText = "Feil ved innlogging: " + err.message;
-      }
-    });
-
-    logoutBtn.addEventListener("click", () => signOut(auth));
-
-    // Dynamic Form Labels based on Content Type Choice
-    document.getElementById("content-type-select").addEventListener("change", (e) => {
-      const type = e.target.value;
-      const podcastBox = document.getElementById("podcast-search-box");
-      const urlLabel = document.getElementById("url-label-text");
-      const mediaInput = document.getElementById("item-url");
-
-      if (type === "podcast") {
-        podcastBox.classList.remove("hidden");
-        urlLabel.innerText = "RSS Feed URL";
-        mediaInput.placeholder = "https://eksempel.no/feed.xml";
-      } else if (type === "audiobook") {
-        podcastBox.classList.add("hidden");
-        urlLabel.innerText = "Lydfil Stream URL (MP3/M4B)";
-        mediaInput.placeholder = "https://eksempel.no/audiobook.mp3";
-      } else if (type === "radio") {
-        podcastBox.classList.add("hidden");
-        urlLabel.innerText = "Radio Stream URL (MP3 / AAC / HLS)";
-        mediaInput.placeholder = "https://lyd.nrk.no/nrk_radio_p3_aac_h";
-      }
-    });
-
-    // iTunes Search Functionality
-    let searchResultsCache = [];
-    document.getElementById("api-search-btn").addEventListener("click", async () => {
-      const term = document.getElementById("api-search-input").value.trim();
-      const resultsContainer = document.getElementById("api-results");
-      if (!term) return alert("Skriv inn et søkeord.");
-
-      resultsContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; padding: 0.5rem 0;">Søker hos Apple...</div>';
-
-      try {
-        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`);
-        const data = await res.json();
-        searchResultsCache = data.results || [];
-        resultsContainer.innerHTML = '';
-
-        if (searchResultsCache.length === 0) {
-          resultsContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem;">Ingen treff funnet.</div>';
-          return;
-        }
-
-        searchResultsCache.forEach((pod, index) => {
-          const row = document.createElement("div");
-          row.className = "api-result-item";
-          row.innerHTML = `
-            <div class="api-result-left">
-              <img src="${pod.artworkUrl100 || ''}" alt="">
-              <div class="api-result-text">
-                <strong>${pod.collectionName}</strong>
-                <div style="color: var(--text-muted); font-size: 0.7rem;">${pod.artistName || 'Ukjent'}</div>
-              </div>
-            </div>
-            <div style="display: flex; gap: 0.3rem;">
-              <button type="button" class="btn btn-sm btn-secondary" onclick="fillFormFromApi(${index})">Fyll Ut</button>
-              <button type="button" class="btn btn-sm" style="background: var(--primary);" onclick="addToQueue(${index}, this)">+ Kø</button>
-            </div>
-          `;
-          resultsContainer.appendChild(row);
-        });
-      } catch (err) {
-        resultsContainer.innerHTML = '<div style="color: var(--danger); font-size: 0.8rem;">Feil: ' + err.message + '</div>';
-      }
-    });
-
-    window.fillFormFromApi = (index) => {
-      const pod = searchResultsCache[index];
-      if (!pod) return;
-
-      document.getElementById("item-title").value = pod.collectionName || "";
-      document.getElementById("item-sub").value = pod.artistName || pod.primaryGenreName || "";
-      document.getElementById("item-cover").value = pod.artworkUrl600 || pod.artworkUrl100 || "";
-      document.getElementById("item-url").value = pod.feedUrl || "";
-      document.getElementById("item-desc").value = `Podkast hentet fra Apple. Sjanger: ${pod.primaryGenreName || 'Diverse'}.`;
-
-      const statusMsg = document.getElementById("status-msg");
-      statusMsg.innerText = `Skjema fylt ut med "${pod.collectionName}". Velg målseksjon og trykk Publiser!`;
-      setTimeout(() => statusMsg.innerText = "", 4000);
-    };
-
-    window.addToQueue = (index, btnElement) => {
-      const pod = searchResultsCache[index];
-      if (!pod) return;
-
-      queueItems.push({
-        type: "podcast",
-        title: pod.collectionName || "",
-        sub: pod.artistName || pod.primaryGenreName || "",
-        coverUrl: pod.artworkUrl600 || pod.artworkUrl100 || "",
-        mediaUrl: pod.feedUrl || "",
-        desc: `Podkast hentet fra Apple. Sjanger: ${pod.primaryGenreName || 'Diverse'}.`
-      });
-
-      btnElement.innerText = "Lagt til";
-      btnElement.disabled = true;
-      btnElement.style.opacity = "0.5";
-
-      document.getElementById("selected-queue").classList.remove("hidden");
-      document.getElementById("queue-count").innerText = queueItems.length;
-    };
-
-    document.getElementById("batch-publish-btn").addEventListener("click", async () => {
-      const sectionId = document.getElementById("item-section-select").value;
-      if (!sectionId) return alert("Du må velge en målseksjon før du publiserer køen!");
-
-      try {
-        const sectionRef = doc(db, "sections", sectionId);
-        const docSnap = await getDoc(sectionRef);
-        
-        if (docSnap.exists()) {
-          const currentItems = docSnap.data().items || [];
-          await updateDoc(sectionRef, { items: [...currentItems, ...queueItems] });
-          
-          alert(`${queueItems.length} elementer ble vellykket lagt til!`);
-          queueItems = [];
-          document.getElementById("selected-queue").classList.add("hidden");
-          document.getElementById("queue-count").innerText = "0";
-        }
-      } catch (err) {
-        alert("Feil under lagring: " + err.message);
-      }
-    });
-
-    // Database Realtime Load
-    function loadDatabaseContent() {
-      const q = query(collection(db, "sections"), orderBy("order", "asc"));
-      onSnapshot(q, (snapshot) => {
-        rawSectionsData = [];
-        snapshot.forEach((docSnap) => {
-          rawSectionsData.push({ id: docSnap.id, ...docSnap.data() });
-        });
-        renderSectionsUI();
-      });
+  // Authentication State Listener
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      loginCard.classList.add("hidden");
+      adminContent.classList.remove("hidden");
+      logoutBtn.classList.remove("hidden");
+      userDisplay.innerText = user.email;
+      loadDatabaseContent();
+    } else {
+      loginCard.classList.remove("hidden");
+      adminContent.classList.add("hidden");
+      logoutBtn.classList.add("hidden");
+      userDisplay.innerText = "";
     }
+  });
 
-    function renderSectionsUI() {
-      const sectionsSelect = document.getElementById("item-section-select");
-      const sectionsList = document.getElementById("sections-list");
-      const filterText = document.getElementById("filter-sections-input").value.toLowerCase();
+  // Login Handler
+  document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      await signInWithEmailAndPassword(auth, document.getElementById("login-email").value, document.getElementById("login-password").value);
+      loginMsg.innerText = "";
+    } catch (err) {
+      loginMsg.innerText = "Feil ved innlogging: " + err.message;
+    }
+  });
 
-      sectionsSelect.innerHTML = '<option value="">-- Velg Seksjon --</option>';
-      sectionsList.innerHTML = '';
+  logoutBtn.addEventListener("click", () => signOut(auth));
 
-      const filtered = rawSectionsData.filter(sec => {
-        const matchTitle = sec.title.toLowerCase().includes(filterText);
-        const matchItems = sec.items && sec.items.some(i => i.title.toLowerCase().includes(filterText));
-        return matchTitle || matchItems;
-      });
+  // Dynamic Form Labels based on Content Type Choice
+  document.getElementById("content-type-select").addEventListener("change", (e) => {
+    const type = e.target.value;
+    const podcastBox = document.getElementById("podcast-search-box");
+    const urlLabel = document.getElementById("url-label-text");
+    const mediaInput = document.getElementById("item-url");
 
-      if (filtered.length === 0) {
-        sectionsList.innerHTML = '<div class="card" style="text-align: center; color: var(--text-muted);">Ingen seksjoner eller innhold samsvarer med søket.</div>';
+    if (type === "podcast") {
+      podcastBox.classList.remove("hidden");
+      urlLabel.innerText = "RSS Feed URL";
+      mediaInput.placeholder = "https://eksempel.no/feed.xml";
+    } else if (type === "audiobook") {
+      podcastBox.classList.add("hidden");
+      urlLabel.innerText = "Lydfil Stream URL (MP3/M4B)";
+      mediaInput.placeholder = "https://eksempel.no/audiobook.mp3";
+    } else if (type === "radio") {
+      podcastBox.classList.add("hidden");
+      urlLabel.innerText = "Radio Stream URL (Direkte MP3 / AAC / M3U8)";
+      mediaInput.placeholder = "https://lyd.nrk.no/nrk_radio_p3_aac_h";
+    }
+  });
+
+  // iTunes Search Functionality
+  let searchResultsCache = [];
+  document.getElementById("api-search-btn").addEventListener("click", async () => {
+    const term = document.getElementById("api-search-input").value.trim();
+    const resultsContainer = document.getElementById("api-results");
+    if (!term) return alert("Skriv inn et søkeord.");
+
+    resultsContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; padding: 0.5rem 0;">Søker hos Apple...</div>';
+
+    try {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`);
+      const data = await res.json();
+      searchResultsCache = data.results || [];
+      resultsContainer.innerHTML = '';
+
+      if (searchResultsCache.length === 0) {
+        resultsContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem;">Ingen treff funnet.</div>';
         return;
       }
 
-      filtered.forEach((sec) => {
-        const pages = Array.isArray(sec.pages) ? sec.pages : [sec.page || 'home'];
-
-        // Populate Select Input
-        const opt = document.createElement("option");
-        opt.value = sec.id;
-        opt.textContent = `[${pages.join(", ").toUpperCase()}] ${sec.title}`;
-        sectionsSelect.appendChild(opt);
-
-        // Build Dashboard Cards
-        const secCard = document.createElement("div");
-        secCard.className = "section-card";
-
-        let itemsHtml = "";
-        if (sec.items && sec.items.length > 0) {
-          itemsHtml = `<div class="item-grid">` + sec.items.map((item, index) => {
-            const itemType = item.type || (item.rssUrl ? 'podcast' : 'media');
-            return `
-            <div class="item-card">
-              <div class="item-info">
-                ${item.coverUrl ? `<img src="${item.coverUrl}" class="item-thumbnail" alt="Cover">` : `<div class="item-thumbnail"></div>`}
-                <div style="overflow: hidden;">
-                  <strong style="font-size: 0.85rem; display: flex; align-items: center; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
-                    ${item.title}
-                    <span class="type-badge">${itemType}</span>
-                  </strong>
-                  <div style="color: var(--text-muted); font-size: 0.75rem;">${item.sub}</div>
-                </div>
-              </div>
-              <button class="btn btn-danger btn-sm" onclick="deleteItem('${sec.id}', ${index})">Slett</button>
-            </div>
-          `}).join("") + `</div>`;
-        } else {
-          itemsHtml = `<div style="color: var(--text-muted); font-size: 0.8rem; padding: 0.5rem 0;">Ingen innholdselementer tilknyttet denne seksjonen enda.</div>`;
-        }
-
-        const badgesHtml = pages.map(p => `<span class="tag-badge">${p}</span>`).join("");
-
-        secCard.innerHTML = `
-          <div class="section-header">
-            <div>
-              ${badgesHtml}
-              <strong style="margin-left: 0.5rem; font-size: 1.05rem;">${sec.title}</strong>
-              <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.5rem;">(Prioritet: ${sec.order})</span>
-            </div>
-            <div style="display: flex; gap: 0.4rem;">
-              <button class="btn btn-edit" onclick="openEditModal('${sec.id}')">Rediger</button>
-              <button class="btn btn-danger" onclick="deleteSection('${sec.id}')">Slett Seksjon</button>
+      searchResultsCache.forEach((pod, index) => {
+        const row = document.createElement("div");
+        row.className = "api-result-item";
+        row.innerHTML = `
+          <div class="api-result-left">
+            <img src="${pod.artworkUrl100 || ''}" alt="">
+            <div class="api-result-text">
+              <strong>${pod.collectionName}</strong>
+              <div style="color: var(--text-muted); font-size: 0.7rem;">${pod.artistName || 'Ukjent'}</div>
             </div>
           </div>
-          ${itemsHtml}
+          <div style="display: flex; gap: 0.3rem;">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="fillFormFromApi(${index})">Fyll Ut</button>
+            <button type="button" class="btn btn-sm" style="background: var(--primary);" onclick="addToQueue(${index}, this)">+ Kø</button>
+          </div>
         `;
-        sectionsList.appendChild(secCard);
+        resultsContainer.appendChild(row);
       });
+    } catch (err) {
+      resultsContainer.innerHTML = '<div style="color: var(--danger); font-size: 0.8rem;">Feil: ' + err.message + '</div>';
+    }
+  });
+
+  window.fillFormFromApi = (index) => {
+    const pod = searchResultsCache[index];
+    if (!pod) return;
+
+    document.getElementById("item-title").value = pod.collectionName || "";
+    document.getElementById("item-sub").value = pod.artistName || pod.primaryGenreName || "";
+    document.getElementById("item-cover").value = pod.artworkUrl600 || pod.artworkUrl100 || "";
+    document.getElementById("item-url").value = pod.feedUrl || "";
+    document.getElementById("item-desc").value = `Podkast hentet fra Apple. Sjanger: ${pod.primaryGenreName || 'Diverse'}.`;
+
+    const statusMsg = document.getElementById("status-msg");
+    statusMsg.innerText = `Skjema fylt ut med "${pod.collectionName}". Velg målseksjon og trykk Publiser!`;
+    setTimeout(() => statusMsg.innerText = "", 4000);
+  };
+
+  window.addToQueue = (index, btnElement) => {
+    const pod = searchResultsCache[index];
+    if (!pod) return;
+
+    queueItems.push({
+      type: "podcast",
+      title: pod.collectionName || "",
+      sub: pod.artistName || pod.primaryGenreName || "",
+      coverUrl: pod.artworkUrl600 || pod.artworkUrl100 || "",
+      mediaUrl: pod.feedUrl || "",
+      desc: `Podkast hentet fra Apple. Sjanger: ${pod.primaryGenreName || 'Diverse'}.`
+    });
+
+    btnElement.innerText = "Lagt til";
+    btnElement.disabled = true;
+    btnElement.style.opacity = "0.5";
+
+    document.getElementById("selected-queue").classList.remove("hidden");
+    document.getElementById("queue-count").innerText = queueItems.length;
+  };
+
+  document.getElementById("batch-publish-btn").addEventListener("click", async () => {
+    const sectionId = document.getElementById("item-section-select").value;
+    if (!sectionId) return alert("Du må velge en målseksjon før du publiserer køen!");
+
+    try {
+      const sectionRef = doc(db, "sections", sectionId);
+      const docSnap = await getDoc(sectionRef);
+      
+      if (docSnap.exists()) {
+        const currentItems = docSnap.data().items || [];
+        await updateDoc(sectionRef, { items: [...currentItems, ...queueItems] });
+        
+        alert(`${queueItems.length} elementer ble vellykket lagt til!`);
+        queueItems = [];
+        document.getElementById("selected-queue").classList.add("hidden");
+        document.getElementById("queue-count").innerText = "0";
+      }
+    } catch (err) {
+      alert("Feil under lagring: " + err.message);
+    }
+  });
+
+  // Database Realtime Load
+  function loadDatabaseContent() {
+    const q = query(collection(db, "sections"), orderBy("order", "asc"));
+    onSnapshot(q, (snapshot) => {
+      rawSectionsData = [];
+      snapshot.forEach((docSnap) => {
+        rawSectionsData.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      renderSectionsUI();
+    });
+  }
+
+  function renderSectionsUI() {
+    const sectionsSelect = document.getElementById("item-section-select");
+    const sectionsList = document.getElementById("sections-list");
+    const filterText = document.getElementById("filter-sections-input").value.toLowerCase();
+
+    sectionsSelect.innerHTML = '<option value="">-- Velg Seksjon --</option>';
+    sectionsList.innerHTML = '';
+
+    const filtered = rawSectionsData.filter(sec => {
+      const matchTitle = sec.title.toLowerCase().includes(filterText);
+      const matchItems = sec.items && sec.items.some(i => i.title.toLowerCase().includes(filterText));
+      return matchTitle || matchItems;
+    });
+
+    if (filtered.length === 0) {
+      sectionsList.innerHTML = '<div class="card" style="text-align: center; color: var(--text-muted);">Ingen seksjoner eller innhold samsvarer med søket.</div>';
+      return;
     }
 
-    document.getElementById("filter-sections-input").addEventListener("input", renderSectionsUI);
-
-    // Section Creation
-    document.getElementById("add-section-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const title = document.getElementById("sec-title").value;
-      const order = parseInt(document.getElementById("sec-order").value);
-      const selectedPages = Array.from(document.querySelectorAll('.sec-target-pages:checked')).map(cb => cb.value);
-
-      if (selectedPages.length === 0) return alert("Velg minst én side hvor seksjonen skal vises.");
-
-      try {
-        await addDoc(collection(db, "sections"), { title, pages: selectedPages, order, items: [] });
-        document.getElementById("sec-title").value = '';
-      } catch (err) {
-        alert("Feil ved opprettelse: " + err.message);
-      }
-    });
-
-    // Content Creation (Single Item)
-    document.getElementById("add-item-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const sectionId = document.getElementById("item-section-select").value;
-      const statusMsg = document.getElementById("status-msg");
-
-      if (!sectionId) return alert("Velg en målseksjon først!");
-
-      statusMsg.innerText = "Lagrer innhold...";
-
-      try {
-        const contentType = document.getElementById("content-type-select").value;
-        const title = document.getElementById("item-title").value;
-        const sub = document.getElementById("item-sub").value;
-        const coverUrl = document.getElementById("item-cover").value;
-        const mediaUrl = document.getElementById("item-url").value;
-        const desc = document.getElementById("item-desc").value;
-
-        const sectionRef = doc(db, "sections", sectionId);
-        const docSnap = await getDoc(sectionRef);
-
-        if (docSnap.exists()) {
-          const currentItems = docSnap.data().items || [];
-          
-          const newItem = { 
-            type: contentType,
-            title, 
-            sub, 
-            coverUrl: coverUrl || "", 
-            mediaUrl: mediaUrl || "",
-            desc 
-          };
-          
-          await updateDoc(sectionRef, { items: [...currentItems, newItem] });
-
-          statusMsg.innerText = "Publisert!";
-          document.getElementById("add-item-form").reset();
-          document.getElementById("api-results").innerHTML = "";
-        }
-      } catch (err) {
-        statusMsg.innerText = "Feil ved lagring: " + err.message;
-      } finally {
-        setTimeout(() => statusMsg.innerText = "", 3000);
-      }
-    });
-
-    // Edit Modal logic
-    window.openEditModal = (secId) => {
-      const sec = rawSectionsData.find(s => s.id === secId);
-      if (!sec) return;
-
-      document.getElementById("edit-sec-id").value = sec.id;
-      document.getElementById("edit-sec-title").value = sec.title;
-      document.getElementById("edit-sec-order").value = sec.order;
-
+    filtered.forEach((sec) => {
       const pages = Array.isArray(sec.pages) ? sec.pages : [sec.page || 'home'];
-      document.querySelectorAll('.edit-sec-target-pages').forEach(cb => {
-        cb.checked = pages.includes(cb.value);
-      });
 
-      document.getElementById("edit-modal").classList.remove("hidden");
-    };
+      // Populate Select Input
+      const opt = document.createElement("option");
+      opt.value = sec.id;
+      opt.textContent = `[${pages.join(", ").toUpperCase()}] ${sec.title}`;
+      sectionsSelect.appendChild(opt);
 
-    window.closeEditModal = () => {
-      document.getElementById("edit-modal").classList.add("hidden");
-    };
+      // Build Dashboard Cards
+      const secCard = document.createElement("div");
+      secCard.className = "section-card";
 
-    document.getElementById("edit-section-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const id = document.getElementById("edit-sec-id").value;
-      const title = document.getElementById("edit-sec-title").value;
-      const order = parseInt(document.getElementById("edit-sec-order").value);
-      const selectedPages = Array.from(document.querySelectorAll('.edit-sec-target-pages:checked')).map(cb => cb.value);
-
-      try {
-        await updateDoc(doc(db, "sections", id), { title, order, pages: selectedPages });
-        closeEditModal();
-      } catch (err) {
-        alert("Feil ved oppdatering: " + err.message);
+      let itemsHtml = "";
+      if (sec.items && sec.items.length > 0) {
+        itemsHtml = `<div class="item-grid">` + sec.items.map((item, index) => {
+          // FIKSET: Radio må ikke falle tilbake på RSS-podcast
+          const itemType = item.type || (item.mediaUrl && item.mediaUrl.includes('.xml') ? 'podcast' : 'radio');
+          return `
+          <div class="item-card">
+            <div class="item-info">
+              ${item.coverUrl ? `<img src="${item.coverUrl}" class="item-thumbnail" alt="Cover">` : `<div class="item-thumbnail"></div>`}
+              <div style="overflow: hidden;">
+                <strong style="font-size: 0.85rem; display: flex; align-items: center; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                  ${item.title}
+                  <span class="type-badge">${itemType}</span>
+                </strong>
+                <div style="color: var(--text-muted); font-size: 0.75rem;">${item.sub || ''}</div>
+              </div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="deleteItem('${sec.id}', ${index})">Slett</button>
+          </div>
+        `}).join("") + `</div>`;
+      } else {
+        itemsHtml = `<div style="color: var(--text-muted); font-size: 0.8rem; padding: 0.5rem 0;">Ingen innholdselementer tilknyttet denne seksjonen enda.</div>`;
       }
+
+      const badgesHtml = pages.map(p => `<span class="tag-badge">${p}</span>`).join("");
+
+      secCard.innerHTML = `
+        <div class="section-header">
+          <div>
+            ${badgesHtml}
+            <strong style="margin-left: 0.5rem; font-size: 1.05rem;">${sec.title}</strong>
+            <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.5rem;">(Prioritet: ${sec.order})</span>
+          </div>
+          <div style="display: flex; gap: 0.4rem;">
+            <button class="btn btn-edit" onclick="openEditModal('${sec.id}')">Rediger</button>
+            <button class="btn btn-danger" onclick="deleteSection('${sec.id}')">Slett Seksjon</button>
+          </div>
+        </div>
+        ${itemsHtml}
+      `;
+      sectionsList.appendChild(secCard);
+    });
+  }
+
+  document.getElementById("filter-sections-input").addEventListener("input", renderSectionsUI);
+
+  // Section Creation
+  document.getElementById("add-section-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const title = document.getElementById("sec-title").value;
+    const order = parseInt(document.getElementById("sec-order").value);
+    const selectedPages = Array.from(document.querySelectorAll('.sec-target-pages:checked')).map(cb => cb.value);
+
+    if (selectedPages.length === 0) return alert("Velg minst én side hvor seksjonen skal vises.");
+
+    try {
+      await addDoc(collection(db, "sections"), { title, pages: selectedPages, order, items: [] });
+      document.getElementById("sec-title").value = '';
+    } catch (err) {
+      alert("Feil ved opprettelse: " + err.message);
+    }
+  });
+
+  // Content Creation (Single Item)
+  document.getElementById("add-item-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const sectionId = document.getElementById("item-section-select").value;
+    const statusMsg = document.getElementById("status-msg");
+
+    if (!sectionId) return alert("Velg en målseksjon først!");
+
+    statusMsg.innerText = "Lagrer innhold...";
+
+    try {
+      const contentType = document.getElementById("content-type-select").value;
+      const title = document.getElementById("item-title").value;
+      const sub = document.getElementById("item-sub").value;
+      const coverUrl = document.getElementById("item-cover").value;
+      const mediaUrl = document.getElementById("item-url").value;
+      const desc = document.getElementById("item-desc").value;
+
+      const sectionRef = doc(db, "sections", sectionId);
+      const docSnap = await getDoc(sectionRef);
+
+      if (docSnap.exists()) {
+        const currentItems = docSnap.data().items || [];
+        
+        const newItem = { 
+          type: contentType,
+          title, 
+          sub, 
+          coverUrl: coverUrl || "", 
+          mediaUrl: mediaUrl || "",
+          desc 
+        };
+        
+        await updateDoc(sectionRef, { items: [...currentItems, newItem] });
+
+        statusMsg.innerText = "Publisert!";
+        document.getElementById("add-item-form").reset();
+        document.getElementById("api-results").innerHTML = "";
+      }
+    } catch (err) {
+      statusMsg.innerText = "Feil ved lagring: " + err.message;
+    } finally {
+      setTimeout(() => statusMsg.innerText = "", 3000);
+    }
+  });
+
+  // Edit Modal logic
+  window.openEditModal = (secId) => {
+    const sec = rawSectionsData.find(s => s.id === secId);
+    if (!sec) return;
+
+    document.getElementById("edit-sec-id").value = sec.id;
+    document.getElementById("edit-sec-title").value = sec.title;
+    document.getElementById("edit-sec-order").value = sec.order;
+
+    const pages = Array.isArray(sec.pages) ? sec.pages : [sec.page || 'home'];
+    document.querySelectorAll('.edit-sec-target-pages').forEach(cb => {
+      cb.checked = pages.includes(cb.value);
     });
 
-    // Delete Operations
-    window.deleteSection = async (id) => {
-      if (confirm("Er du sikker på at du vil slette hele denne seksjonen?")) {
-        await deleteDoc(doc(db, "sections", id));
-      }
-    };
+    document.getElementById("edit-modal").classList.remove("hidden");
+  };
 
-    window.deleteItem = async (sectionId, itemIndex) => {
-      if (confirm("Vil du slette dette elementet?")) {
-        const sectionRef = doc(db, "sections", sectionId);
-        const docSnap = await getDoc(sectionRef);
+  window.closeEditModal = () => {
+    document.getElementById("edit-modal").classList.add("hidden");
+  };
 
-        if (docSnap.exists()) {
-          const currentItems = docSnap.data().items || [];
-          currentItems.splice(itemIndex, 1);
-          await updateDoc(sectionRef, { items: currentItems });
-        }
+  document.getElementById("edit-section-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("edit-sec-id").value;
+    const title = document.getElementById("edit-sec-title").value;
+    const order = parseInt(document.getElementById("edit-sec-order").value);
+    const selectedPages = Array.from(document.querySelectorAll('.edit-sec-target-pages:checked')).map(cb => cb.value);
+
+    try {
+      await updateDoc(doc(db, "sections", id), { title, order, pages: selectedPages });
+      closeEditModal();
+    } catch (err) {
+      alert("Feil ved oppdatering: " + err.message);
+    }
+  });
+
+  // Delete Operations
+  window.deleteSection = async (id) => {
+    if (confirm("Er du sikker på at du vil slette hele denne seksjonen?")) {
+      await deleteDoc(doc(db, "sections", id));
+    }
+  };
+
+  window.deleteItem = async (sectionId, itemIndex) => {
+    if (confirm("Vil du slette dette elementet?")) {
+      const sectionRef = doc(db, "sections", sectionId);
+      const docSnap = await getDoc(sectionRef);
+
+      if (docSnap.exists()) {
+        const currentItems = docSnap.data().items || [];
+        currentItems.splice(itemIndex, 1);
+        await updateDoc(sectionRef, { items: currentItems });
       }
-    };
-  </script>
+    }
+  };
+</script>
 </body>
 </html>
