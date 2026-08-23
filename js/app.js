@@ -1,29 +1,16 @@
 import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
-import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility, openDetailsPage } from "./ui.js";
-import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
-import { playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
+import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
+import { initAuth, setAuthMode, handleLogout } from "./auth.js";
+import { openDetailsView, playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-// Hjelpefunksjon for å unngå XSS og HTML-attributtfeil
-function escapeHtml(str) {
-  if (typeof str !== "string") return "";
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
 
 // Oppstart
 document.addEventListener("DOMContentLoaded", () => {
   initAuth();
   setupAudioListeners();
   setupEventListeners();
-  setupSearchListener();
   setupTouchDrag();
-  setupGlobalCardDelegation();
 });
 
 export function loadContentFromFirestore() {
@@ -52,33 +39,23 @@ export function loadContentFromFirestore() {
             const sub = item.sub || '';
             const rssUrl = item.rssUrl || item.rss || '';
             const manualCover = item.coverUrl || item.cover || item.image || '';
-            
-            // Sikrer HTTPS på lydlenker for å unngå mixed content-feil
-            let audioUrl = item.audioUrl || item.audio || '';
-            if (audioUrl.startsWith("http://")) audioUrl = audioUrl.replace("http://", "https://");
-
-            const isRadio = item.isRadio || pageTarget === "radio";
+            const audioUrl = item.audioUrl || item.audio || '';
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
-
-            // Bestem type dynamisk basert på data eller side
-            const contentType = item.type || (pageTarget === "radio" ? "radio" : pageTarget === "audiobooks" ? "audiobook" : "podcast");
 
             itemsHTML += `
               <div class="book-card" 
                    id="${cardId}"
-                   data-title="${escapeHtml(title)}" 
-                   data-sub="${escapeHtml(sub)}" 
-                   data-desc="${escapeHtml(item.desc || '')}" 
-                   data-cover="${escapeHtml(manualCover)}"
-                   data-rss="${escapeHtml(rssUrl)}"
-                   data-audio="${escapeHtml(audioUrl)}"
-                   data-isradio="${isRadio}"
-                   data-type="${contentType}">
+                   data-title="${title}" 
+                   data-sub="${sub}" 
+                   data-desc="${item.desc || ''}" 
+                   data-cover="${manualCover}"
+                   data-rss="${rssUrl}"
+                   data-audio="${audioUrl}">
                 <div class="book-cover" id="cover-${cardId}">
                   ${buildCoverMarkup(manualCover, title)}
                 </div>
-                <div class="book-title">${escapeHtml(title)}</div>
-                <div class="book-author">${escapeHtml(sub)}</div>
+                <div class="book-title">${title}</div>
+                <div class="book-author">${sub}</div>
               </div>
             `;
 
@@ -88,7 +65,7 @@ export function loadContentFromFirestore() {
           });
 
           sectionWrapper.innerHTML = `
-            <div class="section-header"><h3>${escapeHtml(sec.title || '')}</h3></div>
+            <div class="section-header"><h3>${sec.title}</h3></div>
             <div class="${containerClass}">${itemsHTML}</div>
           `;
 
@@ -96,6 +73,8 @@ export function loadContentFromFirestore() {
         }
       });
     });
+
+    bindCardClickEvents();
   };
 
   const cachedSections = localStorage.getItem("app_sections_cache");
@@ -115,15 +94,12 @@ export function loadContentFromFirestore() {
     });
     localStorage.setItem("app_sections_cache", JSON.stringify(sectionsData));
     renderSectionsData(sectionsData);
-  }, (err) => {
-    console.error("Feil ved Firestore sanntidshenting:", err);
   });
 }
 
 async function fetchRSSImageData(rssUrl, cardId, title) {
   try {
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
-    if (!res.ok) return;
     const data = await res.json();
     if (data.status === 'ok') {
       let imageUrl = data.feed?.image || (data.items?.[0]?.thumbnail || data.items?.[0]?.enclosure?.thumbnail || "");
@@ -169,19 +145,18 @@ async function executeAppSearch(term) {
   }
 
   resultsContainer.classList.add("active");
-  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeHtml(term)}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster...</p></div>`;
+  resultsContainer.innerHTML = `<h2>Søkeresultater for "${term}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster...</p></div>`;
 
   document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => sec.style.display = "none");
 
   try {
     const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`);
-    if (!res.ok) throw new Error("Nettverksfeil ved søk");
     const data = await res.json();
     const podcasts = data.results || [];
 
     let htmlContent = "";
     if (podcasts.length === 0) {
-      htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet på "${escapeHtml(term)}".</p>`;
+      htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet på "${term}".</p>`;
     } else {
       let gridHTML = "";
       podcasts.forEach((podcast, index) => {
@@ -194,24 +169,23 @@ async function executeAppSearch(term) {
         gridHTML += `
           <div class="book-card search-result-item" 
                id="${cardId}"
-               data-title="${escapeHtml(title)}" 
-               data-sub="${escapeHtml(sub)}" 
+               data-title="${title}" 
+               data-sub="${sub}" 
                data-desc="Hentet via Apple Podcast API" 
-               data-cover="${escapeHtml(cover)}"
-               data-rss="${escapeHtml(feedUrl)}"
-               data-audio=""
-               data-isradio="false"
-               data-type="podcast">
+               data-cover="${cover}"
+               data-rss="${feedUrl}"
+               data-audio="">
             <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
-            <div class="book-title">${escapeHtml(title)}</div>
-            <div class="book-author">${escapeHtml(sub)}</div>
+            <div class="book-title">${title}</div>
+            <div class="book-author">${sub}</div>
           </div>
         `;
       });
       htmlContent = `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${gridHTML}</div>`;
     }
 
-    resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeHtml(term)}"</h2><div class="dynamic-container">${htmlContent}</div>`;
+    resultsContainer.innerHTML = `<h2>Søkeresultater for "${term}"</h2><div class="dynamic-container">${htmlContent}</div>`;
+    bindSearchCardClickEvents();
   } catch (err) {
     console.error("Feil under søk:", err);
     resultsContainer.innerHTML = `<h2>Søk</h2><p style="padding:20px; color:red;">Kunne ikke utføre søk akkurat nå.</p>`;
@@ -224,31 +198,23 @@ function removeSearchResultsView() {
   document.querySelectorAll("main > section").forEach(sec => sec.style.display = "");
 }
 
-// Global event delegation for klikk på alle kort
-function setupGlobalCardDelegation() {
-  document.addEventListener("click", (e) => {
-    const card = e.target.closest(".book-card");
-    if (card) {
-      openDetailsPage({
-        id: card.id,
-        title: card.dataset.title,
-        subtitle: card.dataset.sub,
-        description: card.dataset.desc,
-        coverUrl: card.dataset.cover,
-        rssUrl: card.dataset.rss,
-        audioUrl: card.dataset.audio,
-        isRadio: card.dataset.isradio === "true",
-        type: card.dataset.type || "podcast"
-      });
-    }
+function bindSearchCardClickEvents() {
+  document.querySelectorAll(".search-result-item").forEach(card => {
+    card.onclick = () => openDetailsView({ ...card.dataset, rssUrl: card.dataset.rss, audioUrl: card.dataset.audio });
+  });
+}
+
+function bindCardClickEvents() {
+  document.querySelectorAll(".book-card:not(.search-result-item)").forEach(card => {
+    card.onclick = () => openDetailsView({ ...card.dataset, rssUrl: card.dataset.rss, audioUrl: card.dataset.audio });
   });
 }
 
 function setupEventListeners() {
   const el = id => document.getElementById(id);
 
-  if (el("go-to-login-btn")) el("go-to-login-btn").onclick = () => { setAuthMode(false); showView("auth-view"); };
-  if (el("go-to-register-btn")) el("go-to-register-btn").onclick = () => { setAuthMode(true); showView("auth-view"); };
+  if (el("goToLoginBtn")) el("goToLoginBtn").onclick = () => { setAuthMode(false); showView("auth-view"); };
+  if (el("goToRegisterBtn")) el("goToRegisterBtn").onclick = () => { setAuthMode(true); showView("auth-view"); };
   if (el("auth-back-btn")) el("auth-back-btn").onclick = () => showView("landing-view");
   if (el("toggle-auth-mode")) el("toggle-auth-mode").onclick = () => setAuthMode(!state.isSignUp);
   if (el("logout-btn")) el("logout-btn").onclick = handleLogout;
@@ -270,7 +236,11 @@ function setupEventListeners() {
       if (errorMsg) errorMsg.innerText = "";
 
       try {
-        await submitAuthForm(email, password);
+        if (state.isSignUp) {
+          await createUserWithEmailAndPassword(auth, email, password);
+        } else {
+          await signInWithEmailAndPassword(auth, email, password);
+        }
       } catch (err) {
         if (errorMsg) errorMsg.innerText = "Feil ved innlogging eller registrering.";
       }
@@ -293,21 +263,17 @@ function setupEventListeners() {
 
   if (el("start-play-btn")) {
     el("start-play-btn").onclick = () => {
-      if (!state.selectedItem) return;
-
-      const isRadio = Boolean(state.selectedItem.isRadio);
-      
-      if (isRadio) {
+      if (state.selectedItem.audioUrl && !state.selectedItem.rssUrl) {
         playSpecificEpisode(state.selectedItem, 0);
         return;
       }
-
       const cleanId = state.selectedItem.title ? state.selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_') : 'item';
-      const savedTime = state.userHistory?.[cleanId]?.currentTime || 0;
-
+      const savedTime = state.userHistory[cleanId]?.currentTime || 0;
       playSpecificEpisode({
-        ...state.selectedItem,
-        cover: state.selectedItem.coverUrl || state.selectedItem.cover
+        title: state.selectedItem.title,
+        audioUrl: state.selectedItem.audioUrl,
+        cover: state.selectedItem.cover,
+        sub: state.selectedItem.sub
       }, savedTime);
     };
   }
@@ -315,28 +281,12 @@ function setupEventListeners() {
   if (el("mini-play-btn")) el("mini-play-btn").onclick = (e) => { e.stopPropagation(); togglePlay(); };
   if (el("full-play-btn")) el("full-play-btn").onclick = () => togglePlay();
 
-  if (el("skip-back-btn")) {
-    el("skip-back-btn").onclick = () => { 
-      if (globalAudio.src && globalAudio.duration !== Infinity) {
-        globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); 
-      }
-    };
-  }
-  if (el("skip-forward-btn")) {
-    el("skip-forward-btn").onclick = () => { 
-      if (globalAudio.src && globalAudio.duration && globalAudio.duration !== Infinity) {
-        globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); 
-      }
-    };
-  }
+  if (el("skip-back-btn")) el("skip-back-btn").onclick = () => { if (globalAudio.src) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); };
+  if (el("skip-forward-btn")) el("skip-forward-btn").onclick = () => { if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
 
   if (el("open-full-player")) {
     el("open-full-player").onclick = () => {
-      const fullPlayer = el("fullscreen-player");
-      if (fullPlayer) {
-        fullPlayer.style.transform = "";
-        fullPlayer.classList.add("active");
-      }
+      el("fullscreen-player")?.classList.add("active");
       updateUrlHash("fullscreen-player");
       updateBottomNavVisibility();
     };
@@ -344,11 +294,7 @@ function setupEventListeners() {
 
   if (el("player-close-btn")) {
     el("player-close-btn").onclick = () => {
-      const fullPlayer = el("fullscreen-player");
-      if (fullPlayer) {
-        fullPlayer.classList.remove("active");
-        fullPlayer.style.transform = "";
-      }
+      el("fullscreen-player")?.classList.remove("active");
       const lastPage = localStorage.getItem("lastActivePage") || "home";
       switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
     };
@@ -364,8 +310,7 @@ function setupTouchDrag() {
   let isDragging = false;
 
   fullscreenPlayer.addEventListener("touchstart", (e) => {
-    if (e.target.closest("input") || e.target.closest("button") || e.target.closest(".close-btn")) return;
-    
+    if (e.target.closest("input") || e.target.closest("button")) return;
     startY = e.touches[0].clientY;
     currentY = startY;
     isDragging = true;
@@ -374,33 +319,25 @@ function setupTouchDrag() {
 
   fullscreenPlayer.addEventListener("touchmove", (e) => {
     if (!isDragging) return;
-    
     currentY = e.touches[0].clientY;
     const diffY = currentY - startY;
 
     if (diffY > 0) {
-      fullscreenPlayer.style.transform = `translate3d(0, ${diffY}px, 0)`;
+      fullscreenPlayer.style.transform = `translateY(${diffY}px)`;
     }
   }, { passive: true });
 
   fullscreenPlayer.addEventListener("touchend", () => {
     if (!isDragging) return;
     isDragging = false;
-
-    fullscreenPlayer.style.transition = "transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease";
+    fullscreenPlayer.style.transition = "";
 
     const diffY = currentY - startY;
-    
-    if (diffY > 120) {
+    if (diffY > 150) {
       fullscreenPlayer.classList.remove("active");
-      fullscreenPlayer.style.transform = "";
-      
       const lastPage = localStorage.getItem("lastActivePage") || "home";
-      if (typeof switchPage === "function") {
-        switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
-      }
-    } else {
-      fullscreenPlayer.style.transform = "";
+      switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
     }
+    fullscreenPlayer.style.transform = "";
   });
 }
