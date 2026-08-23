@@ -126,12 +126,16 @@
   display: flex;
   position: fixed;
   top: 0;
+  
+  /* LÅSER SPILLEREN I MIDTEN PÅ X-AKSEN UANSETT HVA */
   left: 0;
   right: 0;
-  margin: 0 auto; /* Sentrerer spilleren uten å bruke X-transformasjon */
+  margin-left: auto;
+  margin-right: auto;
   
+  /* BARE Y-AKSEN LOV Å ENDRE (Rett opp / rett ned) */
   --y-offset: 100vh;
-  transform: translateY(var(--y-offset)); /* Kun vertikal Y-bevegelse */
+  transform: translateY(var(--y-offset));
 
   width: 100%;
   max-width: 480px;
