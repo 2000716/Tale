@@ -12,7 +12,6 @@
   right: 0;
   margin: 0 auto;
   
-  /* Bruker translateY rent for kun vertikal bevegelse */
   transform: translateY(0px);
   
   width: calc(100% - 24px);
@@ -127,8 +126,8 @@
   right: 0;
   margin: 0 auto;
 
-  /* Startposisjon skjult nede */
-  transform: translateY(100vh);
+  /* Kombinerer standard skjult posisjon med dynamisk drag-offset via translateY */
+  transform: translateY(calc(100vh + var(--y-offset, 0px)));
 
   width: 100%;
   max-width: 480px;
@@ -163,9 +162,9 @@
               visibility 0.38s;
 }
 
-/* Aktiv storspiller glir opp til 0 på Y-aksen */
+/* Når storspilleren er aktiv, følger den KUN --y-offset mykt nedover */
 #fullscreen-player.active {
-  transform: translateY(0px);
+  transform: translateY(var(--y-offset, 0px));
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
