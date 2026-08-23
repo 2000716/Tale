@@ -20,6 +20,7 @@ export function updateMediaSession(item) {
       ]
     });
 
+    // Lyttere for låseskjerm-knapper
     try {
       navigator.mediaSession.setActionHandler('play', () => {
         globalAudio.play();
@@ -182,7 +183,7 @@ export function playSpecificEpisode(epData, startPosition = 0) {
     
   if (state.selectedItem.audioUrl) {
     globalAudio.src = state.selectedItem.audioUrl;
-    
+
     globalAudio.onloadedmetadata = () => {
       if (startPosition > 0) {
         globalAudio.currentTime = startPosition;
@@ -197,6 +198,7 @@ export function playSpecificEpisode(epData, startPosition = 0) {
       }
     };
 
+    // Oppdaterer låseskjermen/systemet på enheten
     updateMediaSession(state.selectedItem);
   } else {
     alert("Ingen gyldig lyd- eller radiostrøm tilgjengelig for dette elementet.");
@@ -228,6 +230,7 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   openFullscreenPlayer();
 }
 
+// Funksjoner for å åpne/lukke storspilleren mykt
 export function openFullscreenPlayer() {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer) return;
@@ -263,28 +266,34 @@ export function togglePlay() {
   }
 }
 
+// Robust oppsett for drag-to-dismiss (Fabel / Storytel stil) med støtte for touch og mus
 function setupDragToDismiss() {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer || fullPlayer.dataset.dragInitialized) return;
   
-  fullPlayer.dataset.dragInitialized = "true";
+  fullPlayer.dataset.dragInitialized = "true"; // Unngår doble event-listeners
 
   let startY = 0;
   let currentY = 0;
   let dragging = false;
 
   const onStart = (clientY, target) => {
-    if (target.closest('input[type="range"]') || target.closest('button')) return;
+    // Unngå å starte drag ved interaksjon med input/slider, knapper eller lukkeknapp
+    if (target.closest('input') || target.closest('button') || target.closest('.close-btn')) return;
+
     startY = clientY;
     currentY = clientY;
     dragging = true;
+    fullPlayer.style.transition = "none";
   };
 
   const onMove = (clientY) => {
     if (!dragging) return;
+
     currentY = clientY;
     const deltaY = currentY - startY;
 
+    // Kun tillat å dra nedover (deltaY > 0)
     if (deltaY > 0) {
       fullPlayer.classList.add('is-dragging');
       fullPlayer.style.setProperty('--y-offset', `${deltaY}px`);
@@ -298,14 +307,24 @@ function setupDragToDismiss() {
     const deltaY = currentY - startY;
     fullPlayer.classList.remove('is-dragging');
 
-    if (deltaY > 80) {
+    // Myk fjærende overgang tilbake eller bort
+    fullPlayer.style.transition = "transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease";
+
+    // Terskel på 100px for å lukke
+    if (deltaY > 100) {
       closeFullscreenPlayer();
     } else {
       fullPlayer.style.setProperty('--y-offset', '0px');
     }
-    
+
+    // Fjern globale muselyttere
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onEnd);
+
+    // Nullstill overgangsstil etter at animasjonen er ferdig
+    setTimeout(() => {
+      if (fullPlayer) fullPlayer.style.transition = "";
+    }, 300);
   };
 
   const onMouseMove = (e) => onMove(e.clientY);
@@ -329,6 +348,7 @@ export function setupAudioListeners() {
   const totalTimeSpan = document.getElementById("total-time");
   let saveTimer = null;
 
+  // Aktiver drag-to-dismiss
   setupDragToDismiss();
 
   globalAudio.ontimeupdate = () => {
@@ -338,6 +358,7 @@ export function setupAudioListeners() {
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(globalAudio.currentTime);
       if (totalTimeSpan) totalTimeSpan.innerText = formatTime(globalAudio.duration);
 
+      // Oppdaterer tidslinjen på låseskjermen fortløpende
       if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
         try {
           navigator.mediaSession.setPositionState({
@@ -346,7 +367,7 @@ export function setupAudioListeners() {
             position: globalAudio.currentTime
           });
         } catch (e) {
-          // Ignorer om duration er ugyldig under lasting
+          // Unngår kræsj om duration midlertidig er invalid
         }
       }
 
