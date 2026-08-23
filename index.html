@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <!-- Her er den oppdaterte linjen som stopper zoom: -->
+  <!-- Forhindrer feilaktig zoom på mobil -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#070b1e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -22,7 +22,6 @@
   <link rel="stylesheet" href="css/details.css" />
   <link rel="stylesheet" href="css/pages.css" />
   <link rel="stylesheet" href="css/player.css" />
-  <link rel="manifest" href="manifest.json">
 </head>
 <body>
   
@@ -61,10 +60,9 @@
   <!-- 3. HOVEDAPP -->
   <div id="app-view" class="view">
     
-    <!-- Toppstripe med integrert søkelinje og buet bunn -->
+    <!-- Toppstripe med integrert søkelinje -->
     <header class="top-bar">
       <div class="top-bar-main">
-        <!-- Logoen fungerer nå som Hjem-knapp -->
         <button id="nav-home-logo-btn" class="logo-btn" aria-label="Gå til Hjem">
           <div class="logo-container">
             <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787347860/copy_of_tale_edited_gvs2so.png" alt="Tale Logo" class="logo-img">
@@ -76,7 +74,6 @@
         </div>
       </div>
 
-      <!-- Søkedel under logo og profil -->
       <div class="search-container">
         <div class="search-input-wrapper">
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -84,14 +81,12 @@
         </div>
       </div>
 
-      <!-- Buedesign i underkant av header -->
       <div class="top-bar-curve"></div>
     </header>
 
     <!-- Innholdsområde -->
     <main>
       <section id="home" class="page active">
-        <!-- Seksjon for "Fortsett å lytte" galleri -->
         <div id="continue-listening-section" class="continue-section" style="display: none;">
           <h3>Fortsett å lytte</h3>
           <div id="continue-listening-container" class="horizontal-scroll-container"></div>
@@ -125,72 +120,63 @@
       </section>
     </main>
 
-<!-- INFORMASJONSSIDE OVERLAY (AVANSERT) -->
-<div id="details-page" class="modal">
-  <button id="details-close-btn" class="close-btn" aria-label="Lukk"><i class="fa-solid fa-xmark"></i></button>
-  
-  <div class="details-content">
-    
-    <!-- Hero / Header Elementer (Horisontal layout) -->
-    <div class="details-hero">
-      <div id="details-cover-container" class="details-cover-container"></div>
+    <!-- INFORMASJONSSIDE OVERLAY -->
+    <div id="details-page" class="modal">
+      <button id="details-close-btn" class="close-btn" aria-label="Lukk"><i class="fa-solid fa-xmark"></i></button>
       
-      <div class="details-header-info">
-        <div class="details-badges">
-          <span id="details-badge-type" class="badge-tag">Podkast</span>
+      <div class="details-content">
+        <div class="details-hero">
+          <div id="details-cover-container" class="details-cover-container"></div>
+          
+          <div class="details-header-info">
+            <div class="details-badges">
+              <span id="details-badge-type" class="badge-tag">Podkast</span>
+            </div>
+            <h2 id="details-title">Tittel</h2>
+            <p id="details-sub" class="details-sub">Kategori / Utgiver</p>
+          </div>
         </div>
-        <h2 id="details-title">Tittel</h2>
-        <p id="details-sub" class="details-sub">Kategori / Utgiver</p>
+
+        <div class="details-action-bar">
+          <button id="start-play-btn" class="btn-primary">
+            <i class="fa-solid fa-play"></i> <span>Spill av</span>
+          </button>
+          
+          <div class="secondary-actions">
+            <button id="details-like-btn" class="btn-action-icon" title="Favoritt">
+              <i class="fa-regular fa-heart"></i>
+            </button>
+            <button id="details-download-btn" class="btn-action-icon" title="Last ned for offline lytting">
+              <i class="fa-solid fa-arrow-down-to-line"></i>
+            </button>
+            <button id="details-share-btn" class="btn-action-icon" title="Del">
+              <i class="fa-solid fa-share-nodes"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="details-body">
+          <div class="details-desc-box" id="descBox">
+            <h3>Om innholdet</h3>
+            <p id="details-desc" class="details-desc">Beskrivelse laster inn...</p>
+            <button class="details-read-more-btn" id="readMoreBtn">Se mer</button>
+          </div>
+        </div>
+
+        <div class="episode-list-container">
+          <div class="section-title-wrapper">
+            <h3 id="details-badge-episodes">0 episoder</h3>
+            <span id="episode-count-text" class="meta-small"></span>
+          </div>
+          <div id="episode-list"></div>
+        </div>
+
+        <div class="recommendations-container">
+          <h3></h3>
+          <div id="recommendations-list" class="horizontal-scroll"></div>
+        </div>
       </div>
     </div>
-
-    <!-- Handlingsknapper (Action Bar - Kortere og på venstre side) -->
-    <div class="details-action-bar">
-      <button id="start-play-btn" class="btn-primary">
-        <i class="fa-solid fa-play"></i> <span>Spill av</span>
-      </button>
-      
-      <div class="secondary-actions">
-        <button id="details-like-btn" class="btn-action-icon" title="Favoritt">
-          <i class="fa-regular fa-heart"></i>
-        </button>
-        <button id="details-download-btn" class="btn-action-icon" title="Last ned for offline lytting">
-          <i class="fa-solid fa-arrow-down-to-line"></i>
-        </button>
-        <button id="details-share-btn" class="btn-action-icon" title="Del">
-          <i class="fa-solid fa-share-nodes"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Strukturert Beskrivelse & Metadata i Boks med "Se mer" -->
-    <div class="details-body">
-      <div class="details-desc-box" id="descBox">
-        <h3>Om innholdet</h3>
-        <p id="details-desc" class="details-desc">Beskrivelse laster inn...</p>
-        <button class="details-read-more-btn" id="readMoreBtn" onclick="toggleReadMore()">Se mer</button>
-      </div>
-    </div>
-
-    <!-- Episodeliste (Med antall/episoder-tekst øverst til venstre) -->
-    <div class="episode-list-container">
-      <div class="section-title-wrapper">
-        <h3 id="details-badge-episodes">0 episoder</h3>
-        <span id="episode-count-text" class="meta-small"></span>
-      </div>
-      <div id="episode-list"></div>
-    </div>
-
-    <!-- Anbefalinger / Lignende innhold -->
-    <div class="recommendations-container">
-      <h3></h3>
-      <div id="recommendations-list" class="horizontal-scroll">
-        <!-- Fylles dynamisk fra JS -->
-      </div>
-    </div>
-
-  </div>
-</div>
 
     <!-- FULLSKJERM SPILLER -->
     <div id="fullscreen-player" class="modal">
@@ -228,31 +214,26 @@
       </div>
     </div>
 
-<!-- BUNNMENY (Med PNG-bilder) -->
-<nav class="bottom-bar">
-  
-  <!-- Lydbøker -->
-  <button class="nav-btn active" data-target="audiobooks">
-    <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787433160/sound-waves_h7acze.png" alt="Lydbøker" class="nav-icon-png" />
-    <span class="nav-text">Lydbøker</span>
-  </button>
+    <!-- BUNNMENY -->
+    <nav class="bottom-bar">
+      <button class="nav-btn active" data-target="audiobooks">
+        <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787433160/sound-waves_h7acze.png" alt="Lydbøker" class="nav-icon-png" />
+        <span class="nav-text">Lydbøker</span>
+      </button>
 
-  <!-- Podkaster -->
-  <button class="nav-btn" data-target="podcasts">
-    <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787433160/microphone_lygzod.png" alt="Podkaster" class="nav-icon-png" />
-    <span class="nav-text">Podkaster</span>
-  </button>
+      <button class="nav-btn" data-target="podcasts">
+        <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787433160/microphone_lygzod.png" alt="Podkaster" class="nav-icon-png" />
+        <span class="nav-text">Podkaster</span>
+      </button>
 
-  <!-- Radio -->
-  <button class="nav-btn" data-target="radio">
-    <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787433160/antenna_j01lem.png" alt="Radio" class="nav-icon-png" />
-    <span class="nav-text">Radio</span>
-  </button>
-
-</nav>
+      <button class="nav-btn" data-target="radio">
+        <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787433160/antenna_j01lem.png" alt="Radio" class="nav-icon-png" />
+        <span class="nav-text">Radio</span>
+      </button>
+    </nav>
 
   </div>
 
- <script type="module" src="./js/app.js"></script>
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>
