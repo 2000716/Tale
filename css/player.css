@@ -120,7 +120,7 @@
 
 
 /* ==========================================
-   STORSPILLER / FULLSKJERM-SPILLER
+   STORSPILLER / FULLSKJERM-SPILLER (Fabel/Storytel)
    ========================================== */
 #fullscreen-player {
   display: flex;
@@ -129,7 +129,7 @@
   left: 50%;
   
   --y-offset: 100%;
-  /* -50% X-akser er LÅST permanent her, så JS endrer KUN Y-verdi */
+  /* -50% X er låst permanent her, slik at JS kun oppdaterer vertikal Y-offset */
   transform: translate3d(-50%, var(--y-offset), 0);
 
   width: 100%;
