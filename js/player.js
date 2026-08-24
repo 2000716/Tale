@@ -22,7 +22,7 @@ let targetTime = null;
 
 function updateSleepDisplay() {
   const sleepLabel = document.getElementById("sleep-label");
-  if (!sleepLabel || sleepIndex === 0) return;
+  if (!sleepLabel || sleepIndex === 0 || !targetTime) return;
 
   const remainingMs = targetTime - Date.now();
   if (remainingMs <= 0) {
@@ -37,7 +37,11 @@ function updateSleepDisplay() {
 function clearSleepTimer() {
   clearTimeout(sleepTimeout);
   clearInterval(sleepInterval);
+  sleepTimeout = null;
+  sleepInterval = null;
+  targetTime = null;
   sleepIndex = 0;
+  
   const sleepLabel = document.getElementById("sleep-label");
   const sleepBtn = document.getElementById("sleep-btn");
   if (sleepLabel) sleepLabel.innerText = "Av";
@@ -72,14 +76,13 @@ export function setupExtraPlayerControls() {
       sleepIndex = (sleepIndex + 1) % sleepOptions.length;
       const option = sleepOptions[sleepIndex];
 
-      clearTimeout(sleepTimeout);
-      clearInterval(sleepInterval);
-
       if (option.minutes === 0) {
-        if (sleepLabel) sleepLabel.innerText = "Av";
-        sleepBtn.classList.remove("active");
+        clearSleepTimer();
         return;
       }
+
+      clearTimeout(sleepTimeout);
+      clearInterval(sleepInterval);
 
       sleepBtn.classList.add("active");
       const durationMs = option.minutes * 60 * 1000;
@@ -142,6 +145,7 @@ export function updateMediaSession(item) {
 }
 
 export async function openDetailsView(item) {
+  if (!item) return;
   state.selectedItem = item;
   localStorage.setItem("lastSelectedItem", JSON.stringify(state.selectedItem));
 
@@ -154,8 +158,8 @@ export async function openDetailsView(item) {
   if (descBox) descBox.classList.remove('expanded');
   if (readMoreBtn) readMoreBtn.textContent = 'Se mer';
 
-  if (dTitle) dTitle.innerText = state.selectedItem.title;
-  if (dSub) dSub.innerText = state.selectedItem.sub;
+  if (dTitle) dTitle.innerText = state.selectedItem.title || "";
+  if (dSub) dSub.innerText = state.selectedItem.sub || "";
   if (dDesc) dDesc.innerHTML = state.selectedItem.desc || "Laster inn...";
     
   const detailsCoverContainer = document.getElementById("details-cover-container");
@@ -248,7 +252,7 @@ export async function openDetailsView(item) {
                 sub: state.selectedItem.sub
               };
               const cleanId = ep.title.replace(/[^a-zA-Z0-9-_]/g, '_');
-              const savedTime = state.userHistory[cleanId]?.currentTime || 0;
+              const savedTime = state.userHistory?.[cleanId]?.currentTime || 0;
               playSpecificEpisode(epData, savedTime);
             };
 
@@ -270,6 +274,8 @@ export async function openDetailsView(item) {
 }
 
 export function playSpecificEpisode(epData, startPosition = 0) {
+  if (!state.selectedItem) state.selectedItem = {};
+
   const totalTimeSpan = document.getElementById("total-time");
   state.selectedItem.title = epData.title || state.selectedItem.title;
   state.selectedItem.audioUrl = epData.audioUrl || state.selectedItem.audioUrl;
@@ -280,6 +286,9 @@ export function playSpecificEpisode(epData, startPosition = 0) {
     globalAudio.src = state.selectedItem.audioUrl;
 
     globalAudio.onloadedmetadata = () => {
+      // Re-apply valgt hastighet når nytt spor lastes inn
+      globalAudio.playbackRate = speeds[currentSpeedIndex];
+
       if (startPosition > 0) {
         globalAudio.currentTime = startPosition;
       }
@@ -353,7 +362,7 @@ export function togglePlay() {
     globalAudio.pause();
     updatePlayIcons(false);
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "paused";
-    if (state.selectedItem.title) {
+    if (state.selectedItem?.title) {
       saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
     }
   }
@@ -454,7 +463,7 @@ export function setupAudioListeners() {
         }
       }
 
-      if (!saveTimer && state.selectedItem.title) {
+      if (!saveTimer && state.selectedItem?.title) {
         saveTimer = setTimeout(() => {
           saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
           saveTimer = null;
@@ -470,7 +479,7 @@ export function setupAudioListeners() {
     if (progressBar) progressBar.value = 0;
     if (currentTimeSpan) currentTimeSpan.innerText = "0:00";
 
-    if (state.selectedItem.title) {
+    if (state.selectedItem?.title) {
       const itemToOpen = { ...state.selectedItem };
       await removeFromFirestoreHistory(state.selectedItem.title);
       
@@ -494,7 +503,7 @@ export function setupAudioListeners() {
     progressBar.onchange = () => {
       if (globalAudio.duration) {
         globalAudio.currentTime = (progressBar.value / 100) * globalAudio.duration;
-        if (state.selectedItem.title) {
+        if (state.selectedItem?.title) {
           saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
         }
       }
