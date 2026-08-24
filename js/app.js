@@ -283,8 +283,9 @@ function setupEventListeners() {
   if (el("mini-play-btn")) el("mini-play-btn").onclick = (e) => { e.stopPropagation(); togglePlay(); };
   if (el("full-play-btn")) el("full-play-btn").onclick = () => togglePlay();
 
-  if (el("skip-back-btn")) el("skip-back-btn").onclick = { if (globalAudio.src) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); };
-  if (el("skip-forward-btn")) el("skip-forward-btn").onclick = { if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
+  // Fikset spoling:
+  if (el("skip-back-btn")) el("skip-back-btn").onclick = () => { if (globalAudio.src) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); };
+  if (el("skip-forward-btn")) el("skip-forward-btn").onclick = () => { if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
 
   if (el("open-full-player")) {
     el("open-full-player").onclick = () => {
