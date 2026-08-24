@@ -3,7 +3,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "http
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout } from "./auth.js";
-import { openDetailsView, playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
+import { openDetailsView, playSpecificEpisode, togglePlay, setupAudioListeners, openFullscreenPlayer, closeFullscreenPlayer } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Oppstart
@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupAudioListeners();
   setupEventListeners();
   setupSearchListener();
-  loadContentFromFirestore(); // Korrigert: Henter innhold ved oppstart
+  loadContentFromFirestore();
 });
 
 export function loadContentFromFirestore() {
@@ -289,17 +289,13 @@ function setupEventListeners() {
 
   if (el("open-full-player")) {
     el("open-full-player").onclick = () => {
-      el("fullscreen-player")?.classList.add("active");
-      updateUrlHash("fullscreen-player");
-      updateBottomNavVisibility();
+      openFullscreenPlayer(); // Bruker nå standardfunksjonen fra player.js
     };
   }
 
   if (el("player-close-btn")) {
     el("player-close-btn").onclick = () => {
-      el("fullscreen-player")?.classList.remove("active");
-      const lastPage = localStorage.getItem("lastActivePage") || "home";
-      switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
+      closeFullscreenPlayer(); // Bruker nå standardfunksjonen fra player.js
     };
   }
 }
