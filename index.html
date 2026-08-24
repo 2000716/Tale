@@ -178,27 +178,42 @@
       </div>
     </div>
 
-    <!-- FULLSKJERM SPILLER -->
-    <div id="fullscreen-player" class="modal">
-      <div class="drag-handle"></div>
-      <div class="player-full-content">
-        <div id="full-cover-container"></div>
-        <h2 id="full-title">Tittel</h2>
-        <p id="full-sub">Undertittel</p>
+<!-- FULLSKJERM SPILLER -->
+<div id="fullscreen-player" class="modal">
+  <div class="drag-handle"></div>
+  <div class="player-full-content">
+    <div id="full-cover-container"></div>
+    <h2 id="full-title">Tittel</h2>
+    <p id="full-sub">Undertittel</p>
 
-        <div class="progress-container">
-          <span id="current-time">0:00</span>
-          <input type="range" id="progress-bar" value="0" min="0" max="100">
-          <span id="total-time">0:00</span>
-        </div>
-
-        <div class="full-controls">
-          <button id="skip-back-btn" class="skip-btn" title="-15 sekunder"><i class="fa-solid fa-rotate-left"></i> 15s</button>
-          <button id="full-play-btn" class="main-play-btn"><i class="fa-solid fa-play"></i></button>
-          <button id="skip-forward-btn" class="skip-btn" title="+15 sekunder">15s <i class="fa-solid fa-rotate-right"></i></button>
-        </div>
-      </div>
+    <div class="progress-container">
+      <span id="current-time">0:00</span>
+      <input type="range" id="progress-bar" value="0" min="0" max="100">
+      <span id="total-time">0:00</span>
     </div>
+
+    <div class="full-controls">
+      <button id="skip-back-btn" class="skip-btn" title="-15 sekunder"><i class="fa-solid fa-rotate-left"></i> 15s</button>
+      <button id="full-play-btn" class="main-play-btn"><i class="fa-solid fa-play"></i></button>
+      <button id="skip-forward-btn" class="skip-btn" title="+15 sekunder">15s <i class="fa-solid fa-rotate-right"></i></button>
+    </div>
+
+<!-- EKSTRA-KONTROLLER NEDERST I SPILLEREN -->
+<div class="extra-controls">
+  <!-- Hastighetsknapp med PNG -->
+  <button id="speed-btn" class="extra-btn" title="Avspillingshastighet">
+    <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787433160/speed_icon.png" alt="Hastighet" class="nav-icon-png" />
+    <span id="speed-label">1x</span>
+  </button>
+
+  <!-- Sleep-timer knapp med PNG -->
+  <button id="sleep-btn" class="extra-btn" title="Søvntimer">
+    <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787608573/copy_of_night_lijrw7.png" alt="Søvntimer" class="nav-icon-png" />
+    <span id="sleep-label">Av</span>
+  </button>
+</div>
+  </div>
+</div>
 
     <!-- MINI-SPILLERSTRIPE -->
     <div class="player hidden" id="audio-player-bar">
