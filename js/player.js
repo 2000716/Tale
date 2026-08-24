@@ -2,6 +2,102 @@ import { state, globalAudio } from "./state.js";
 import { buildCoverMarkup, updateUrlHash, updateBottomNavVisibility, formatTime, updatePlayIcons, switchPage } from "./ui.js";
 import { saveProgressToFirestore, removeFromFirestoreHistory, updateDetailPlayButtonState } from "./history.js";
 
+// --- GLOBAL TILSTAND FOR EXTRA CONTROLS ---
+const speeds = [1, 1.25, 1.5, 1.75, 2, 0.8];
+let currentSpeedIndex = 0;
+
+const sleepOptions = [
+  { label: "Av", minutes: 0 },
+  { label: "15 min", minutes: 15 },
+  { label: "30 min", minutes: 30 },
+  { label: "45 min", minutes: 45 },
+  { label: "1 time", minutes: 60 },
+  { label: "2 timer", minutes: 120 }
+];
+
+let sleepIndex = 0;
+let sleepTimeout = null;
+let sleepInterval = null;
+let targetTime = null;
+
+function updateSleepDisplay() {
+  const sleepLabel = document.getElementById("sleep-label");
+  if (!sleepLabel || sleepIndex === 0) return;
+
+  const remainingMs = targetTime - Date.now();
+  if (remainingMs <= 0) {
+    clearInterval(sleepInterval);
+    return;
+  }
+
+  const remainingMins = Math.ceil(remainingMs / 60000);
+  sleepLabel.innerText = `${remainingMins}m`;
+}
+
+function clearSleepTimer() {
+  clearTimeout(sleepTimeout);
+  clearInterval(sleepInterval);
+  sleepIndex = 0;
+  const sleepLabel = document.getElementById("sleep-label");
+  const sleepBtn = document.getElementById("sleep-btn");
+  if (sleepLabel) sleepLabel.innerText = "Av";
+  if (sleepBtn) sleepBtn.classList.remove("active");
+}
+
+export function setupExtraPlayerControls() {
+  const speedBtn = document.getElementById("speed-btn");
+  const speedLabel = document.getElementById("speed-label");
+  const sleepBtn = document.getElementById("sleep-btn");
+  const sleepLabel = document.getElementById("sleep-label");
+
+  // 1. Hastighetskontroll
+  if (speedBtn) {
+    speedBtn.onclick = () => {
+      currentSpeedIndex = (currentSpeedIndex + 1) % speeds.length;
+      const newSpeed = speeds[currentSpeedIndex];
+      globalAudio.playbackRate = newSpeed;
+
+      if (speedLabel) speedLabel.innerText = `${newSpeed}x`;
+      if (newSpeed !== 1) {
+        speedBtn.classList.add("active");
+      } else {
+        speedBtn.classList.remove("active");
+      }
+    };
+  }
+
+  // 2. Sleep-timer (Søvntimer)
+  if (sleepBtn) {
+    sleepBtn.onclick = () => {
+      sleepIndex = (sleepIndex + 1) % sleepOptions.length;
+      const option = sleepOptions[sleepIndex];
+
+      clearTimeout(sleepTimeout);
+      clearInterval(sleepInterval);
+
+      if (option.minutes === 0) {
+        if (sleepLabel) sleepLabel.innerText = "Av";
+        sleepBtn.classList.remove("active");
+        return;
+      }
+
+      sleepBtn.classList.add("active");
+      const durationMs = option.minutes * 60 * 1000;
+      targetTime = Date.now() + durationMs;
+
+      sleepTimeout = setTimeout(() => {
+        globalAudio.pause();
+        updatePlayIcons(false);
+        if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+        clearSleepTimer();
+      }, durationMs);
+
+      updateSleepDisplay();
+      sleepInterval = setInterval(updateSleepDisplay, 1000);
+    };
+  }
+}
+
 export function updateMediaSession(item) {
   if ('mediaSession' in navigator) {
     const coverUrl = item.cover || 'https://via.placeholder.com/512';
@@ -20,7 +116,6 @@ export function updateMediaSession(item) {
       ]
     });
 
-    // Lyttere for låseskjerm-knapper
     try {
       navigator.mediaSession.setActionHandler('play', () => {
         globalAudio.play();
@@ -198,7 +293,6 @@ export function playSpecificEpisode(epData, startPosition = 0) {
       }
     };
 
-    // Oppdaterer låseskjermen/systemet på enheten
     updateMediaSession(state.selectedItem);
   } else {
     alert("Ingen gyldig lyd- eller radiostrøm tilgjengelig for dette elementet.");
@@ -230,7 +324,6 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   openFullscreenPlayer();
 }
 
-// Funksjoner for å åpne/lukke storspilleren mykt
 export function openFullscreenPlayer() {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer) return;
@@ -266,19 +359,17 @@ export function togglePlay() {
   }
 }
 
-// Robust oppsett for drag-to-dismiss (Fabel / Storytel stil) med støtte for touch og mus
 function setupDragToDismiss() {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer || fullPlayer.dataset.dragInitialized) return;
   
-  fullPlayer.dataset.dragInitialized = "true"; // Unngår doble event-listeners
+  fullPlayer.dataset.dragInitialized = "true";
 
   let startY = 0;
   let currentY = 0;
   let dragging = false;
 
   const onStart = (clientY, target) => {
-    // Unngå å starte drag ved interaksjon med input/slider, knapper eller lukkeknapp
     if (target.closest('input') || target.closest('button') || target.closest('.close-btn')) return;
 
     startY = clientY;
@@ -293,7 +384,6 @@ function setupDragToDismiss() {
     currentY = clientY;
     const deltaY = currentY - startY;
 
-    // Kun tillat å dra nedover (deltaY > 0)
     if (deltaY > 0) {
       fullPlayer.classList.add('is-dragging');
       fullPlayer.style.setProperty('--y-offset', `${deltaY}px`);
@@ -307,21 +397,17 @@ function setupDragToDismiss() {
     const deltaY = currentY - startY;
     fullPlayer.classList.remove('is-dragging');
 
-    // Myk fjærende overgang tilbake eller bort
     fullPlayer.style.transition = "transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease";
 
-    // Terskel på 100px for å lukke
     if (deltaY > 100) {
       closeFullscreenPlayer();
     } else {
       fullPlayer.style.setProperty('--y-offset', '0px');
     }
 
-    // Fjern globale muselyttere
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onEnd);
 
-    // Nullstill overgangsstil etter at animasjonen er ferdig
     setTimeout(() => {
       if (fullPlayer) fullPlayer.style.transition = "";
     }, 300);
@@ -329,12 +415,10 @@ function setupDragToDismiss() {
 
   const onMouseMove = (e) => onMove(e.clientY);
 
-  // Touch Events (Mobil)
   fullPlayer.addEventListener('touchstart', (e) => onStart(e.touches[0].clientY, e.target), { passive: true });
   fullPlayer.addEventListener('touchmove', (e) => onMove(e.touches[0].clientY), { passive: true });
   fullPlayer.addEventListener('touchend', onEnd);
 
-  // Mouse Events (Desktop)
   fullPlayer.addEventListener('mousedown', (e) => {
     onStart(e.clientY, e.target);
     window.addEventListener('mousemove', onMouseMove);
@@ -348,8 +432,8 @@ export function setupAudioListeners() {
   const totalTimeSpan = document.getElementById("total-time");
   let saveTimer = null;
 
-  // Aktiver drag-to-dismiss
   setupDragToDismiss();
+  setupExtraPlayerControls();
 
   globalAudio.ontimeupdate = () => {
     if (!state.isUserSeeking && globalAudio.duration) {
@@ -358,7 +442,6 @@ export function setupAudioListeners() {
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(globalAudio.currentTime);
       if (totalTimeSpan) totalTimeSpan.innerText = formatTime(globalAudio.duration);
 
-      // Oppdaterer tidslinjen på låseskjermen fortløpende
       if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
         try {
           navigator.mediaSession.setPositionState({
@@ -367,7 +450,7 @@ export function setupAudioListeners() {
             position: globalAudio.currentTime
           });
         } catch (e) {
-          // Unngår kræsj om duration midlertidig er invalid
+          // Ignorer midlertidig ugyldig duration
         }
       }
 
@@ -382,6 +465,7 @@ export function setupAudioListeners() {
 
   globalAudio.onended = async () => {
     updatePlayIcons(false);
+    clearSleepTimer();
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "none";
     if (progressBar) progressBar.value = 0;
     if (currentTimeSpan) currentTimeSpan.innerText = "0:00";
