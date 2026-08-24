@@ -306,3 +306,46 @@ body:has(#fullscreen-player.active) .bottom-bar {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+/* ==========================================
+   EKSTRA-KONTROLLER (HASTIGHET OG SLEEP TIMER)
+   ========================================== */
+.extra-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  width: 100%;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.extra-btn {
+  background: transparent;
+  border: 1.5px solid #AEC2F7;
+  color: #AEC2F7;
+  padding: 0.5rem 1.1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+/* Farger om PNG-ikoner til den lysblå fargen (#AEC2F7) */
+.extra-btn img,
+.extra-btn .nav-icon-png {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  /* Dette filteret gjør PNG-ikonet helt identisk i fargen #AEC2F7 */
+  filter: invert(80%) sepia(21%) saturate(972%) hue-rotate(187deg) brightness(101%) contrast(94%);
+}
+
+/* Hover- og aktiv-effekt som matcher resten av spilleren */
+.extra-btn:hover,
+.extra-btn.active {
+  background-color: rgba(174, 194, 247, 0.15);
+  box-shadow: 0 0 10px rgba(174, 194, 247, 0.2);
+}
