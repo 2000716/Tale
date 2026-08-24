@@ -1,4 +1,5 @@
-import { db } from "./firebase-config.js";
+import { db, auth } from "./firebase-config.js";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout } from "./auth.js";
@@ -10,7 +11,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initAuth();
   setupAudioListeners();
   setupEventListeners();
-  setupTouchDrag();
 });
 
 export function loadContentFromFirestore() {
@@ -263,17 +263,17 @@ function setupEventListeners() {
 
   if (el("start-play-btn")) {
     el("start-play-btn").onclick = () => {
-      if (state.selectedItem.audioUrl && !state.selectedItem.rssUrl) {
+      if (state.selectedItem?.audioUrl && !state.selectedItem?.rssUrl) {
         playSpecificEpisode(state.selectedItem, 0);
         return;
       }
-      const cleanId = state.selectedItem.title ? state.selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_') : 'item';
-      const savedTime = state.userHistory[cleanId]?.currentTime || 0;
+      const cleanId = state.selectedItem?.title ? state.selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_') : 'item';
+      const savedTime = state.userHistory?.[cleanId]?.currentTime || 0;
       playSpecificEpisode({
-        title: state.selectedItem.title,
-        audioUrl: state.selectedItem.audioUrl,
-        cover: state.selectedItem.cover,
-        sub: state.selectedItem.sub
+        title: state.selectedItem?.title,
+        audioUrl: state.selectedItem?.audioUrl,
+        cover: state.selectedItem?.cover,
+        sub: state.selectedItem?.sub
       }, savedTime);
     };
   }
@@ -299,45 +299,4 @@ function setupEventListeners() {
       switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
     };
   }
-}
-
-function setupTouchDrag() {
-  const fullscreenPlayer = document.getElementById("fullscreen-player");
-  if (!fullscreenPlayer) return;
-
-  let startY = 0;
-  let currentY = 0;
-  let isDragging = false;
-
-  fullscreenPlayer.addEventListener("touchstart", (e) => {
-    if (e.target.closest("input") || e.target.closest("button")) return;
-    startY = e.touches[0].clientY;
-    currentY = startY;
-    isDragging = true;
-    fullscreenPlayer.style.transition = "none";
-  }, { passive: true });
-
-  fullscreenPlayer.addEventListener("touchmove", (e) => {
-    if (!isDragging) return;
-    currentY = e.touches[0].clientY;
-    const diffY = currentY - startY;
-
-    if (diffY > 0) {
-      fullscreenPlayer.style.transform = `translateY(${diffY}px)`;
-    }
-  }, { passive: true });
-
-  fullscreenPlayer.addEventListener("touchend", () => {
-    if (!isDragging) return;
-    isDragging = false;
-    fullscreenPlayer.style.transition = "";
-
-    const diffY = currentY - startY;
-    if (diffY > 150) {
-      fullscreenPlayer.classList.remove("active");
-      const lastPage = localStorage.getItem("lastActivePage") || "home";
-      switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
-    }
-    fullscreenPlayer.style.transform = "";
-  });
 }
