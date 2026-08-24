@@ -126,7 +126,6 @@
   right: 0;
   margin: 0 auto;
 
-  /* Kombinerer standard skjult posisjon med dynamisk drag-offset via translateY */
   transform: translateY(calc(100vh + var(--y-offset, 0px)));
 
   width: 100%;
@@ -162,7 +161,6 @@
               visibility 0.38s;
 }
 
-/* Når storspilleren er aktiv, følger den KUN --y-offset mykt nedover */
 #fullscreen-player.active {
   transform: translateY(var(--y-offset, 0px));
   opacity: 1;
@@ -306,13 +304,15 @@ body:has(#fullscreen-player.active) .bottom-bar {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
 /* ==========================================
-   EKSTRA-KONTROLLER (HASTIGHET OG SLEEP TIMER)
+   EKSTRA-KONTROLLER (HASTIGHET, SLEEP & MER)
    ========================================== */
 .extra-controls {
   display: flex;
   justify-content: center;
-  gap: 1.5rem;
+  align-items: center;
+  gap: 1.2rem;
   width: 100%;
   margin-top: 2rem;
   padding-top: 1rem;
@@ -322,30 +322,237 @@ body:has(#fullscreen-player.active) .bottom-bar {
   background: transparent;
   border: 1.5px solid #AEC2F7;
   color: #AEC2F7;
-  padding: 0.5rem 1.1rem;
+  padding: 0.5rem 1rem;
   border-radius: 20px;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   transition: all 0.2s ease;
+  min-width: 65px;
 }
 
-/* Farger om PNG-ikoner til den lysblå fargen (#AEC2F7) */
+/* Tekstknapp for Speed (Uten ikon) */
+.text-only-btn {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
 .extra-btn img,
 .extra-btn .nav-icon-png {
   width: 18px;
   height: 18px;
   object-fit: contain;
-  /* Dette filteret gjør PNG-ikonet helt identisk i fargen #AEC2F7 */
   filter: invert(80%) sepia(21%) saturate(972%) hue-rotate(187deg) brightness(101%) contrast(94%);
 }
 
-/* Hover- og aktiv-effekt som matcher resten av spilleren */
 .extra-btn:hover,
 .extra-btn.active {
   background-color: rgba(174, 194, 247, 0.15);
   box-shadow: 0 0 10px rgba(174, 194, 247, 0.2);
+}
+
+/* ==========================================
+   MODAL OG HJUL FOR SLEEP TIMER
+   ========================================== */
+.sleep-modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+
+.sleep-modal.active { 
+  display: flex; 
+}
+
+.sleep-modal-content {
+  background: #121936;
+  border: 1px solid rgba(174, 194, 247, 0.2);
+  border-radius: 20px;
+  width: 280px;
+  padding: 20px;
+  color: #ffffff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  text-align: center;
+}
+
+.sleep-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #ffffff;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.wheel-container {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  margin: 15px 0;
+}
+
+.wheel-highlight {
+  position: absolute;
+  top: 50px; left: 0; right: 0;
+  height: 50px;
+  background: rgba(174, 194, 247, 0.12);
+  border-top: 1px solid rgba(174, 194, 247, 0.3);
+  border-bottom: 1px solid rgba(174, 194, 247, 0.3);
+  pointer-events: none;
+  border-radius: 10px;
+}
+
+.wheel-scroll {
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  padding: 50px 0;
+  scrollbar-width: none;
+}
+
+.wheel-scroll::-webkit-scrollbar { 
+  display: none; 
+}
+
+.wheel-item {
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  font-size: 1.1rem;
+  scroll-snap-align: center;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.wheel-item.selected {
+  color: #AEC2F7;
+  font-weight: 700;
+  transform: scale(1.15);
+}
+
+.confirm-sleep-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: #AEC2F7;
+  color: #070b1e;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.confirm-sleep-btn:active {
+  transform: scale(0.97);
+}
+
+/* ==========================================
+   HALVSIDE-PANEL (BOTTOM SHEET) FOR 3-PRIKKER
+   ========================================== */
+.sheet-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  align-items: flex-end;
+}
+
+.sheet-overlay.active { 
+  display: flex; 
+}
+
+.bottom-sheet {
+  background: #121936;
+  border-top: 1px solid rgba(174, 194, 247, 0.2);
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  border-radius: 24px 24px 0 0;
+  padding: 12px 20px 32px 20px;
+  color: #ffffff;
+  box-sizing: border-box;
+  animation: slideUpSheet 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.sheet-handle {
+  width: 38px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  margin: 0 auto 16px auto;
+}
+
+.sheet-header {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.sheet-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sheet-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sheet-option:hover,
+.sheet-option:active {
+  background: rgba(174, 194, 247, 0.15);
+  border-color: rgba(174, 194, 247, 0.3);
+}
+
+.sheet-option i {
+  font-size: 1.1rem;
+  width: 24px;
+  color: #AEC2F7;
+  text-align: center;
 }
