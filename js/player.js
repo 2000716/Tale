@@ -146,7 +146,7 @@ export function setupExtraPlayerControls() {
   // Valg A: Om denne boken / sporet
   if (optAboutBtn) {
     optAboutBtn.onclick = () => {
-      infoSheetOverlay.classList.remove("active");
+      if (infoSheetOverlay) infoSheetOverlay.classList.remove("active");
       closeFullscreenPlayer();
       if (state.selectedItem) {
         openDetailsView(state.selectedItem);
@@ -157,7 +157,7 @@ export function setupExtraPlayerControls() {
   // Valg B: Del boken
   if (optShareBtn) {
     optShareBtn.onclick = async () => {
-      infoSheetOverlay.classList.remove("active");
+      if (infoSheetOverlay) infoSheetOverlay.classList.remove("active");
       if (navigator.share && state.selectedItem) {
         try {
           await navigator.share({
