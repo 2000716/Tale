@@ -2,14 +2,13 @@ import { state } from "./state.js";
 
 export function updateBottomNavVisibility() {
   const bottomNav = document.getElementById("bottom-nav") || document.querySelector(".bottom-bar");
-  const detailsPage = document.getElementById("details-page");
   const fullPlayer = document.getElementById("fullscreen-player");
 
-  const isDetailsActive = detailsPage?.classList.contains("active");
   const isFullPlayerActive = fullPlayer?.classList.contains("active");
 
   if (bottomNav) {
-    bottomNav.style.display = (isDetailsActive || isFullPlayerActive) ? "none" : "flex";
+    // Menyen skjules KUN når fullskjermspilleren er aktiv
+    bottomNav.style.display = isFullPlayerActive ? "none" : "flex";
   }
 }
 
