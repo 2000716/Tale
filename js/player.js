@@ -3,30 +3,20 @@ import { buildCoverMarkup, updateUrlHash, updateBottomNavVisibility, formatTime,
 import { saveProgressToFirestore, removeFromFirestoreHistory, updateDetailPlayButtonState } from "./history.js";
 
 // --- GLOBAL TILSTAND FOR EXTRA CONTROLS ---
-const speeds = [1, 1.25, 1.5, 1.75, 2, 0.8];
+const speeds = [1.0, 1.25, 1.5, 1.75, 2.0, 0.8];
 let currentSpeedIndex = 0;
 
-const sleepOptions = [
-  { label: "Av", minutes: 0 },
-  { label: "15 min", minutes: 15 },
-  { label: "30 min", minutes: 30 },
-  { label: "45 min", minutes: 45 },
-  { label: "1 time", minutes: 60 },
-  { label: "2 timer", minutes: 120 }
-];
-
-let sleepIndex = 0;
 let sleepTimeout = null;
 let sleepInterval = null;
 let targetTime = null;
 
 function updateSleepDisplay() {
   const sleepLabel = document.getElementById("sleep-label");
-  if (!sleepLabel || sleepIndex === 0 || !targetTime) return;
+  if (!sleepLabel || !targetTime) return;
 
   const remainingMs = targetTime - Date.now();
   if (remainingMs <= 0) {
-    clearInterval(sleepInterval);
+    clearSleepTimer();
     return;
   }
 
@@ -40,29 +30,60 @@ function clearSleepTimer() {
   sleepTimeout = null;
   sleepInterval = null;
   targetTime = null;
-  sleepIndex = 0;
-  
+
   const sleepLabel = document.getElementById("sleep-label");
   const sleepBtn = document.getElementById("sleep-btn");
   if (sleepLabel) sleepLabel.innerText = "Av";
   if (sleepBtn) sleepBtn.classList.remove("active");
 }
 
+function setSleepTimer(minutes) {
+  clearSleepTimer();
+
+  if (minutes === 0) return;
+
+  const sleepBtn = document.getElementById("sleep-btn");
+  if (sleepBtn) sleepBtn.classList.add("active");
+
+  const durationMs = minutes * 60 * 1000;
+  targetTime = Date.now() + durationMs;
+
+  sleepTimeout = setTimeout(() => {
+    globalAudio.pause();
+    updatePlayIcons(false);
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+    clearSleepTimer();
+  }, durationMs);
+
+  updateSleepDisplay();
+  sleepInterval = setInterval(updateSleepDisplay, 1000);
+}
+
 export function setupExtraPlayerControls() {
   const speedBtn = document.getElementById("speed-btn");
   const speedLabel = document.getElementById("speed-label");
+  
   const sleepBtn = document.getElementById("sleep-btn");
-  const sleepLabel = document.getElementById("sleep-label");
+  const sleepModal = document.getElementById("sleep-modal");
+  const closeSleepModal = document.getElementById("close-sleep-modal");
+  const confirmSleepBtn = document.getElementById("confirm-sleep-btn");
+  const sleepWheel = document.getElementById("sleep-wheel");
 
-  // 1. Hastighetskontroll
+  const moreOptionsBtn = document.getElementById("more-options-btn");
+  const infoSheetOverlay = document.getElementById("info-sheet-overlay");
+  const optAboutBtn = document.getElementById("opt-about-btn");
+  const optShareBtn = document.getElementById("opt-share-btn");
+
+  // 1. Hastighetskontroll: Kun tekst i 1.0x-format
   if (speedBtn) {
     speedBtn.onclick = () => {
       currentSpeedIndex = (currentSpeedIndex + 1) % speeds.length;
       const newSpeed = speeds[currentSpeedIndex];
       globalAudio.playbackRate = newSpeed;
 
-      if (speedLabel) speedLabel.innerText = `${newSpeed}x`;
-      if (newSpeed !== 1) {
+      if (speedLabel) speedLabel.innerText = `${newSpeed.toFixed(1)}x`;
+
+      if (newSpeed !== 1.0) {
         speedBtn.classList.add("active");
       } else {
         speedBtn.classList.remove("active");
@@ -70,33 +91,86 @@ export function setupExtraPlayerControls() {
     };
   }
 
-  // 2. Sleep-timer (Søvntimer)
-  if (sleepBtn) {
-    sleepBtn.onclick = () => {
-      sleepIndex = (sleepIndex + 1) % sleepOptions.length;
-      const option = sleepOptions[sleepIndex];
+  // 2. Sleep-timer (Scroll-hjul Modal)
+  if (sleepBtn && sleepModal) {
+    sleepBtn.onclick = () => sleepModal.classList.add("active");
+  }
 
-      if (option.minutes === 0) {
-        clearSleepTimer();
-        return;
+  if (closeSleepModal && sleepModal) {
+    closeSleepModal.onclick = () => sleepModal.classList.remove("active");
+  }
+
+  if (sleepWheel) {
+    const items = sleepWheel.querySelectorAll(".wheel-item");
+    
+    // Oppdater valgt element under rulling i hjulet
+    sleepWheel.onscroll = () => {
+      const scrollPos = sleepWheel.scrollTop + 50;
+      items.forEach(item => {
+        const itemTop = item.offsetTop;
+        if (scrollPos >= itemTop && scrollPos < itemTop + 50) {
+          item.classList.add("selected");
+        } else {
+          item.classList.remove("selected");
+        }
+      });
+    };
+
+    if (confirmSleepBtn) {
+      confirmSleepBtn.onclick = () => {
+        const selectedItem = sleepWheel.querySelector(".wheel-item.selected") || items[0];
+        const minutes = parseInt(selectedItem.dataset.value, 10);
+        setSleepTimer(minutes);
+        if (sleepModal) sleepModal.classList.remove("active");
+      };
+    }
+  }
+
+  // 3. Tre-prikker Meny (Bottom Sheet)
+  if (moreOptionsBtn && infoSheetOverlay) {
+    moreOptionsBtn.onclick = () => {
+      const titleElem = document.getElementById("sheet-item-title");
+      if (titleElem && state.selectedItem?.title) {
+        titleElem.innerText = state.selectedItem.title;
       }
+      infoSheetOverlay.classList.add("active");
+    };
 
-      clearTimeout(sleepTimeout);
-      clearInterval(sleepInterval);
+    infoSheetOverlay.onclick = (e) => {
+      if (e.target === infoSheetOverlay) {
+        infoSheetOverlay.classList.remove("active");
+      }
+    };
+  }
 
-      sleepBtn.classList.add("active");
-      const durationMs = option.minutes * 60 * 1000;
-      targetTime = Date.now() + durationMs;
+  // Valg A: Om denne boken / sporet
+  if (optAboutBtn) {
+    optAboutBtn.onclick = () => {
+      infoSheetOverlay.classList.remove("active");
+      closeFullscreenPlayer();
+      if (state.selectedItem) {
+        openDetailsView(state.selectedItem);
+      }
+    };
+  }
 
-      sleepTimeout = setTimeout(() => {
-        globalAudio.pause();
-        updatePlayIcons(false);
-        if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
-        clearSleepTimer();
-      }, durationMs);
-
-      updateSleepDisplay();
-      sleepInterval = setInterval(updateSleepDisplay, 1000);
+  // Valg B: Del boken
+  if (optShareBtn) {
+    optShareBtn.onclick = async () => {
+      infoSheetOverlay.classList.remove("active");
+      if (navigator.share && state.selectedItem) {
+        try {
+          await navigator.share({
+            title: state.selectedItem.title,
+            text: `Hør på ${state.selectedItem.title} på Tale!`,
+            url: window.location.href,
+          });
+        } catch (err) {
+          console.log("Deling avbrutt av brukeren:", err);
+        }
+      } else {
+        alert(`Kunne ikke dele: Lenken til "${state.selectedItem?.title || 'sporet'}" er klar.`);
+      }
     };
   }
 }
@@ -286,7 +360,6 @@ export function playSpecificEpisode(epData, startPosition = 0) {
     globalAudio.src = state.selectedItem.audioUrl;
 
     globalAudio.onloadedmetadata = () => {
-      // Re-apply valgt hastighet når nytt spor lastes inn
       globalAudio.playbackRate = speeds[currentSpeedIndex];
 
       if (startPosition > 0) {
