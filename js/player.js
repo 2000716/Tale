@@ -235,7 +235,7 @@ export async function openDetailsView(item) {
   if (dTitle) dTitle.innerText = state.selectedItem.title || "";
   if (dSub) dSub.innerText = state.selectedItem.sub || "";
   if (dDesc) dDesc.innerHTML = state.selectedItem.desc || "Laster inn...";
-    
+  
   const detailsCoverContainer = document.getElementById("details-cover-container");
   if (detailsCoverContainer) {
     detailsCoverContainer.innerHTML = buildCoverMarkup(state.selectedItem.cover, state.selectedItem.title);
@@ -355,7 +355,7 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   state.selectedItem.audioUrl = epData.audioUrl || state.selectedItem.audioUrl;
   if (epData.cover) state.selectedItem.cover = epData.cover;
   if (epData.sub) state.selectedItem.sub = epData.sub;
-    
+  
   if (state.selectedItem.audioUrl) {
     globalAudio.src = state.selectedItem.audioUrl;
 
@@ -413,7 +413,7 @@ export function openFullscreenPlayer() {
   fullPlayer.classList.remove('is-dragging');
   fullPlayer.classList.add('active');
   updateUrlHash("fullscreen-player");
-  updateBottomNavVisibility();
+  // updateBottomNavVisibility() fjernet herfor å unngå kollisjon med CSS :has()
 }
 
 export function closeFullscreenPlayer() {
@@ -422,7 +422,7 @@ export function closeFullscreenPlayer() {
   fullPlayer.classList.remove('is-dragging');
   fullPlayer.classList.remove('active');
   fullPlayer.style.removeProperty('--y-offset');
-  updateBottomNavVisibility();
+  // updateBottomNavVisibility() fjernet herfor å unngå kollisjon med CSS :has()
 }
 
 export function togglePlay() {
