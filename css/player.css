@@ -290,6 +290,11 @@
    ROBUST SKJULING AV BUNNMENY & MINI-SPILLER
    ========================================== */
 .bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--bottom-bar-height);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
 }
 
@@ -304,6 +309,7 @@ body:has(#fullscreen-player.active) .bottom-bar {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
 /* ==========================================
    EKSTRA-KONTROLLER (HASTIGHET, SLEEP & MER)
    ========================================== */
@@ -334,7 +340,6 @@ body:has(#fullscreen-player.active) .bottom-bar {
   min-width: 65px;
 }
 
-/* Tekstknapp for Speed (Uten ikon) */
 .text-only-btn {
   font-weight: 800;
   letter-spacing: 0.5px;
