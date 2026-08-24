@@ -304,7 +304,6 @@ body:has(#fullscreen-player.active) .bottom-bar {
   opacity: 0 !important;
   pointer-events: none !important;
 }
-
 /* ==========================================
    EKSTRA-KONTROLLER (HASTIGHET, SLEEP & MER)
    ========================================== */
