@@ -7,10 +7,12 @@
    ========================================== */
 .player {
   position: fixed;
-  bottom: calc(var(--bottom-bar-height, 70px) + env(safe-area-inset-bottom, 0px) + 8px);
+  bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom) + 8px);
   left: 0;
   right: 0;
   margin: 0 auto;
+  
+  transform: translateY(0px);
   
   width: calc(100% - 24px);
   max-width: 456px;
@@ -115,7 +117,7 @@
 }
 
 /* ==========================================
-   STORSPILLER / FULLSKJERM
+   STORSPILLER / FULLSKJERM (Ren vertikal bevegelse)
    ========================================== */
 #fullscreen-player {
   position: fixed;
@@ -124,7 +126,7 @@
   right: 0;
   margin: 0 auto;
 
-  transform: translateY(100%);
+  transform: translateY(calc(100vh + var(--y-offset, 0px)));
 
   width: 100%;
   max-width: 480px;
@@ -139,8 +141,8 @@
   touch-action: none;
   user-select: none;
 
-  padding-top: calc(0.8rem + env(safe-area-inset-top, 0px));
-  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+  padding-top: calc(0.8rem + env(safe-area-inset-top));
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
   padding-left: 1.5rem;
   padding-right: 1.5rem;
   box-sizing: border-box;
@@ -152,6 +154,7 @@
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
+  will-change: transform, opacity;
 
   transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
               opacity 0.25s ease,
@@ -159,7 +162,7 @@
 }
 
 #fullscreen-player.active {
-  transform: translateY(0px);
+  transform: translateY(var(--y-offset, 0px));
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
@@ -284,39 +287,22 @@
 }
 
 /* ==========================================
-   KONTROLLERT SKJULING AV BUNNMENY & MINI-SPILLER
+   ROBUST SKJULING AV BUNNMENY & MINI-SPILLER
    ========================================== */
 .bottom-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: var(--bottom-bar-height, 70px);
-  z-index: 1000;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
 }
 
-/* Skjul mini-spiller og bunnmeny KUN når storspilleren er åpen */
-#fullscreen-player.active ~ .player,
 body:has(#fullscreen-player.active) .player {
-  transform: translateY(160px);
-  opacity: 0;
-  pointer-events: none;
+  transform: translateY(160px) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
-#fullscreen-player.active ~ .bottom-bar,
 body:has(#fullscreen-player.active) .bottom-bar {
-  transform: translateY(120px);
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* Skjul mini-spiller og bunnmeny helt når bruker er i innlogging */
-body:has(#landing-view.active) .player,
-body:has(#auth-view.active) .player,
-body:has(#landing-view.active) .bottom-bar,
-body:has(#auth-view.active) .bottom-bar {
-  display: none !important;
+  transform: translateY(120px) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* ==========================================
@@ -349,6 +335,7 @@ body:has(#auth-view.active) .bottom-bar {
   min-width: 65px;
 }
 
+/* Tekstknapp for Speed (Uten ikon) */
 .text-only-btn {
   font-weight: 800;
   letter-spacing: 0.5px;
