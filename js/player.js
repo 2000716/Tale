@@ -252,15 +252,26 @@ export function openFullscreenPlayer() {
   fullPlayer.style.setProperty('--y-offset', '0px');
   fullPlayer.classList.remove('is-dragging');
   fullPlayer.classList.add('active');
+  
   updateUrlHash("fullscreen-player");
+  updateBottomNavVisibility();
 }
 
 export function closeFullscreenPlayer() {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer) return;
+  
   fullPlayer.classList.remove('is-dragging');
   fullPlayer.classList.remove('active');
   fullPlayer.style.removeProperty('--y-offset');
+
+  // Tilbakestill Hash dersom vi kom fra storspilleren
+  if (window.location.hash === "#fullscreen-player") {
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+
+  // Tving re-synkronisering av meny/mini-spiller
+  updateBottomNavVisibility();
 }
 
 export function togglePlay() {
