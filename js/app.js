@@ -1,7 +1,7 @@
 import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
-import { initAuth, setAuthMode, handleLogout } from "./auth.js";
+import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { openDetailsView, playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -192,7 +192,7 @@ async function executeAppSearch(term) {
   }
 }
 
-function removeSearchResultsView() {
+export function removeSearchResultsView() {
   const resultsContainer = document.getElementById("search-results-page");
   if (resultsContainer) resultsContainer.remove();
   document.querySelectorAll("main > section").forEach(sec => sec.style.display = "");
@@ -236,11 +236,8 @@ function setupEventListeners() {
       if (errorMsg) errorMsg.innerText = "";
 
       try {
-        if (state.isSignUp) {
-          await createUserWithEmailAndPassword(auth, email, password);
-        } else {
-          await signInWithEmailAndPassword(auth, email, password);
-        }
+        // Bruker submitAuthForm fra auth.js i stedet for ufinerte Firebase-kall
+        await submitAuthForm(email, password);
       } catch (err) {
         if (errorMsg) errorMsg.innerText = "Feil ved innlogging eller registrering.";
       }
@@ -248,7 +245,10 @@ function setupEventListeners() {
   }
 
   document.querySelectorAll(".nav-btn").forEach(btn => {
-    btn.onclick = () => switchPage(btn.dataset.target);
+    btn.onclick = () => {
+      removeSearchResultsView();
+      switchPage(btn.dataset.target);
+    };
   });
 
   if (el("nav-account-btn")) el("nav-account-btn").onclick = () => switchPage("account");
