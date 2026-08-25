@@ -245,25 +245,30 @@
 
 .skip-btn {
   background: transparent;
-  border: 1.5px solid #AEC2F7;
+  border: none;                 /* Fjerner rammen helt */
   color: #AEC2F7;
-  padding: 0.6rem 1.1rem;
-  border-radius: 20px;
+  padding: 0.8rem 1.4rem;       /* Øker trykkflaten og størrelsen */
+  border-radius: 24px;          /* Myk markeringsform ved hover/trykk */
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1.1rem;            /* Øker tekststørrelsen (opp fra 0.9rem) */
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  transition: background-color 0.2s ease;
+  gap: 0.6rem;                  /* Litt mer avstand mellom ikon og tekst */
+  transition: transform 0.15s ease, background-color 0.2s ease;
 }
 
 .skip-btn i {
   color: #AEC2F7;
+  font-size: 1.3rem;            /* Øker ikonstørrelsen */
 }
 
 .skip-btn:hover {
   background-color: rgba(174, 194, 247, 0.15);
+}
+
+.skip-btn:active {
+  transform: scale(0.93);       /* Gir en responsiv følelse når du trykker */
 }
 
 .main-play-btn {
