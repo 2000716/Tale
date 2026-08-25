@@ -211,58 +211,81 @@ function bindCardClickEvents() {
 }
 
 function setupEventListeners() {
-  const el = id => document.getElementById(id);
+  // Global Event Delegation for alle klikk i appen
+  document.addEventListener("click", async (e) => {
+    
+    // 1. Gå til Innlogging
+    const loginBtn = e.target.closest("#go-to-login-btn");
+    if (loginBtn) {
+      setAuthMode(false);
+      showView("auth-view");
+      return;
+    }
 
-  if (el("goToLoginBtn")) el("goToLoginBtn").onclick = () => { setAuthMode(false); showView("auth-view"); };
-  if (el("goToRegisterBtn")) el("goToRegisterBtn").onclick = () => { setAuthMode(true); showView("auth-view"); };
-  if (el("auth-back-btn")) el("auth-back-btn").onclick = () => showView("landing-view");
-  if (el("toggle-auth-mode")) el("toggle-auth-mode").onclick = () => setAuthMode(!state.isSignUp);
-  if (el("logout-btn")) el("logout-btn").onclick = handleLogout;
+    // 2. Gå til Registrering
+    const regBtn = e.target.closest("#go-to-register-btn");
+    if (regBtn) {
+      setAuthMode(true);
+      showView("auth-view");
+      return;
+    }
 
-  if (el("nav-home-logo-btn")) {
-    el("nav-home-logo-btn").onclick = () => {
+    // 3. Tilbake-knapp fra Auth
+    const backBtn = e.target.closest("#auth-back-btn");
+    if (backBtn) {
+      showView("landing-view");
+      return;
+    }
+
+    // 4. Bytt mellom Logg inn / Registrer
+    const toggleBtn = e.target.closest("#toggle-auth-mode");
+    if (toggleBtn) {
+      setAuthMode(!state.isSignUp);
+      return;
+    }
+
+    // 5. Logg ut
+    const logoutBtn = e.target.closest("#logout-btn");
+    if (logoutBtn) {
+      handleLogout();
+      return;
+    }
+
+    // 6. Navigasjonsknapper (Bunnmeny)
+    const navBtn = e.target.closest(".nav-btn");
+    if (navBtn) {
+      removeSearchResultsView();
+      switchPage(navBtn.dataset.target);
+      return;
+    }
+
+    // 7. Konto-knapp
+    const accBtn = e.target.closest("#nav-account-btn");
+    if (accBtn) {
+      switchPage("account");
+      return;
+    }
+
+    // 8. Logo/Hjem-knapp
+    const homeLogoBtn = e.target.closest("#nav-home-logo-btn");
+    if (homeLogoBtn) {
       removeSearchResultsView();
       switchPage("home");
-    };
-  }
+      return;
+    }
 
-  const authForm = el("auth-form");
-  if (authForm) {
-    authForm.onsubmit = async (e) => {
-      e.preventDefault();
-      const email = el("auth-email").value;
-      const password = el("auth-password").value;
-      const errorMsg = el("auth-error");
-      if (errorMsg) errorMsg.innerText = "";
-
-      try {
-        // Bruker submitAuthForm fra auth.js i stedet for ufinerte Firebase-kall
-        await submitAuthForm(email, password);
-      } catch (err) {
-        if (errorMsg) errorMsg.innerText = "Feil ved innlogging eller registrering.";
-      }
-    };
-  }
-
-  document.querySelectorAll(".nav-btn").forEach(btn => {
-    btn.onclick = () => {
-      removeSearchResultsView();
-      switchPage(btn.dataset.target);
-    };
-  });
-
-  if (el("nav-account-btn")) el("nav-account-btn").onclick = () => switchPage("account");
-
-  if (el("details-close-btn")) {
-    el("details-close-btn").onclick = () => {
-      el("details-page")?.classList.remove("active");
+    // 9. Lukk Detaljside
+    const closeDetails = e.target.closest("#details-close-btn");
+    if (closeDetails) {
+      document.getElementById("details-page")?.classList.remove("active");
       const lastPage = localStorage.getItem("lastActivePage") || "home";
       switchPage(lastPage !== "details-page" ? lastPage : "home");
-    };
-  }
+      return;
+    }
 
-  if (el("start-play-btn")) {
-    el("start-play-btn").onclick = () => {
+    // 10. Start avspilling fra detaljside
+    const startPlayBtn = e.target.closest("#start-play-btn");
+    if (startPlayBtn) {
       if (state.selectedItem.audioUrl && !state.selectedItem.rssUrl) {
         playSpecificEpisode(state.selectedItem, 0);
         return;
@@ -275,30 +298,57 @@ function setupEventListeners() {
         cover: state.selectedItem.cover,
         sub: state.selectedItem.sub
       }, savedTime);
-    };
-  }
+      return;
+    }
 
-  if (el("mini-play-btn")) el("mini-play-btn").onclick = (e) => { e.stopPropagation(); togglePlay(); };
-  if (el("full-play-btn")) el("full-play-btn").onclick = () => togglePlay();
-
-  if (el("skip-back-btn")) el("skip-back-btn").onclick = () => { if (globalAudio.src) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15); };
-  if (el("skip-forward-btn")) el("skip-forward-btn").onclick = () => { if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15); };
-
-  if (el("open-full-player")) {
-    el("open-full-player").onclick = () => {
-      el("fullscreen-player")?.classList.add("active");
+    // 11. Spiller-kontrollere
+    if (e.target.closest("#mini-play-btn")) {
+      e.stopPropagation();
+      togglePlay();
+      return;
+    }
+    if (e.target.closest("#full-play-btn")) {
+      togglePlay();
+      return;
+    }
+    if (e.target.closest("#skip-back-btn")) {
+      if (globalAudio.src) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15);
+      return;
+    }
+    if (e.target.closest("#skip-forward-btn")) {
+      if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15);
+      return;
+    }
+    if (e.target.closest("#open-full-player")) {
+      document.getElementById("fullscreen-player")?.classList.add("active");
       updateUrlHash("fullscreen-player");
       updateBottomNavVisibility();
-    };
-  }
-
-  if (el("player-close-btn")) {
-    el("player-close-btn").onclick = () => {
-      el("fullscreen-player")?.classList.remove("active");
+      return;
+    }
+    if (e.target.closest("#player-close-btn")) {
+      document.getElementById("fullscreen-player")?.classList.remove("active");
       const lastPage = localStorage.getItem("lastActivePage") || "home";
       switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
-    };
-  }
+      return;
+    }
+  });
+
+  // Event listener for sending av innloggingsskjema
+  document.addEventListener("submit", async (e) => {
+    if (e.target && e.target.id === "auth-form") {
+      e.preventDefault();
+      const email = document.getElementById("auth-email")?.value;
+      const password = document.getElementById("auth-password")?.value;
+      const errorMsg = document.getElementById("auth-error");
+      if (errorMsg) errorMsg.innerText = "";
+
+      try {
+        await submitAuthForm(email, password);
+      } catch (err) {
+        if (errorMsg) errorMsg.innerText = "Feil ved innlogging eller registrering.";
+      }
+    }
+  });
 }
 
 function setupTouchDrag() {
