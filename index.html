@@ -120,7 +120,7 @@
       </section>
     </main>
 
-    <!-- INFORMASJONSSIDE OVERLAY -->
+<!-- INFORMASJONSSIDE OVERLAY -->
     <div id="details-page" class="modal">
       <button id="details-close-btn" class="close-btn" aria-label="Lukk"><i class="fa-solid fa-xmark"></i></button>
       
@@ -164,20 +164,36 @@
         </div>
 
         <div class="episode-list-container">
-          <div class="section-title-wrapper">
-            <h3 id="details-badge-episodes">0 episoder</h3>
-            <span id="episode-count-text" class="meta-small"></span>
+          <div class="section-title-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+              <h3 id="details-badge-episodes">0 episoder</h3>
+              <span id="episode-count-text" class="meta-small"></span>
+            </div>
+
+            <!-- SESONGVELGER (skjules via JS dersom innholdet ikke har sesonger) -->
+            <div id="season-select-wrapper" class="season-select-wrapper" style="display: none;">
+              <select id="season-select" class="season-dropdown">
+                <!-- Fylles dynamisk fra JavaScript -->
+              </select>
+            </div>
           </div>
+
+          <!-- LISTEN MED EPISODER -->
           <div id="episode-list"></div>
+
+          <!-- KNAPP FOR Å ÅPNE / LASTE FLERE EPISODER -->
+          <button id="load-more-episodes-btn" class="btn-secondary" style="display: none; width: 100%; margin-top: 1rem;">
+            Vis flere episoder
+          </button>
         </div>
 
         <div class="recommendations-container">
-          <h3></h3>
+          <h3>Anbefalinger</h3>
           <div id="recommendations-list" class="horizontal-scroll"></div>
         </div>
       </div>
     </div>
-
+    
     <!-- FULLSKJERM SPILLER -->
     <div id="fullscreen-player" class="modal">
       <div class="drag-handle"></div>
