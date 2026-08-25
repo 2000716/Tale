@@ -1,4 +1,4 @@
-import { playTrack } from './player.js';
+import { playSpecificEpisode as playTrack } from './player.js';
 
 // Konfigurasjon og tilstand
 const EPISODES_PER_PAGE = 5;
