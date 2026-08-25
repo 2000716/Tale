@@ -35,18 +35,28 @@ export async function openDetailsPage(item) {
   visibleEpisodesCount = EPISODES_PER_PAGE;
   fetchedEpisodes = [];
 
+  const contentType = item.type || (item.rssUrl || item.rss ? 'podcast' : 'audiobook');
+
   if (detailsPage) {
-    detailsPage.setAttribute('data-type', item.type || 'podcast');
+    detailsPage.setAttribute('data-type', contentType);
   }
 
-  // 1. Sett tittel, undertittel, beskrivelse og cover
-  if (titleEl) titleEl.textContent = item.title || 'Uten tittel';
-  if (subEl) subEl.textContent = item.sub || item.subtitle || item.author || item.publisher || '';
-  if (descEl) descEl.innerHTML = item.desc || item.description || 'Ingen beskrivelse tilgjengelig.';
+  // 1. Fleksibel innhenting av tittel, undertittel, beskrivelse og cover
+  const itemTitle = item.title || item.name || 'Uten tittel';
+  const itemSub = item.sub || item.subtitle || item.author || item.publisher || item.host || '';
+  const itemDesc = item.desc || item.description || item.summary || 'Ingen beskrivelse tilgjengelig.';
+  const imageUrl = item.cover || item.coverUrl || item.image || item.imageUrl || '';
 
-  const imageUrl = item.cover || item.coverUrl || item.image || '';
+  if (titleEl) titleEl.textContent = itemTitle;
+  if (subEl) subEl.textContent = itemSub;
+  if (descEl) descEl.innerHTML = itemDesc;
+
   if (coverContainer) {
-    coverContainer.innerHTML = `<img src="${imageUrl}" alt="${item.title}" class="details-cover-img">`;
+    if (imageUrl) {
+      coverContainer.innerHTML = `<img src="${imageUrl}" alt="${itemTitle}" class="details-cover-img" onerror="this.style.display='none'">`;
+    } else {
+      coverContainer.innerHTML = `<div class="details-cover-fallback"><i class="fa-solid fa-headphones"></i></div>`;
+    }
   }
 
   if (descEl && readMoreBtn) {
@@ -54,15 +64,26 @@ export async function openDetailsPage(item) {
     readMoreBtn.style.display = 'block';
   }
 
-  // 2. Håndter RSS eller direkte episoder
+  // 2. Håndtering basert på type (Radio vs RSS vs Lokale episoder)
   const rssUrl = item.rssUrl || item.rss;
-  if (rssUrl) {
+
+  if (contentType === 'radio' || !rssUrl) {
+    // Direkteinnhold / Radio / Lydbok uten RSS trenger ikke hentes via API
+    if (item.episodes && Array.isArray(item.episodes)) {
+      fetchedEpisodes = item.episodes;
+    } else if (item.chapters && Array.isArray(item.chapters)) {
+      fetchedEpisodes = item.chapters;
+    } else {
+      fetchedEpisodes = [];
+    }
+  } else {
+    // Ekte RSS-feed (Podkast)
     if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Henter episoder...</div>`;
     try {
       const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
       const data = await res.json();
       if (data.status === 'ok') {
-        if (data.feed?.description && descEl && !item.desc) {
+        if (data.feed?.description && descEl && (!item.desc && !item.description)) {
           descEl.innerHTML = data.feed.description;
         }
         fetchedEpisodes = (data.items || []).map(ep => ({
@@ -71,30 +92,28 @@ export async function openDetailsPage(item) {
           cover: ep.itunes?.image || ep.thumbnail || imageUrl,
           duration: ep.enclosure?.duration || ep.duration || '',
           pubDate: ep.pubDate || '',
-          description: ep.description || ''
+          description: ep.description || ep.summary || ''
         }));
       }
     } catch (err) {
       console.error("Kunne ikke hente RSS:", err);
+      if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Kunne ikke laste episoder fra RSS.</div>`;
     }
-  } else if (item.episodes || item.chapters) {
-    fetchedEpisodes = item.episodes || item.chapters || [];
   }
 
   // 3. Konfigurer UI etter type
-  setupContentTypeUI(item);
+  setupContentTypeUI(item, contentType);
 
   if (detailsPage) {
     detailsPage.classList.add('active');
   }
 }
 
-// Alias for bakoverkompatibilitet dersom app.js kaller openDetailsView
+// Alias for bakoverkompatibilitet
 export const openDetailsView = openDetailsPage;
 
-function setupContentTypeUI(item) {
-  const type = item.type || 'podcast';
-  const audioUrl = item.audioUrl || item.streamUrl || item.audio || '';
+function setupContentTypeUI(item, type) {
+  const audioUrl = item.audioUrl || item.streamUrl || item.audio || item.url || '';
 
   if (type === 'radio') {
     if (badgeType) badgeType.textContent = 'Direkte Radio';
@@ -105,10 +124,10 @@ function setupContentTypeUI(item) {
     if (startPlayBtn) {
       startPlayBtn.onclick = () => {
         playSpecificEpisode({
-          title: item.title,
+          title: item.title || item.name,
           sub: item.sub || item.author || 'Direkte Radio',
           audioUrl: audioUrl,
-          cover: item.cover || item.coverUrl || item.image
+          cover: item.cover || item.coverUrl || item.image || ''
         }, 0);
       };
     }
@@ -125,7 +144,7 @@ function setupContentTypeUI(item) {
           title: first.title || item.title,
           sub: item.sub || item.author || '',
           audioUrl: first.audioUrl || audioUrl,
-          cover: first.cover || item.cover
+          cover: first.cover || item.cover || item.coverUrl
         }, 0);
       };
     }
@@ -160,7 +179,7 @@ function setupContentTypeUI(item) {
           title: target.title || item.title,
           sub: item.sub || item.author || '',
           audioUrl: target.audioUrl || audioUrl,
-          cover: target.cover || item.cover
+          cover: target.cover || item.cover || item.coverUrl
         }, 0);
       };
     }
@@ -230,7 +249,7 @@ function renderEpisodesOrChapters(items, unitName) {
           title: selected.title || currentItem.title,
           sub: currentItem.sub || currentItem.author || '',
           audioUrl: selected.audioUrl || selected.url || currentItem.audioUrl,
-          cover: selected.cover || currentItem.cover
+          cover: selected.cover || currentItem.cover || currentItem.coverUrl
         }, 0);
       }
     });
