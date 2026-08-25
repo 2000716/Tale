@@ -44,12 +44,18 @@ export async function openDetailsPage(item) {
   // 1. Fleksibel innhenting av tittel, undertittel, beskrivelse og cover
   const itemTitle = item.title || item.name || 'Uten tittel';
   const itemSub = item.sub || item.subtitle || item.author || item.publisher || item.host || '';
-  const rawDesc = item.desc || item.description || item.summary || item.about || 'Ingen beskrivelse tilgjengelig.';
+  
+  // Filtrer ut generiske Apple API-meldinger dersom de har kommet inn som desc
+  let rawDesc = item.desc || item.description || item.summary || item.about || '';
+  if (rawDesc.includes('Hentet via Apple Podcast API')) {
+    rawDesc = '';
+  }
+
   const imageUrl = item.cover || item.coverUrl || item.image || item.imageUrl || '';
 
   if (titleEl) titleEl.textContent = itemTitle;
   if (subEl) subEl.textContent = itemSub;
-  if (descEl) descEl.innerHTML = cleanHTML(rawDesc);
+  if (descEl) descEl.innerHTML = cleanHTML(rawDesc || 'Ingen beskrivelse tilgjengelig.');
 
   if (coverContainer) {
     if (imageUrl) {
@@ -80,14 +86,16 @@ export async function openDetailsPage(item) {
     }
   } else {
     // RSS-feed (Podkast)
-    if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Henter episoder...</div>`;
+    if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Henter episoder og informasjon...</div>`;
     try {
       const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
       const data = await res.json();
       if (data.status === 'ok') {
-        // Oppdater hovedbeskrivelse dersom feed har beskrivelse og objektet manglet det
-        if (data.feed?.description && descEl && (!item.desc && !item.description)) {
-          descEl.innerHTML = cleanHTML(data.feed.description);
+
+        // OPPVIKTIG: Oppdaterer hovedbeskrivelsen direkte med den fulle beskrivelsen fra RSS-feeden
+        const rssFeedDescription = data.feed?.description || data.feed?.summary || '';
+        if (rssFeedDescription && descEl) {
+          descEl.innerHTML = cleanHTML(rssFeedDescription);
         }
 
         fetchedEpisodes = (data.items || []).map(ep => ({
