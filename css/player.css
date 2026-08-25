@@ -306,33 +306,40 @@ body:has(#fullscreen-player.active) .bottom-bar {
 }
 
 /* ==========================================
-   EKSTRA-KONTROLLER (HASTIGHET, SLEEP & MER)
+   EKSTRA-KONTROLLER (Romslig ramme rundt alle 3)
    ========================================== */
 .extra-controls {
   display: flex;
-  justify-content: center;
+  justify-content: space-evenly; /* Fordeler knappene jevnt med god plass */
   align-items: center;
-  gap: 1.2rem;
+  gap: 1rem;                     /* Avstand mellom knappene innvendig */
   width: 100%;
-  margin-top: 2rem;
-  padding-top: 1rem;
+  max-width: 360px;             /* Gjøre hele rammen bredere/større */
+  margin: 2rem auto 0 auto;     /* Sentrerer beholderen */
+  padding: 0.6rem 0.8rem;       /* Luft rundt knappene innvendig i rammen */
+
+  /* RAMME RUNDT HELE HELE BOKSEN */
+  border: 1.5px solid #AEC2F7;
+  border-radius: 24px;
+  background-color: transparent;
+  box-sizing: border-box;
 }
 
 .extra-btn {
   background: transparent;
-  border: 1.5px solid #AEC2F7;
+  border: none;                 /* Ingen ramme på hver knapp */
+  border-radius: 14px;          /* Myk markeringsform ved trykk/hover */
   color: #AEC2F7;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
+  padding: 0.75rem 1.2rem;      /* Gjøre selve knappene og trykkflaten større */
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1rem;              /* Litt større tekst (økt fra 0.9rem) */
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   transition: all 0.2s ease;
-  min-width: 65px;
+  flex: 1;                      /* Lar knappene fylle plassen jevnt */
 }
 
 /* Tekstknapp for Speed (Uten ikon) */
@@ -343,18 +350,16 @@ body:has(#fullscreen-player.active) .bottom-bar {
 
 .extra-btn img,
 .extra-btn .nav-icon-png {
-  width: 18px;
-  height: 18px;
+  width: 22px;                  /* Større ikoner (økt fra 18px) */
+  height: 22px;
   object-fit: contain;
   filter: invert(80%) sepia(21%) saturate(972%) hue-rotate(187deg) brightness(101%) contrast(94%);
 }
 
 .extra-btn:hover,
 .extra-btn.active {
-  background-color: rgba(174, 194, 247, 0.15);
-  box-shadow: 0 0 10px rgba(174, 194, 247, 0.2);
+  background-color: rgba(174, 194, 247, 0.15); /* Subtil bakgrunn når du trykker */
 }
-
 /* ==========================================
    MODAL OG HJUL FOR SLEEP TIMER
    ========================================== */
