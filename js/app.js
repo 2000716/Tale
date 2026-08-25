@@ -2,7 +2,8 @@ import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
-import { openDetailsView, playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
+import { playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
+import { openDetailsPage, closeDetailsPage } from "./details.js"; // Import fra details.js
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Oppstart
@@ -36,21 +37,32 @@ export function loadContentFromFirestore() {
           let itemsHTML = "";
           (sec.items || []).forEach((item, index) => {
             const title = item.title || 'Innhold';
-            const sub = item.sub || '';
+            const sub = item.sub || item.author || item.publisher || '';
             const rssUrl = item.rssUrl || item.rss || '';
             const manualCover = item.coverUrl || item.cover || item.image || '';
-            const audioUrl = item.audioUrl || item.audio || '';
+            const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
+            const type = item.type || (pageTarget === 'radio' ? 'radio' : pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
+
+            // Ta vare på rådata i dataset (konverterer array/objekter til JSON-strenger)
+            const seasonsJSON = item.seasons ? JSON.stringify(item.seasons) : '';
+            const episodesJSON = item.episodes ? JSON.stringify(item.episodes) : '';
+            const chaptersJSON = item.chapters ? JSON.stringify(item.chapters) : '';
 
             itemsHTML += `
               <div class="book-card" 
                    id="${cardId}"
+                   data-id="${item.id || cardId}"
                    data-title="${title}" 
                    data-sub="${sub}" 
-                   data-desc="${item.desc || ''}" 
+                   data-desc="${item.desc || item.description || ''}" 
                    data-cover="${manualCover}"
                    data-rss="${rssUrl}"
-                   data-audio="${audioUrl}">
+                   data-audio="${audioUrl}"
+                   data-type="${type}"
+                   data-seasons='${seasonsJSON}'
+                   data-episodes='${episodesJSON}'
+                   data-chapters='${chaptersJSON}'>
                 <div class="book-cover" id="cover-${cardId}">
                   ${buildCoverMarkup(manualCover, title)}
                 </div>
@@ -169,11 +181,13 @@ async function executeAppSearch(term) {
         gridHTML += `
           <div class="book-card search-result-item" 
                id="${cardId}"
+               data-id="${cardId}"
                data-title="${title}" 
                data-sub="${sub}" 
                data-desc="Hentet via Apple Podcast API" 
                data-cover="${cover}"
                data-rss="${feedUrl}"
+               data-type="podcast"
                data-audio="">
             <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
             <div class="book-title">${title}</div>
@@ -198,15 +212,49 @@ export function removeSearchResultsView() {
   document.querySelectorAll("main > section").forEach(sec => sec.style.display = "");
 }
 
+/**
+ * Hjelpefunksjon for å bygge et komplett innholdsobjekt fra data-attributtene til kortet
+ */
+function extractCardItemData(card) {
+  const parseJSON = (str) => {
+    if (!str) return null;
+    try { return JSON.parse(str); } catch (e) { return null; }
+  };
+
+  return {
+    id: card.dataset.id || card.id,
+    title: card.dataset.title || '',
+    subtitle: card.dataset.sub || '',
+    publisher: card.dataset.sub || '',
+    author: card.dataset.sub || '',
+    description: card.dataset.desc || '',
+    coverUrl: card.dataset.cover || '',
+    image: card.dataset.cover || '',
+    rssUrl: card.dataset.rss || '',
+    audioUrl: card.dataset.audio || '',
+    streamUrl: card.dataset.audio || '',
+    type: card.dataset.type || 'podcast',
+    seasons: parseJSON(card.dataset.seasons),
+    episodes: parseJSON(card.dataset.episodes),
+    chapters: parseJSON(card.dataset.chapters)
+  };
+}
+
 function bindSearchCardClickEvents() {
   document.querySelectorAll(".search-result-item").forEach(card => {
-    card.onclick = () => openDetailsView({ ...card.dataset, rssUrl: card.dataset.rss, audioUrl: card.dataset.audio });
+    card.onclick = () => {
+      const item = extractCardItemData(card);
+      openDetailsPage(item);
+    };
   });
 }
 
 function bindCardClickEvents() {
   document.querySelectorAll(".book-card:not(.search-result-item)").forEach(card => {
-    card.onclick = () => openDetailsView({ ...card.dataset, rssUrl: card.dataset.rss, audioUrl: card.dataset.audio });
+    card.onclick = () => {
+      const item = extractCardItemData(card);
+      openDetailsPage(item);
+    };
   });
 }
 
@@ -274,34 +322,16 @@ function setupEventListeners() {
       return;
     }
 
-    // 9. Lukk Detaljside
+    // 9. Lukk Detaljside (Styres via details.js)
     const closeDetails = e.target.closest("#details-close-btn");
     if (closeDetails) {
-      document.getElementById("details-page")?.classList.remove("active");
+      closeDetailsPage();
       const lastPage = localStorage.getItem("lastActivePage") || "home";
       switchPage(lastPage !== "details-page" ? lastPage : "home");
       return;
     }
 
-    // 10. Start avspilling fra detaljside
-    const startPlayBtn = e.target.closest("#start-play-btn");
-    if (startPlayBtn) {
-      if (state.selectedItem.audioUrl && !state.selectedItem.rssUrl) {
-        playSpecificEpisode(state.selectedItem, 0);
-        return;
-      }
-      const cleanId = state.selectedItem.title ? state.selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_') : 'item';
-      const savedTime = state.userHistory[cleanId]?.currentTime || 0;
-      playSpecificEpisode({
-        title: state.selectedItem.title,
-        audioUrl: state.selectedItem.audioUrl,
-        cover: state.selectedItem.cover,
-        sub: state.selectedItem.sub
-      }, savedTime);
-      return;
-    }
-
-    // 11. Spiller-kontrollere
+    // 10. Spiller-kontrollere
     if (e.target.closest("#mini-play-btn")) {
       e.stopPropagation();
       togglePlay();
