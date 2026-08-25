@@ -10,8 +10,8 @@
   max-width: 480px;
   height: 100vh;
   height: 100dvh;
-  background-color: var(--bg-content, #070b1e);
-  color: var(--text-light, #ffffff);
+  background-color: var(--bg-content, #ffffff);
+  color: var(--text-dark, #18181b);
   z-index: 1500;
   overflow-y: auto;
   
@@ -50,9 +50,9 @@
   position: absolute;
   top: calc(env(safe-area-inset-top, 10px) + 0.8rem);
   right: 1.2rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.06);
   border: none;
-  color: #fff;
+  color: #18181b;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -65,7 +65,7 @@
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.12);
 }
 
 /* --- Hero / Cover og Toppseksjon --- */
@@ -97,7 +97,7 @@
   height: 100%;
   object-fit: cover;
   border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
 }
 
 .details-header-info {
@@ -119,24 +119,24 @@
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   margin-bottom: 0.5rem;
-  background-color: rgba(59, 98, 196, 0.2);
-  color: #60a5fa;
+  background-color: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
 }
 
 /* Dynamiske farger basert på innholdstype */
 #details-page[data-type="radio"] .badge-tag {
-  background-color: rgba(16, 185, 129, 0.2);
-  color: #34d399; /* Grønn for radio */
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #059669; /* Grønn for radio */
 }
 
 #details-page[data-type="audiobook"] .badge-tag {
-  background-color: rgba(245, 158, 11, 0.2);
-  color: #fbbf24; /* Oransje for lydbok */
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #d97706; /* Oransje for lydbok */
 }
 
 #details-page[data-type="podcast"] .badge-tag {
-  background-color: rgba(59, 98, 196, 0.2);
-  color: #60a5fa; /* Blå for podkast */
+  background-color: rgba(59, 98, 196, 0.12);
+  color: #2563eb; /* Blå for podkast */
 }
 
 .details-content h2, 
@@ -144,12 +144,12 @@
   font-size: 1.3rem;
   font-weight: 700;
   margin-bottom: 0.3rem;
-  color: #ffffff;
+  color: #09090b;
   line-height: 1.3;
 }
 
 .details-sub {
-  color: #a1a1aa;
+  color: #52525b;
   margin-bottom: 1rem;
   font-size: 0.9rem;
   font-weight: 500;
@@ -159,34 +159,45 @@
 .details-desc-box,
 .details-description-box {
   width: 100%;
-  background-color: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: #f4f4f5;
+  border: 1px solid #e4e4e7;
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1.2rem;
   text-align: left;
   font-size: 0.9rem;
   line-height: 1.5;
-  color: #d1d5db;
+  color: #27272a;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .details-desc-box h3 {
   margin-top: 0;
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
-  color: #fff;
+  color: #09090b;
+  font-weight: 700;
 }
 
+/* Plassert inn i boksen som et eget element i bunnen */
 .details-read-more-btn {
   background: none;
   border: none;
-  color: #60a5fa;
+  color: #2563eb;
   font-size: 0.85rem;
   font-weight: 600;
   padding: 0;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
+  align-self: flex-start;
   cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.details-read-more-btn:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
 }
 
 /* --- Handlingsknapper (Action Bar / Spill av) --- */
@@ -201,7 +212,7 @@
 
 .btn-primary {
   width: 100%;
-  background-color: var(--accent-blue, #3b62c4);
+  background-color: var(--accent-blue, #2563eb);
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -213,7 +224,7 @@
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(59, 98, 196, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
@@ -228,21 +239,21 @@
 }
 
 .btn-action-icon {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
   width: 42px;
   height: 42px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: #18181b;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease;
 }
 
 .btn-action-icon:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: #e4e4e7;
 }
 
 .btn-action-icon:active {
@@ -256,7 +267,7 @@
   width: 100%;
   margin-top: 0.5rem;
   text-align: left; 
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid #e4e4e7;
   padding-top: 1.2rem;
   display: flex;
   flex-direction: column;
@@ -277,7 +288,7 @@
 
 .section-title-wrapper h3 {
   margin: 0;
-  color: #ffffff;
+  color: #09090b;
   font-size: 1rem;
   font-weight: 600;
 }
@@ -289,9 +300,9 @@
 }
 
 .season-dropdown {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: #f4f4f5;
+  color: #18181b;
+  border: 1px solid #e4e4e7;
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 0.85rem;
@@ -303,13 +314,13 @@
 
 .season-dropdown:focus,
 .season-dropdown:hover {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-color: var(--accent-blue, #3b62c4);
+  background-color: #e4e4e7;
+  border-color: var(--accent-blue, #2563eb);
 }
 
 .season-dropdown option {
-  background-color: #070b1e;
-  color: #ffffff;
+  background-color: #ffffff;
+  color: #18181b;
 }
 
 /* --- Episode-elementer --- */
@@ -318,7 +329,7 @@
   display: flex;
   gap: 12px;
   padding: 0.75rem 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid #f4f4f5;
   cursor: pointer;
   transition: background 0.2s ease;
   border-radius: 8px;
@@ -329,7 +340,7 @@
 
 .episode-item:hover,
 .episode-card:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: #f4f4f5;
 }
 
 .episode-poster {
@@ -338,7 +349,7 @@
   border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: #e4e4e7;
 }
 
 .episode-info {
@@ -353,7 +364,7 @@
 .episode-info h4 {
   font-weight: 600;
   font-size: 0.9rem;
-  color: #ffffff;
+  color: #09090b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -362,7 +373,7 @@
 
 .ep-desc {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: #52525b;
   margin-bottom: 0.25rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -373,18 +384,18 @@
 .episode-footer-meta,
 .meta-small {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #71717a;
   display: flex;
   gap: 12px;
 }
 
 .btn-play-sm {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  color: #fff;
+  color: #18181b;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -392,12 +403,16 @@
   flex-shrink: 0;
 }
 
+.btn-play-sm:hover {
+  background: #e4e4e7;
+}
+
 /* --- "Vis flere"-knapp --- */
 #load-more-episodes-btn,
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #ffffff;
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
+  color: #18181b;
   padding: 0.75rem 1rem;
   border-radius: 10px;
   font-size: 0.9rem;
@@ -410,13 +425,13 @@
 
 #load-more-episodes-btn:hover,
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: #e4e4e7;
+  border-color: #d4d4d8;
 }
 
 .loading-episodes {
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: #71717a;
   font-style: italic;
   text-align: center;
   padding: 1rem;
