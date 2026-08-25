@@ -44,12 +44,12 @@ export async function openDetailsPage(item) {
   // 1. Fleksibel innhenting av tittel, undertittel, beskrivelse og cover
   const itemTitle = item.title || item.name || 'Uten tittel';
   const itemSub = item.sub || item.subtitle || item.author || item.publisher || item.host || '';
-  const itemDesc = item.desc || item.description || item.summary || 'Ingen beskrivelse tilgjengelig.';
+  const rawDesc = item.desc || item.description || item.summary || item.about || 'Ingen beskrivelse tilgjengelig.';
   const imageUrl = item.cover || item.coverUrl || item.image || item.imageUrl || '';
 
   if (titleEl) titleEl.textContent = itemTitle;
   if (subEl) subEl.textContent = itemSub;
-  if (descEl) descEl.innerHTML = itemDesc;
+  if (descEl) descEl.innerHTML = cleanHTML(rawDesc);
 
   if (coverContainer) {
     if (imageUrl) {
@@ -59,16 +59,18 @@ export async function openDetailsPage(item) {
     }
   }
 
+  // Tilbakestill beskrivelsesboks og les mer-knapp
   if (descEl && readMoreBtn) {
     descEl.style.maxHeight = '80px';
     readMoreBtn.style.display = 'block';
+    readMoreBtn.textContent = 'Se mer';
   }
 
   // 2. Håndtering basert på type (Radio vs RSS vs Lokale episoder)
   const rssUrl = item.rssUrl || item.rss;
 
   if (contentType === 'radio' || !rssUrl) {
-    // Direkteinnhold / Radio / Lydbok uten RSS trenger ikke hentes via API
+    // Direkteinnhold / Radio / Lydbok uten RSS
     if (item.episodes && Array.isArray(item.episodes)) {
       fetchedEpisodes = item.episodes;
     } else if (item.chapters && Array.isArray(item.chapters)) {
@@ -77,22 +79,24 @@ export async function openDetailsPage(item) {
       fetchedEpisodes = [];
     }
   } else {
-    // Ekte RSS-feed (Podkast)
+    // RSS-feed (Podkast)
     if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Henter episoder...</div>`;
     try {
       const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
       const data = await res.json();
       if (data.status === 'ok') {
+        // Oppdater hovedbeskrivelse dersom feed har beskrivelse og objektet manglet det
         if (data.feed?.description && descEl && (!item.desc && !item.description)) {
-          descEl.innerHTML = data.feed.description;
+          descEl.innerHTML = cleanHTML(data.feed.description);
         }
+
         fetchedEpisodes = (data.items || []).map(ep => ({
           title: ep.title || 'Uten tittel',
           audioUrl: ep.enclosure?.link || ep.link || '',
-          cover: ep.itunes?.image || ep.thumbnail || imageUrl,
+          cover: ep.thumbnail || ep.itunes?.image || ep.enclosure?.thumbnail || imageUrl,
           duration: ep.enclosure?.duration || ep.duration || '',
           pubDate: ep.pubDate || '',
-          description: ep.description || ep.summary || ''
+          description: ep.description || ep.summary || ep.content || ''
         }));
       }
     } catch (err) {
@@ -216,16 +220,23 @@ function renderEpisodesOrChapters(items, unitName) {
   }
 
   const displayedItems = items.slice(0, visibleEpisodesCount);
+  const fallbackCover = currentItem?.cover || currentItem?.coverUrl || currentItem?.image || '';
 
   episodeList.innerHTML = displayedItems.map((ep, index) => {
     const durationText = ep.duration ? parseDuration(ep.duration) : '';
-    const descText = ep.description || ep.summary || '';
+    const descText = cleanHTML(ep.description || ep.summary || '');
+    const epCover = ep.cover || fallbackCover;
 
     return `
       <div class="episode-item" data-index="${index}">
+        <div class="episode-thumb">
+          ${epCover 
+            ? `<img src="${epCover}" alt="${ep.title}" onerror="this.parentElement.innerHTML='<i class=\\'fa-solid fa-podcast\\'></i>'">` 
+            : '<i class="fa-solid fa-podcast"></i>'}
+        </div>
         <div class="episode-info">
           <div class="episode-title">${ep.title || `Episode ${index + 1}`}</div>
-          ${descText ? `<div class="ep-desc">${cleanHTML(descText)}</div>` : ''}
+          ${descText ? `<div class="ep-desc">${descText}</div>` : ''}
           <div class="episode-footer-meta">
             ${durationText ? `<span><i class="fa-regular fa-clock"></i> ${durationText}</span>` : ''}
             ${ep.pubDate ? `<span>${formatDate(ep.pubDate)}</span>` : ''}
@@ -249,7 +260,7 @@ function renderEpisodesOrChapters(items, unitName) {
           title: selected.title || currentItem.title,
           sub: currentItem.sub || currentItem.author || '',
           audioUrl: selected.audioUrl || selected.url || currentItem.audioUrl,
-          cover: selected.cover || currentItem.cover || currentItem.coverUrl
+          cover: selected.cover || fallbackCover
         }, 0);
       }
     });
@@ -288,7 +299,9 @@ if (readMoreBtn && descEl) {
 
 function cleanHTML(str) {
   if (!str) return '';
-  return str.replace(/<\/?[^>]+(>|$)/g, '').substring(0, 100) + '...';
+  const temp = document.createElement('div');
+  temp.innerHTML = str;
+  return temp.textContent || temp.innerText || '';
 }
 
 function formatDate(dateString) {
