@@ -2,16 +2,16 @@ import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
-import { playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
-import { openDetailsPage, closeDetailsPage } from "./details.js"; // <--- VIKTIG: Denne importerer funksjonene!
+import { openDetailsView, togglePlay, setupAudioListeners } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Oppstart
 document.addEventListener("DOMContentLoaded", () => {
   initAuth();
   setupAudioListeners();
+  loadContentFromFirestore(); // <-- FIKSET: Denne manglet!
+  setupSearchListener();       // <-- FIKSET: Denne manglet!
   setupEventListeners();
-  setupTouchDrag();
 });
 
 export function loadContentFromFirestore() {
@@ -44,7 +44,6 @@ export function loadContentFromFirestore() {
             const type = item.type || (pageTarget === 'radio' ? 'radio' : pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
-            // Ta vare på rådata i dataset (konverterer array/objekter til JSON-strenger)
             const seasonsJSON = item.seasons ? JSON.stringify(item.seasons) : '';
             const episodesJSON = item.episodes ? JSON.stringify(item.episodes) : '';
             const chaptersJSON = item.chapters ? JSON.stringify(item.chapters) : '';
@@ -106,6 +105,8 @@ export function loadContentFromFirestore() {
     });
     localStorage.setItem("app_sections_cache", JSON.stringify(sectionsData));
     renderSectionsData(sectionsData);
+  }, (err) => {
+    console.error("Firestore onSnapshot feilet:", err);
   });
 }
 
@@ -153,7 +154,7 @@ async function executeAppSearch(term) {
     resultsContainer = document.createElement("section");
     resultsContainer.id = "search-results-page";
     resultsContainer.className = "page active search-results-overlay";
-    document.querySelector("main").appendChild(resultsContainer);
+    document.querySelector("main")?.appendChild(resultsContainer);
   }
 
   resultsContainer.classList.add("active");
@@ -212,9 +213,6 @@ export function removeSearchResultsView() {
   document.querySelectorAll("main > section").forEach(sec => sec.style.display = "");
 }
 
-/**
- * Hjelpefunksjon for å bygge et komplett innholdsobjekt fra data-attributtene til kortet
- */
 function extractCardItemData(card) {
   const parseJSON = (str) => {
     if (!str) return null;
@@ -224,10 +222,13 @@ function extractCardItemData(card) {
   return {
     id: card.dataset.id || card.id,
     title: card.dataset.title || '',
+    sub: card.dataset.sub || '',
     subtitle: card.dataset.sub || '',
     publisher: card.dataset.sub || '',
     author: card.dataset.sub || '',
+    desc: card.dataset.desc || '',
     description: card.dataset.desc || '',
+    cover: card.dataset.cover || '',
     coverUrl: card.dataset.cover || '',
     image: card.dataset.cover || '',
     rssUrl: card.dataset.rss || '',
@@ -244,7 +245,7 @@ function bindSearchCardClickEvents() {
   document.querySelectorAll(".search-result-item").forEach(card => {
     card.onclick = () => {
       const item = extractCardItemData(card);
-      openDetailsPage(item);
+      openDetailsView(item);
     };
   });
 }
@@ -253,13 +254,12 @@ function bindCardClickEvents() {
   document.querySelectorAll(".book-card:not(.search-result-item)").forEach(card => {
     card.onclick = () => {
       const item = extractCardItemData(card);
-      openDetailsPage(item);
+      openDetailsView(item);
     };
   });
 }
 
 function setupEventListeners() {
-  // Global Event Delegation for alle klikk i appen
   document.addEventListener("click", async (e) => {
     
     // 1. Gå til Innlogging
@@ -322,10 +322,10 @@ function setupEventListeners() {
       return;
     }
 
-    // 9. Lukk Detaljside (Styres via details.js)
+    // 9. Lukk Detaljside
     const closeDetails = e.target.closest("#details-close-btn");
     if (closeDetails) {
-      closeDetailsPage();
+      document.getElementById("details-page")?.classList.remove("active");
       const lastPage = localStorage.getItem("lastActivePage") || "home";
       switchPage(lastPage !== "details-page" ? lastPage : "home");
       return;
@@ -350,7 +350,11 @@ function setupEventListeners() {
       return;
     }
     if (e.target.closest("#open-full-player")) {
-      document.getElementById("fullscreen-player")?.classList.add("active");
+      const fullPlayer = document.getElementById("fullscreen-player");
+      if (fullPlayer) {
+        fullPlayer.style.setProperty('--y-offset', '0px');
+        fullPlayer.classList.add("active");
+      }
       updateUrlHash("fullscreen-player");
       updateBottomNavVisibility();
       return;
@@ -363,7 +367,7 @@ function setupEventListeners() {
     }
   });
 
-  // Event listener for sending av innloggingsskjema
+  // Skjemainnsending for innlogging
   document.addEventListener("submit", async (e) => {
     if (e.target && e.target.id === "auth-form") {
       e.preventDefault();
@@ -378,46 +382,5 @@ function setupEventListeners() {
         if (errorMsg) errorMsg.innerText = "Feil ved innlogging eller registrering.";
       }
     }
-  });
-}
-
-function setupTouchDrag() {
-  const fullscreenPlayer = document.getElementById("fullscreen-player");
-  if (!fullscreenPlayer) return;
-
-  let startY = 0;
-  let currentY = 0;
-  let isDragging = false;
-
-  fullscreenPlayer.addEventListener("touchstart", (e) => {
-    if (e.target.closest("input") || e.target.closest("button")) return;
-    startY = e.touches[0].clientY;
-    currentY = startY;
-    isDragging = true;
-    fullscreenPlayer.style.transition = "none";
-  }, { passive: true });
-
-  fullscreenPlayer.addEventListener("touchmove", (e) => {
-    if (!isDragging) return;
-    currentY = e.touches[0].clientY;
-    const diffY = currentY - startY;
-
-    if (diffY > 0) {
-      fullscreenPlayer.style.transform = `translateY(${diffY}px)`;
-    }
-  }, { passive: true });
-
-  fullscreenPlayer.addEventListener("touchend", () => {
-    if (!isDragging) return;
-    isDragging = false;
-    fullscreenPlayer.style.transition = "";
-
-    const diffY = currentY - startY;
-    if (diffY > 150) {
-      fullscreenPlayer.classList.remove("active");
-      const lastPage = localStorage.getItem("lastActivePage") || "home";
-      switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
-    }
-    fullscreenPlayer.style.transform = "";
   });
 }
