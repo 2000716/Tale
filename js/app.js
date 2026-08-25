@@ -3,7 +3,7 @@ import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { playSpecificEpisode, togglePlay, setupAudioListeners } from "./player.js";
-import { openDetailsPage, closeDetailsPage } from "./details.js"; // Import fra details.js
+import { openDetailsPage, closeDetailsPage } from "./details.js"; // <--- VIKTIG: Denne importerer funksjonene!
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Oppstart
