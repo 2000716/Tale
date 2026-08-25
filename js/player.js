@@ -25,8 +25,8 @@ function updateSleepDisplay() {
 }
 
 function clearSleepTimer() {
-  clearTimeout(sleepTimeout);
-  clearInterval(sleepInterval);
+  if (sleepTimeout) clearTimeout(sleepTimeout);
+  if (sleepInterval) clearInterval(sleepInterval);
   sleepTimeout = null;
   sleepInterval = null;
   targetTime = null;
@@ -59,6 +59,26 @@ function setSleepTimer(minutes) {
   sleepInterval = setInterval(updateSleepDisplay, 1000);
 }
 
+// Hjelpefunksjon for å parse varighet fra RSS (sekunder eller HH:MM:SS)
+function parseRssDuration(duration) {
+  if (!duration) return "";
+  if (typeof duration === "number") {
+    return `• ${Math.round(duration / 60)} min`;
+  }
+  if (typeof duration === "string") {
+    if (duration.includes(":")) {
+      const parts = duration.split(":").map(Number);
+      let seconds = 0;
+      if (parts.length === 3) seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      else if (parts.length === 2) seconds = parts[0] * 60 + parts[1];
+      return `• ${Math.round(seconds / 60)} min`;
+    }
+    const sec = parseInt(duration, 10);
+    if (!isNaN(sec)) return `• ${Math.round(sec / 60)} min`;
+  }
+  return "";
+}
+
 export function setupExtraPlayerControls() {
   const speedBtn = document.getElementById("speed-btn");
   const speedLabel = document.getElementById("speed-label");
@@ -74,7 +94,7 @@ export function setupExtraPlayerControls() {
   const optAboutBtn = document.getElementById("opt-about-btn");
   const optShareBtn = document.getElementById("opt-share-btn");
 
-  // 1. Hastighetskontroll: Kun tekst i 1.0x-format
+  // 1. Hastighetskontroll
   if (speedBtn) {
     speedBtn.onclick = () => {
       currentSpeedIndex = (currentSpeedIndex + 1) % speeds.length;
@@ -91,7 +111,7 @@ export function setupExtraPlayerControls() {
     };
   }
 
-  // 2. Sleep-timer (Scroll-hjul Modal)
+  // 2. Sleep-timer Modal
   if (sleepBtn && sleepModal) {
     sleepBtn.onclick = () => sleepModal.classList.add("active");
   }
@@ -103,7 +123,6 @@ export function setupExtraPlayerControls() {
   if (sleepWheel) {
     const items = sleepWheel.querySelectorAll(".wheel-item");
     
-    // Oppdater valgt element under rulling i hjulet
     sleepWheel.onscroll = () => {
       const scrollPos = sleepWheel.scrollTop + 50;
       items.forEach(item => {
@@ -126,7 +145,7 @@ export function setupExtraPlayerControls() {
     }
   }
 
-  // 3. Tre-prikker Meny (Bottom Sheet)
+  // 3. Tre-prikker Meny
   if (moreOptionsBtn && infoSheetOverlay) {
     moreOptionsBtn.onclick = () => {
       const titleElem = document.getElementById("sheet-item-title");
@@ -143,7 +162,6 @@ export function setupExtraPlayerControls() {
     };
   }
 
-  // Valg A: Om denne boken / sporet
   if (optAboutBtn) {
     optAboutBtn.onclick = () => {
       if (infoSheetOverlay) infoSheetOverlay.classList.remove("active");
@@ -154,7 +172,6 @@ export function setupExtraPlayerControls() {
     };
   }
 
-  // Valg B: Del boken
   if (optShareBtn) {
     optShareBtn.onclick = async () => {
       if (infoSheetOverlay) infoSheetOverlay.classList.remove("active");
@@ -302,8 +319,7 @@ export async function openDetailsView(item) {
 
             const epTitle = ep.title || "Uten tittel";
             const epImage = ep.itunes?.image || ep.thumbnail || state.selectedItem.cover;
-            const durationSec = ep.enclosure?.duration;
-            const durationFormatted = durationSec ? `• ${Math.round(durationSec / 60)} min` : "";
+            const durationFormatted = parseRssDuration(ep.enclosure?.duration || ep.duration);
             const pubDate = ep.pubDate ? new Date(ep.pubDate).toLocaleDateString() : "";
             const cleanSnippet = ep.description ? ep.description.replace(/<[^>]*>?/gm, '').substring(0, 70) + "..." : "";
 
@@ -326,8 +342,9 @@ export async function openDetailsView(item) {
                 cover: epImage,
                 sub: state.selectedItem.sub
               };
+              // Sjekker både tittel direkte og vasket ID i history for bakoverkompatibilitet
               const cleanId = epTitle.replace(/[^a-zA-Z0-9-_]/g, '_');
-              const savedTime = state.userHistory?.[cleanId]?.currentTime || 0;
+              const savedTime = state.userHistory?.[epTitle]?.currentTime || state.userHistory?.[cleanId]?.currentTime || 0;
               playSpecificEpisode(epData, savedTime);
             };
 
@@ -343,9 +360,13 @@ export async function openDetailsView(item) {
     }
   }
 
-  document.getElementById("details-page")?.classList.add("active");
-  updateUrlHash("details-page");
-  updateBottomNavVisibility();
+  if (typeof switchPage === "function") {
+    switchPage("details-page");
+  } else {
+    document.getElementById("details-page")?.classList.add("active");
+    updateUrlHash("details-page");
+    updateBottomNavVisibility();
+  }
 }
 
 export function playSpecificEpisode(epData, startPosition = 0) {
@@ -472,11 +493,11 @@ function setupDragToDismiss() {
   };
 
   const onEnd = () => {
-    window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', onEnd);
-
     if (!dragging) return;
     dragging = false;
+
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onEnd);
 
     const deltaY = currentY - startY;
     fullPlayer.classList.remove('is-dragging');
