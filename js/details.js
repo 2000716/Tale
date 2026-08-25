@@ -1,10 +1,11 @@
-import { playSpecificEpisode as playTrack } from './player.js';
+import { playSpecificEpisode } from './player.js';
 
 // Konfigurasjon og tilstand
-const EPISODES_PER_PAGE = 5;
+const EPISODES_PER_PAGE = 10;
 let currentItem = null;
 let currentSeason = 1;
 let visibleEpisodesCount = EPISODES_PER_PAGE;
+let fetchedEpisodes = [];
 
 // DOM-elementer fra index.html
 const detailsPage = document.getElementById('details-page');
@@ -17,7 +18,6 @@ const descEl = document.getElementById('details-desc');
 const readMoreBtn = document.getElementById('readMoreBtn');
 const startPlayBtn = document.getElementById('start-play-btn');
 
-// Episode- og sesong-elementer
 const episodeListContainer = document.querySelector('.episode-list-container');
 const episodeList = document.getElementById('episode-list');
 const badgeEpisodes = document.getElementById('details-badge-episodes');
@@ -26,107 +26,122 @@ const seasonSelect = document.getElementById('season-select');
 const loadMoreBtn = document.getElementById('load-more-episodes-btn');
 
 /**
- * Åpner detaljsiden og tilpasser grensesnittet etter innholdstype
- * @param {Object} item - Objektet som inneholder info om radio, podcast eller lydbok
+ * Åpner detaljsiden og tilpasser grensesnittet
  */
-export function openDetailsPage(item) {
+export async function openDetailsPage(item) {
   if (!item) return;
 
   currentItem = item;
-  visibleEpisodesCount = EPISODES_PER_PAGE; // Tilbakestill pagination
+  visibleEpisodesCount = EPISODES_PER_PAGE;
+  fetchedEpisodes = [];
 
-  // Sett data-type attributt på modalkonteineren for CSS-farging
   if (detailsPage) {
     detailsPage.setAttribute('data-type', item.type || 'podcast');
   }
 
-  // 1. Fyll inn generell tekst og cover-bilde
+  // 1. Sett tittel, undertittel, beskrivelse og cover
   if (titleEl) titleEl.textContent = item.title || 'Uten tittel';
-  if (subEl) subEl.textContent = item.subtitle || item.author || item.publisher || '';
-  if (descEl) descEl.textContent = item.description || 'Ingen beskrivelse tilgjengelig.';
+  if (subEl) subEl.textContent = item.sub || item.subtitle || item.author || item.publisher || '';
+  if (descEl) descEl.innerHTML = item.desc || item.description || 'Ingen beskrivelse tilgjengelig.';
 
+  const imageUrl = item.cover || item.coverUrl || item.image || '';
   if (coverContainer) {
-    const imageUrl = item.coverUrl || item.image || 'https://via.placeholder.com/300';
     coverContainer.innerHTML = `<img src="${imageUrl}" alt="${item.title}" class="details-cover-img">`;
   }
 
-  // Reset/les mer-knapp
   if (descEl && readMoreBtn) {
     descEl.style.maxHeight = '80px';
     readMoreBtn.style.display = 'block';
   }
 
-  // 2. Tilpass utseende og logikk basert på innholdstype (radio, podcast, audiobook)
+  // 2. Håndter RSS eller direkte episoder
+  const rssUrl = item.rssUrl || item.rss;
+  if (rssUrl) {
+    if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Henter episoder...</div>`;
+    try {
+      const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+      const data = await res.json();
+      if (data.status === 'ok') {
+        if (data.feed?.description && descEl && !item.desc) {
+          descEl.innerHTML = data.feed.description;
+        }
+        fetchedEpisodes = (data.items || []).map(ep => ({
+          title: ep.title || 'Uten tittel',
+          audioUrl: ep.enclosure?.link || ep.link || '',
+          cover: ep.itunes?.image || ep.thumbnail || imageUrl,
+          duration: ep.enclosure?.duration || ep.duration || '',
+          pubDate: ep.pubDate || '',
+          description: ep.description || ''
+        }));
+      }
+    } catch (err) {
+      console.error("Kunne ikke hente RSS:", err);
+    }
+  } else if (item.episodes || item.chapters) {
+    fetchedEpisodes = item.episodes || item.chapters || [];
+  }
+
+  // 3. Konfigurer UI etter type
   setupContentTypeUI(item);
 
-  // 3. Åpne modallaget
   if (detailsPage) {
     detailsPage.classList.add('active');
   }
 }
 
-/**
- * Konfigurerer UI-seksjoner basert på innholdstype
- */
+// Alias for bakoverkompatibilitet dersom app.js kaller openDetailsView
+export const openDetailsView = openDetailsPage;
+
 function setupContentTypeUI(item) {
   const type = item.type || 'podcast';
+  const audioUrl = item.audioUrl || item.streamUrl || item.audio || '';
 
   if (type === 'radio') {
-    // --- RADIO ---
     if (badgeType) badgeType.textContent = 'Direkte Radio';
     if (seasonWrapper) seasonWrapper.style.display = 'none';
     if (loadMoreBtn) loadMoreBtn.style.display = 'none';
-
-    // Radio har ingen episodeliste (det er direktestrøm)
     if (episodeListContainer) episodeListContainer.style.display = 'none';
 
-    // Hovedspilleknapp starter direktestrømmen
     if (startPlayBtn) {
       startPlayBtn.onclick = () => {
-        playTrack({
-          id: item.id,
+        playSpecificEpisode({
           title: item.title,
-          audioUrl: item.streamUrl || item.audioUrl, // Støtter både streamUrl og audioUrl
-          isLive: true,
-          coverUrl: item.coverUrl || item.image
-        }, item);
+          sub: item.sub || item.author || 'Direkte Radio',
+          audioUrl: audioUrl,
+          cover: item.cover || item.coverUrl || item.image
+        }, 0);
       };
     }
 
   } else if (type === 'audiobook') {
-    // --- LYDBOK ---
     if (badgeType) badgeType.textContent = 'Lydbok';
     if (seasonWrapper) seasonWrapper.style.display = 'none';
     if (episodeListContainer) episodeListContainer.style.display = 'flex';
 
-    // Hovedspilleknapp starter kapittel 1 / sporet
     if (startPlayBtn) {
       startPlayBtn.onclick = () => {
-        const firstChapter = (item.chapters && item.chapters[0]) || item;
-        playTrack(firstChapter, item);
+        const first = fetchedEpisodes[0] || { title: item.title, audioUrl: audioUrl, cover: item.cover };
+        playSpecificEpisode({
+          title: first.title || item.title,
+          sub: item.sub || item.author || '',
+          audioUrl: first.audioUrl || audioUrl,
+          cover: first.cover || item.cover
+        }, 0);
       };
     }
 
-    renderEpisodesOrChapters(item.chapters || [], 'kapitler');
+    renderEpisodesOrChapters(fetchedEpisodes, 'kapitler');
 
   } else {
-    // --- PODKAST ---
     if (badgeType) badgeType.textContent = 'Podkast';
     if (episodeListContainer) episodeListContainer.style.display = 'flex';
 
-    // Håndter sesonger dersom podkasten har det
     if (item.seasons && Array.isArray(item.seasons) && item.seasons.length > 0) {
       if (seasonWrapper) seasonWrapper.style.display = 'block';
-
-      // Bygg opp sesong-velgeren
       if (seasonSelect) {
-        seasonSelect.innerHTML = item.seasons
-          .map(s => `<option value="${s}">Sesong ${s}</option>`)
-          .join('');
-
+        seasonSelect.innerHTML = item.seasons.map(s => `<option value="${s}">Sesong ${s}</option>`).join('');
         currentSeason = item.seasons[0];
         seasonSelect.value = currentSeason;
-
         seasonSelect.onchange = (e) => {
           currentSeason = Number(e.target.value);
           visibleEpisodesCount = EPISODES_PER_PAGE;
@@ -137,13 +152,16 @@ function setupContentTypeUI(item) {
       if (seasonWrapper) seasonWrapper.style.display = 'none';
     }
 
-    // Hovedspilleknapp starter nyeste/første episode
     if (startPlayBtn) {
       startPlayBtn.onclick = () => {
-        const episodes = getFilteredEpisodes();
-        if (episodes.length > 0) {
-          playTrack(episodes[0], item);
-        }
+        const eps = getFilteredEpisodes();
+        const target = eps[0] || { title: item.title, audioUrl: audioUrl, cover: item.cover };
+        playSpecificEpisode({
+          title: target.title || item.title,
+          sub: item.sub || item.author || '',
+          audioUrl: target.audioUrl || audioUrl,
+          cover: target.cover || item.cover
+        }, 0);
       };
     }
 
@@ -151,34 +169,22 @@ function setupContentTypeUI(item) {
   }
 }
 
-/**
- * Henter episoder filtrert på valgt sesong
- */
 function getFilteredEpisodes() {
-  if (!currentItem || !currentItem.episodes) return [];
-  
-  if (currentItem.seasons && currentItem.seasons.length > 0) {
-    return currentItem.episodes.filter(ep => Number(ep.season) === currentSeason);
+  if (!fetchedEpisodes || fetchedEpisodes.length === 0) return [];
+  if (currentItem?.seasons && currentItem.seasons.length > 0) {
+    return fetchedEpisodes.filter(ep => Number(ep.season) === currentSeason);
   }
-  
-  return currentItem.episodes;
+  return fetchedEpisodes;
 }
 
-/**
- * Oppdaterer listen for podkastepisoder
- */
 function updatePodcastList() {
   const episodes = getFilteredEpisodes();
   renderEpisodesOrChapters(episodes, 'episoder');
 }
 
-/**
- * Felles funksjon for å rendre enten episoder eller kapitler (støtter MP3 og RSS-data)
- */
 function renderEpisodesOrChapters(items, unitName) {
   if (!episodeList) return;
 
-  // Sjekk om det finnes innhold
   if (!items || items.length === 0) {
     episodeList.innerHTML = `<div class="loading-episodes">Ingen ${unitName} tilgjengelig.</div>`;
     if (badgeEpisodes) badgeEpisodes.textContent = `0 ${unitName}`;
@@ -186,19 +192,14 @@ function renderEpisodesOrChapters(items, unitName) {
     return;
   }
 
-  // Oppdater overskriftstittel (f.eks. "12 episoder")
   if (badgeEpisodes) {
     badgeEpisodes.textContent = `${items.length} ${unitName}`;
   }
 
-  // Kutt listen basert på "Vis flere"-grensen
   const displayedItems = items.slice(0, visibleEpisodesCount);
 
-  // Bygg HTML for hvert element
   episodeList.innerHTML = displayedItems.map((ep, index) => {
-    // Håndterer både direkte MP3 og RSS-felt
-    const audioSrc = ep.audioUrl || ep.url || ep.enclosure?.url || '';
-    const durationText = ep.duration || (ep.itunes && ep.itunes.duration) || '';
+    const durationText = ep.duration ? parseDuration(ep.duration) : '';
     const descText = ep.description || ep.summary || '';
 
     return `
@@ -218,21 +219,23 @@ function renderEpisodesOrChapters(items, unitName) {
     `;
   }).join('');
 
-  // Legg til klikk-hendelse for avspilling på hver rad
   const episodeRows = episodeList.querySelectorAll('.episode-item');
   episodeRows.forEach((row) => {
     row.addEventListener('click', () => {
       const idx = Number(row.getAttribute('data-index'));
-      const selectedAudio = displayedItems[idx];
-      
-      if (selectedAudio) {
-        // Send både sporet og hele objektet (for å ha context/cover)
-        playTrack(selectedAudio, currentItem);
+      const selected = displayedItems[idx];
+
+      if (selected) {
+        playSpecificEpisode({
+          title: selected.title || currentItem.title,
+          sub: currentItem.sub || currentItem.author || '',
+          audioUrl: selected.audioUrl || selected.url || currentItem.audioUrl,
+          cover: selected.cover || currentItem.cover
+        }, 0);
       }
     });
   });
 
-  // Håndtering av "Vis flere episoder"-knappen
   if (loadMoreBtn) {
     if (items.length > visibleEpisodesCount) {
       loadMoreBtn.style.display = 'block';
@@ -246,19 +249,11 @@ function renderEpisodesOrChapters(items, unitName) {
   }
 }
 
-/**
- * Lukker modalvinduet
- */
 export function closeDetailsPage() {
-  if (detailsPage) {
-    detailsPage.classList.remove('active');
-  }
+  if (detailsPage) detailsPage.classList.remove('active');
 }
 
-// Event Listeners for lukking og les mer
-if (closeBtn) {
-  closeBtn.addEventListener('click', closeDetailsPage);
-}
+if (closeBtn) closeBtn.addEventListener('click', closeDetailsPage);
 
 if (readMoreBtn && descEl) {
   readMoreBtn.addEventListener('click', () => {
@@ -272,13 +267,11 @@ if (readMoreBtn && descEl) {
   });
 }
 
-// Hjelpefunksjon for å fjerne HTML-tags fra beskrivelser (f.eks. fra RSS)
 function cleanHTML(str) {
   if (!str) return '';
-  return str.replace(/<\/?[^>]+(>|$)/g, '');
+  return str.replace(/<\/?[^>]+(>|$)/g, '').substring(0, 100) + '...';
 }
 
-// Hjelpefunksjon for å formatere datoer
 function formatDate(dateString) {
   try {
     const d = new Date(dateString);
@@ -287,4 +280,10 @@ function formatDate(dateString) {
   } catch (e) {
     return '';
   }
+}
+
+function parseDuration(dur) {
+  if (typeof dur === 'number') return `${Math.round(dur / 60)} min`;
+  if (typeof dur === 'string' && dur.includes(':')) return dur;
+  return dur ? `${dur} min` : '';
 }
