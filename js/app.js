@@ -5,12 +5,23 @@ import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { openDetailsView, togglePlay, setupAudioListeners } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Hjelpefunksjon for å unngå krasj ved spesialtegn i HTML-attributter
+function escapeAttr(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 // Oppstart
 document.addEventListener("DOMContentLoaded", () => {
   initAuth();
   setupAudioListeners();
-  loadContentFromFirestore(); // <-- FIKSET: Denne manglet!
-  setupSearchListener();       // <-- FIKSET: Denne manglet!
+  loadContentFromFirestore();
+  setupSearchListener();
   setupEventListeners();
 });
 
@@ -51,17 +62,17 @@ export function loadContentFromFirestore() {
             itemsHTML += `
               <div class="book-card" 
                    id="${cardId}"
-                   data-id="${item.id || cardId}"
-                   data-title="${title}" 
-                   data-sub="${sub}" 
-                   data-desc="${item.desc || item.description || ''}" 
-                   data-cover="${manualCover}"
-                   data-rss="${rssUrl}"
-                   data-audio="${audioUrl}"
-                   data-type="${type}"
-                   data-seasons='${seasonsJSON}'
-                   data-episodes='${episodesJSON}'
-                   data-chapters='${chaptersJSON}'>
+                   data-id="${escapeAttr(item.id || cardId)}"
+                   data-title="${escapeAttr(title)}" 
+                   data-sub="${escapeAttr(sub)}" 
+                   data-desc="${escapeAttr(item.desc || item.description || '')}" 
+                   data-cover="${escapeAttr(manualCover)}"
+                   data-rss="${escapeAttr(rssUrl)}"
+                   data-audio="${escapeAttr(audioUrl)}"
+                   data-type="${escapeAttr(type)}"
+                   data-seasons='${escapeAttr(seasonsJSON)}'
+                   data-episodes='${escapeAttr(episodesJSON)}'
+                   data-chapters='${escapeAttr(chaptersJSON)}'>
                 <div class="book-cover" id="cover-${cardId}">
                   ${buildCoverMarkup(manualCover, title)}
                 </div>
@@ -84,10 +95,9 @@ export function loadContentFromFirestore() {
         }
       });
     });
-
-    bindCardClickEvents();
   };
 
+  // Les fra cache først for lynrask oppstart
   const cachedSections = localStorage.getItem("app_sections_cache");
   if (cachedSections) {
     try {
@@ -97,6 +107,7 @@ export function loadContentFromFirestore() {
     }
   }
 
+  // Sanntidssynkronisering fra Firestore
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
   onSnapshot(q, (snapshot) => {
     const sectionsData = [];
@@ -158,7 +169,7 @@ async function executeAppSearch(term) {
   }
 
   resultsContainer.classList.add("active");
-  resultsContainer.innerHTML = `<h2>Søkeresultater for "${term}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster...</p></div>`;
+  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster...</p></div>`;
 
   document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => sec.style.display = "none");
 
@@ -169,7 +180,7 @@ async function executeAppSearch(term) {
 
     let htmlContent = "";
     if (podcasts.length === 0) {
-      htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet på "${term}".</p>`;
+      htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet på "${escapeAttr(term)}".</p>`;
     } else {
       let gridHTML = "";
       podcasts.forEach((podcast, index) => {
@@ -183,11 +194,11 @@ async function executeAppSearch(term) {
           <div class="book-card search-result-item" 
                id="${cardId}"
                data-id="${cardId}"
-               data-title="${title}" 
-               data-sub="${sub}" 
+               data-title="${escapeAttr(title)}" 
+               data-sub="${escapeAttr(sub)}" 
                data-desc="Hentet via Apple Podcast API" 
-               data-cover="${cover}"
-               data-rss="${feedUrl}"
+               data-cover="${escapeAttr(cover)}"
+               data-rss="${escapeAttr(feedUrl)}"
                data-type="podcast"
                data-audio="">
             <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
@@ -199,8 +210,7 @@ async function executeAppSearch(term) {
       htmlContent = `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${gridHTML}</div>`;
     }
 
-    resultsContainer.innerHTML = `<h2>Søkeresultater for "${term}"</h2><div class="dynamic-container">${htmlContent}</div>`;
-    bindSearchCardClickEvents();
+    resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container">${htmlContent}</div>`;
   } catch (err) {
     console.error("Feil under søk:", err);
     resultsContainer.innerHTML = `<h2>Søk</h2><p style="padding:20px; color:red;">Kunne ikke utføre søk akkurat nå.</p>`;
@@ -241,27 +251,17 @@ function extractCardItemData(card) {
   };
 }
 
-function bindSearchCardClickEvents() {
-  document.querySelectorAll(".search-result-item").forEach(card => {
-    card.onclick = () => {
-      const item = extractCardItemData(card);
-      openDetailsView(item);
-    };
-  });
-}
-
-function bindCardClickEvents() {
-  document.querySelectorAll(".book-card:not(.search-result-item)").forEach(card => {
-    card.onclick = () => {
-      const item = extractCardItemData(card);
-      openDetailsView(item);
-    };
-  });
-}
-
 function setupEventListeners() {
   document.addEventListener("click", async (e) => {
     
+    // 0. Håndtering av kort-klikk via event-delegering (Erstatter bindCardClickEvents)
+    const card = e.target.closest(".book-card");
+    if (card) {
+      const item = extractCardItemData(card);
+      openDetailsView(item);
+      return;
+    }
+
     // 1. Gå til Innlogging
     const loginBtn = e.target.closest("#go-to-login-btn");
     if (loginBtn) {
