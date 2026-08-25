@@ -119,7 +119,7 @@ export function setupExtraPlayerControls() {
     if (confirmSleepBtn) {
       confirmSleepBtn.onclick = () => {
         const selectedItem = sleepWheel.querySelector(".wheel-item.selected") || items[0];
-        const minutes = parseInt(selectedItem.dataset.value, 10);
+        const minutes = parseInt(selectedItem?.dataset?.value || "0", 10);
         setSleepTimer(minutes);
         if (sleepModal) sleepModal.classList.remove("active");
       };
@@ -161,8 +161,8 @@ export function setupExtraPlayerControls() {
       if (navigator.share && state.selectedItem) {
         try {
           await navigator.share({
-            title: state.selectedItem.title,
-            text: `Hør på ${state.selectedItem.title} på Tale!`,
+            title: state.selectedItem.title || "Tale",
+            text: `Hør på ${state.selectedItem.title || "dette sporet"} på Tale!`,
             url: window.location.href,
           });
         } catch (err) {
@@ -261,7 +261,7 @@ export async function openDetailsView(item) {
       episodeListContainer.innerHTML = `
         <div class="episode-item" style="cursor: pointer;">
           <div class="episode-info">
-            <div class="episode-title">${state.selectedItem.title} (Spill av direkte)</div>
+            <div class="episode-title">${state.selectedItem.title || "Spill av"} (Spill av direkte)</div>
             <div class="ep-desc">Klikk for å starte avspilling av denne strømmen.</div>
           </div>
         </div>
@@ -282,7 +282,7 @@ export async function openDetailsView(item) {
           dDesc.innerHTML = data.feed.description;
         }
 
-        const rssImg = data.feed?.image || (data.items.length > 0 ? data.items[0].thumbnail : "");
+        const rssImg = data.feed?.image || (data.items?.length > 0 ? data.items[0].thumbnail : "");
         if (rssImg) {
           state.selectedItem.cover = rssImg;
           if (detailsCoverContainer) {
@@ -290,16 +290,17 @@ export async function openDetailsView(item) {
           }
         }
 
-        if (data.items.length > 0 && data.items[0].enclosure && data.items[0].enclosure.link) {
+        if (data.items?.length > 0 && data.items[0].enclosure?.link) {
           state.selectedItem.audioUrl = data.items[0].enclosure.link;
         }
 
-        if (episodeListContainer && data.items.length > 0) {
+        if (episodeListContainer && data.items?.length > 0) {
           episodeListContainer.innerHTML = "";
           data.items.forEach(ep => {
             const epDiv = document.createElement("div");
             epDiv.className = "episode-item";
 
+            const epTitle = ep.title || "Uten tittel";
             const epImage = ep.itunes?.image || ep.thumbnail || state.selectedItem.cover;
             const durationSec = ep.enclosure?.duration;
             const durationFormatted = durationSec ? `• ${Math.round(durationSec / 60)} min` : "";
@@ -309,7 +310,7 @@ export async function openDetailsView(item) {
             epDiv.innerHTML = `
               <img src="${epImage}" class="episode-poster" alt="Cover" loading="lazy">
               <div class="episode-info">
-                <div class="episode-title">${ep.title}</div>
+                <div class="episode-title">${epTitle}</div>
                 <div class="ep-desc">${cleanSnippet}</div>
                 <div class="episode-footer-meta">
                   <span><i class="fa-regular fa-calendar"></i> ${pubDate}</span>
@@ -320,12 +321,12 @@ export async function openDetailsView(item) {
 
             epDiv.onclick = () => {
               const epData = {
-                title: ep.title,
+                title: epTitle,
                 audioUrl: ep.enclosure?.link || state.selectedItem.audioUrl,
                 cover: epImage,
                 sub: state.selectedItem.sub
               };
-              const cleanId = ep.title.replace(/[^a-zA-Z0-9-_]/g, '_');
+              const cleanId = epTitle.replace(/[^a-zA-Z0-9-_]/g, '_');
               const savedTime = state.userHistory?.[cleanId]?.currentTime || 0;
               playSpecificEpisode(epData, savedTime);
             };
@@ -413,7 +414,6 @@ export function openFullscreenPlayer() {
   fullPlayer.classList.remove('is-dragging');
   fullPlayer.classList.add('active');
   updateUrlHash("fullscreen-player");
-  // updateBottomNavVisibility() fjernet herfor å unngå kollisjon med CSS :has()
 }
 
 export function closeFullscreenPlayer() {
@@ -422,7 +422,6 @@ export function closeFullscreenPlayer() {
   fullPlayer.classList.remove('is-dragging');
   fullPlayer.classList.remove('active');
   fullPlayer.style.removeProperty('--y-offset');
-  // updateBottomNavVisibility() fjernet herfor å unngå kollisjon med CSS :has()
 }
 
 export function togglePlay() {
@@ -473,6 +472,9 @@ function setupDragToDismiss() {
   };
 
   const onEnd = () => {
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onEnd);
+
     if (!dragging) return;
     dragging = false;
 
@@ -486,9 +488,6 @@ function setupDragToDismiss() {
     } else {
       fullPlayer.style.setProperty('--y-offset', '0px');
     }
-
-    window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', onEnd);
 
     setTimeout(() => {
       if (fullPlayer) fullPlayer.style.transition = "";
@@ -554,7 +553,11 @@ export function setupAudioListeners() {
 
     if (state.selectedItem?.title) {
       const itemToOpen = { ...state.selectedItem };
-      await removeFromFirestoreHistory(state.selectedItem.title);
+      try {
+        await removeFromFirestoreHistory(state.selectedItem.title);
+      } catch (err) {
+        console.error("Kunne ikke fjerne historikk fra Firestore:", err);
+      }
       
       document.getElementById("audio-player-bar")?.classList.add("hidden");
       closeFullscreenPlayer();
