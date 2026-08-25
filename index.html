@@ -178,89 +178,91 @@
       </div>
     </div>
 
-<!-- FULLSKJERM SPILLER -->
-<div id="fullscreen-player" class="modal">
-  <div class="drag-handle"></div>
-  <div class="player-full-content">
-    <div id="full-cover-container"></div>
-    <h2 id="full-title">Tittel</h2>
-    <p id="full-sub">Undertittel</p>
+    <!-- FULLSKJERM SPILLER -->
+    <div id="fullscreen-player" class="modal">
+      <div class="drag-handle"></div>
+      <div class="player-full-content">
+        <div id="full-cover-container"></div>
+        <h2 id="full-title">Tittel</h2>
+        <p id="full-sub">Undertittel</p>
 
-    <div class="progress-container">
-      <span id="current-time">0:00</span>
-      <input type="range" id="progress-bar" value="0" min="0" max="100">
-      <span id="total-time">0:00</span>
-    </div>
+        <div class="progress-container">
+          <span id="current-time">0:00</span>
+          <input type="range" id="progress-bar" value="0" min="0" max="100">
+          <span id="total-time">0:00</span>
+        </div>
 
-    <div class="full-controls">
-      <button id="skip-back-btn" class="skip-btn" title="-15 sekunder"><i class="fa-solid fa-rotate-left"></i> 15s</button>
-      <button id="full-play-btn" class="main-play-btn"><i class="fa-solid fa-play"></i></button>
-      <button id="skip-forward-btn" class="skip-btn" title="+15 sekunder">15s <i class="fa-solid fa-rotate-right"></i></button>
-    </div>
+        <div class="full-controls">
+          <button id="skip-back-btn" class="skip-btn" title="-15 sekunder"><i class="fa-solid fa-rotate-left"></i> 15s</button>
+          <button id="full-play-btn" class="main-play-btn"><i class="fa-solid fa-play"></i></button>
+          <button id="skip-forward-btn" class="skip-btn" title="+15 sekunder">15s <i class="fa-solid fa-rotate-right"></i></button>
+        </div>
 
-<!-- EKSTRA-KONTROLLER NEDERST I SPILLEREN -->
-<div class="extra-controls">
-  <!-- Hastighetsknapp: KUN tekst (ingen ikon) -->
-  <button id="speed-btn" class="extra-btn text-only-btn" title="Avspillingshastighet">
-    <span id="speed-label">1.0x</span>
-  </button>
+        <!-- EKSTRA-KONTROLLER NEDERST I SPILLEREN -->
+        <div class="extra-controls">
+          <!-- Hastighetsknapp: KUN tekst -->
+          <button id="speed-btn" class="extra-btn text-only-btn" title="Avspillingshastighet">
+            <span id="speed-label">1.0x</span>
+          </button>
 
-  <!-- Sleep-timer knapp: Med PNG-ikon -->
-  <button id="sleep-btn" class="extra-btn" title="Søvntimer">
-    <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787608573/copy_of_night_lijrw7.png" alt="Søvntimer" class="nav-icon-png" />
-    <span id="sleep-label">Av</span>
-  </button>
+          <!-- Sleep-timer knapp -->
+          <button id="sleep-btn" class="extra-btn" title="Søvntimer">
+            <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787608573/copy_of_night_lijrw7.png" alt="Søvntimer" class="nav-icon-png" />
+            <span id="sleep-label">Av</span>
+          </button>
 
-  <!-- Ny knapp: 3-prikker for meny/info -->
-  <button id="more-options-btn" class="extra-btn" title="Mer informasjon">
-    <i class="fa-solid fa-ellipsis"></i>
-  </button>
-</div>
+          <!-- 3-prikker for meny/info -->
+          <button id="more-options-btn" class="extra-btn" title="Mer informasjon">
+            <i class="fa-solid fa-ellipsis"></i>
+          </button>
+        </div>
+      </div> <!-- Lukker player-full-content -->
+    </div> <!-- Lukker fullscreen-player -->
 
-<!-- Modal for Sleep Timer Scroll-hjul -->
-<div id="sleep-modal" class="sleep-modal">
-  <div class="sleep-modal-content">
-    <div class="sleep-modal-header">
-      <span>Velg søvntimer</span>
-      <button id="close-sleep-modal" class="close-modal-btn">&times;</button>
-    </div>
-    <div class="wheel-container">
-      <div class="wheel-highlight"></div>
-      <div id="sleep-wheel" class="wheel-scroll">
-        <div class="wheel-item selected" data-value="0">Av</div>
-        <div class="wheel-item" data-value="5">5 min</div>
-        <div class="wheel-item" data-value="10">10 min</div>
-        <div class="wheel-item" data-value="15">15 min</div>
-        <div class="wheel-item" data-value="30">30 min</div>
-        <div class="wheel-item" data-value="45">45 min</div>
-        <div class="wheel-item" data-value="60">1 time</div>
-        <div class="wheel-item" data-value="90">1.5 time</div>
-        <div class="wheel-item" data-value="120">2 timer</div>
+    <!-- Modal for Sleep Timer Scroll-hjul -->
+    <div id="sleep-modal" class="sleep-modal">
+      <div class="sleep-modal-content">
+        <div class="sleep-modal-header">
+          <span>Velg søvntimer</span>
+          <button id="close-sleep-modal" class="close-modal-btn">&times;</button>
+        </div>
+        <div class="wheel-container">
+          <div class="wheel-highlight"></div>
+          <div id="sleep-wheel" class="wheel-scroll">
+            <div class="wheel-item selected" data-value="0">Av</div>
+            <div class="wheel-item" data-value="5">5 min</div>
+            <div class="wheel-item" data-value="10">10 min</div>
+            <div class="wheel-item" data-value="15">15 min</div>
+            <div class="wheel-item" data-value="30">30 min</div>
+            <div class="wheel-item" data-value="45">45 min</div>
+            <div class="wheel-item" data-value="60">1 time</div>
+            <div class="wheel-item" data-value="90">1.5 time</div>
+            <div class="wheel-item" data-value="120">2 timer</div>
+          </div>
+        </div>
+        <button id="confirm-sleep-btn" class="confirm-sleep-btn">Sett timer</button>
       </div>
     </div>
-    <button id="confirm-sleep-btn" class="confirm-sleep-btn">Sett timer</button>
-  </div>
-</div>
 
-<!-- Halvside-panel (Bottom Sheet) for 3-prikker menyen -->
-<div id="info-sheet-overlay" class="sheet-overlay">
-  <div class="bottom-sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-header">
-      <h3 id="sheet-item-title">Innholdsvalg</h3>
+    <!-- Halvside-panel (Bottom Sheet) for 3-prikker menyen -->
+    <div id="info-sheet-overlay" class="sheet-overlay">
+      <div class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h3 id="sheet-item-title">Innholdsvalg</h3>
+        </div>
+        <div class="sheet-body">
+          <button id="opt-about-btn" class="sheet-option">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Om denne boken / sporet</span>
+          </button>
+          <button id="opt-share-btn" class="sheet-option">
+            <i class="fa-solid fa-share-nodes"></i>
+            <span>Del dette sporet</span>
+          </button>
+        </div>
+      </div>
     </div>
-    <div class="sheet-body">
-      <button id="opt-about-btn" class="sheet-option">
-        <i class="fa-solid fa-circle-info"></i>
-        <span>Om denne boken / sporet</span>
-      </button>
-      <button id="opt-share-btn" class="sheet-option">
-        <i class="fa-solid fa-share-nodes"></i>
-        <span>Del dette sporet</span>
-      </button>
-    </div>
-  </div>
-</div>
 
     <!-- MINI-SPILLERSTRIPE -->
     <div class="player hidden" id="audio-player-bar">
