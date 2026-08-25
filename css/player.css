@@ -117,7 +117,7 @@
 }
 
 /* ==========================================
-   STORSPILLER / FULLSKJERM (Ren vertikal bevegelse)
+   STORSPILLER / FULLSKJERM (Korrigert)
    ========================================== */
 #fullscreen-player {
   position: fixed;
@@ -126,7 +126,8 @@
   right: 0;
   margin: 0 auto;
 
-  transform: translateY(calc(100vh + var(--y-offset, 0px)));
+  /* FIKS 1: Start alltid på 100% nede (rett utenfor skjermen) */
+  transform: translateY(100%);
 
   width: 100%;
   max-width: 480px;
@@ -154,14 +155,21 @@
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
-  will-change: transform, opacity;
 
-  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
+  /* FIKS 2: Animer transform og opacity mykt */
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), 
               opacity 0.25s ease,
-              visibility 0.38s;
+              visibility 0.35s;
+}
+
+/* FIKS 3: Når spilleren dras manuelt med fingeren, slår vi av transition 
+   slik at den følger fingeren umiddelbart uten forsinkelse */
+#fullscreen-player.is-dragging {
+  transition: none !important;
 }
 
 #fullscreen-player.active {
+  /* Når aktiv, flytt fra 0px og nedover etter hvor mye brukeren drar */
   transform: translateY(var(--y-offset, 0px));
   opacity: 1;
   pointer-events: auto;
