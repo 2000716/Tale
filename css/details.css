@@ -10,8 +10,8 @@
   max-width: 480px;
   height: 100vh;
   height: 100dvh;
-  background-color: var(--bg-content, #ffffff);
-  color: var(--text-dark, #111827);
+  background-color: var(--bg-content, #070b1e);
+  color: var(--text-light, #ffffff);
   z-index: 1500;
   overflow-y: auto;
   
@@ -45,6 +45,29 @@
   width: 100%;
 }
 
+/* Lukk-knapp */
+.close-btn {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 10px) + 0.8rem);
+  right: 1.2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 /* --- Hero / Cover og Toppseksjon --- */
 .details-hero {
   display: flex;
@@ -74,7 +97,7 @@
   height: 100%;
   object-fit: cover;
   border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
 .details-header-info {
@@ -85,7 +108,8 @@
   text-align: center;
 }
 
-/* --- Type Etikett (Radio / Lydbok / Podcast) --- */
+/* --- Type Etiketter (Radio / Lydbok / Podkast) --- */
+.badge-tag,
 .details-type-badge {
   display: inline-block;
   font-size: 0.75rem;
@@ -95,24 +119,24 @@
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   margin-bottom: 0.5rem;
-  background-color: rgba(59, 98, 196, 0.1);
-  color: var(--accent-blue, #3b62c4);
+  background-color: rgba(59, 98, 196, 0.2);
+  color: #60a5fa;
 }
 
-/* Dynamiske farger basert på type */
-#details-page[data-type="radio"] .details-type-badge {
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #10b981; /* Grønn for radio */
+/* Dynamiske farger basert på innholdstype */
+#details-page[data-type="radio"] .badge-tag {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #34d399; /* Grønn for radio */
 }
 
-#details-page[data-type="audiobook"] .details-type-badge {
-  background-color: rgba(245, 158, 11, 0.1);
-  color: #f59e0b; /* Oransje for lydbok */
+#details-page[data-type="audiobook"] .badge-tag {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #fbbf24; /* Oransje for lydbok */
 }
 
-#details-page[data-type="podcast"] .details-type-badge {
-  background-color: rgba(59, 98, 196, 0.1);
-  color: #3b62c4; /* Blå for podcast */
+#details-page[data-type="podcast"] .badge-tag {
+  background-color: rgba(59, 98, 196, 0.2);
+  color: #60a5fa; /* Blå for podkast */
 }
 
 .details-content h2, 
@@ -120,30 +144,49 @@
   font-size: 1.3rem;
   font-weight: 700;
   margin-bottom: 0.3rem;
-  color: var(--text-dark, #111827);
+  color: #ffffff;
   line-height: 1.3;
 }
 
 .details-sub {
-  color: var(--accent-blue, #3b62c4);
+  color: #a1a1aa;
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* --- Beskrivelsesboks --- */
+.details-desc-box,
 .details-description-box {
   width: 100%;
-  background-color: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1.2rem;
   text-align: left;
   font-size: 0.9rem;
   line-height: 1.5;
-  color: var(--text-muted, #4b5563);
+  color: #d1d5db;
   box-sizing: border-box;
+}
+
+.details-desc-box h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+.details-read-more-btn {
+  background: none;
+  border: none;
+  color: #60a5fa;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0;
+  margin-top: 0.5rem;
+  cursor: pointer;
 }
 
 /* --- Handlingsknapper (Action Bar / Spill av) --- */
@@ -185,71 +228,117 @@
 }
 
 .btn-action-icon {
-  background: rgba(0, 0, 0, 0.04);
-  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   width: 42px;
   height: 42px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-dark, #111827);
+  color: #ffffff;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.1s ease;
 }
 
 .btn-action-icon:hover {
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-action-icon:active {
+  transform: scale(0.95);
 }
 
 /* ==========================================
-   EPISODELISTE 
+   EPISODELISTE OG SESONGSTYRING 
    ========================================== */
 .episode-list-container {
   width: 100%;
   margin-top: 0.5rem;
   text-align: left; 
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1.2rem;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
 }
 
-.episode-list-container h3 {
-  order: -1;
-  align-self: flex-start;
-  margin: 0 0 0.75rem 0;
-  color: var(--text-dark, #111827);
-  font-size: 0.95rem;
-  text-align: left;
+/* Skjul episodeliste for Radio */
+#details-page[data-type="radio"] .episode-list-container {
+  display: none;
+}
+
+.section-title-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   width: 100%;
+  margin-bottom: 0.8rem;
+}
+
+.section-title-wrapper h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1rem;
   font-weight: 600;
 }
 
-.episode-item {
+/* --- Sesong-dropdown styling --- */
+.season-select-wrapper {
   display: flex;
-  gap: 10px;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  cursor: pointer;
-  transition: background 0.2s ease;
-  border-radius: 6px;
   align-items: center;
-  width: 100%;
 }
 
-.episode-item:hover {
-  background: rgba(0, 0, 0, 0.03);
+.season-dropdown {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.season-dropdown:focus,
+.season-dropdown:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent-blue, #3b62c4);
+}
+
+.season-dropdown option {
+  background-color: #070b1e;
+  color: #ffffff;
+}
+
+/* --- Episode-elementer --- */
+.episode-item,
+.episode-card {
+  display: flex;
+  gap: 12px;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-radius: 8px;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.episode-item:hover,
+.episode-card:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .episode-poster {
   width: 48px;
   height: 48px;
-  border-radius: 6px;
+  border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
-  background-color: #e5e7eb;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .episode-info {
@@ -260,36 +349,74 @@
   text-align: left;
 }
 
-.episode-title {
+.episode-title,
+.episode-info h4 {
   font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--text-dark, #111827);
+  font-size: 0.9rem;
+  color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 0.1rem;
+  margin: 0 0 0.2rem 0;
 }
 
 .ep-desc {
   font-size: 0.75rem;
-  color: var(--text-muted, #6b7280);
-  margin-bottom: 0.15rem;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.episode-footer-meta {
-  font-size: 0.7rem;
-  color: var(--text-muted, #9ca3af);
+.episode-footer-meta,
+.meta-small {
+  font-size: 0.75rem;
+  color: #6b7280;
   display: flex;
   gap: 12px;
 }
 
+.btn-play-sm {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* --- "Vis flere"-knapp --- */
+#load-more-episodes-btn,
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+#load-more-episodes-btn:hover,
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 .loading-episodes {
   font-size: 0.85rem;
-  color: var(--text-muted, #6b7280);
+  color: #9ca3af;
   font-style: italic;
   text-align: center;
   padding: 1rem;
