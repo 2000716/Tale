@@ -1,5 +1,74 @@
 /* ==========================================
-   1. LANDING & AUTENTISERING
+   1. ANIMASJONSOVERGANGER OG EFFEKTER
+   ========================================== */
+
+/* Myk overgang mellom visninger (landing, auth, app) */
+.fade-transition {
+  transition: opacity 0.35s ease-in-out, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.view:not(.active) {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.98);
+}
+
+.view.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Skaleringseffekt på innloggingskortet */
+.scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Animering for innloggings/registrerings-felter */
+.field-group-animated {
+  max-height: 200px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
+}
+
+.field-group-animated.hidden {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+/* Risting på feilmelding */
+.shake-animation {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+/* Knappetrykk-responsivitet */
+.btn-bounce:active {
+  transform: scale(0.97);
+}
+
+
+/* ==========================================
+   2. LANDING & AUTENTISERING (AUTH)
    ========================================== */
 #landing-view, 
 #auth-view {
@@ -7,7 +76,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 2rem;
+  padding: 2rem 1rem;
   text-align: center;
   background-color: var(--bg-dark);
   color: var(--text-light);
@@ -17,6 +86,7 @@
   left: 0;
   width: 100%;
   z-index: 100;
+  box-sizing: border-box;
 }
 
 #landing-view.active, 
@@ -47,28 +117,84 @@
   flex-direction: column;
   gap: 1rem;
   width: 100%;
+  max-width: 320px;
 }
 
+/* Oppdatert auth-kort med glassmorphism og bedre inputs */
 .auth-card {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg, 20px);
+  padding: 2rem 1.5rem;
+  max-width: 420px;
   width: 100%;
-  background: var(--card-bg);
-  padding: 1.5rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--bar-border);
+  margin: 0 auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
 }
 
-.auth-card input {
-  width: 100%;
-  padding: 0.9rem;
-  margin: 0.4rem 0;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--bar-border);
-  background: var(--bg-dark);
-  color: var(--text-light);
+.input-row {
+  display: flex;
+  gap: 0.75rem;
 }
+
+.input-row .input-wrapper {
+  flex: 1;
+}
+
+.input-wrapper {
+  position: relative;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 2.75rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: var(--text-light, #fff);
+  font-size: 0.95rem;
+  transition: border-color 0.2s, background-color 0.2s;
+  box-sizing: border-box;
+}
+
+.input-wrapper input:focus {
+  outline: none;
+  border-color: #6366f1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 0.8rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 0.4rem;
+  font-size: 1rem;
+}
+
+.toggle-password-btn:hover {
+  color: #fff;
+}
+
 
 /* ==========================================
-   2. HOVEDSIDE & KORT
+   3. HOVEDSIDE & KORT
    ========================================== */
 .hero-banner {
   background: linear-gradient(135deg, #0b112c 0%, #1a2550 100%);
@@ -184,18 +310,145 @@
   text-overflow: ellipsis;
 }
 
-.account-card {
-  background: var(--card-content);
-  padding: 1.5rem;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  margin-top: 1rem;
-  color: var(--text-dark);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
 
 /* ==========================================
-   3. MINI-SPILLER & FULLSKJERMSPILLER
+   4. MIN KONTO-SIDE
+   ========================================== */
+.account-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem 1rem 1.5rem;
+}
+
+.account-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  color: #fff;
+  font-size: 2.2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+}
+
+.account-email {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  margin-top: 0.2rem;
+}
+
+.badge-subscription {
+  margin-top: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  padding: 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.account-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: var(--text-light, #fff);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.account-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form-group input {
+  padding: 0.7rem 0.9rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #fff;
+}
+
+.account-menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-item-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.menu-item-btn:hover {
+  opacity: 0.8;
+}
+
+.menu-item-btn span {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.icon-arrow {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.account-actions {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+
+/* ==========================================
+   5. MINI-SPILLER & FULLSKJERMSPILLER
    ========================================== */
 .player {
   position: fixed;
