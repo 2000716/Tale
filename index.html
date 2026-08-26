@@ -45,12 +45,12 @@
   <div id="auth-view" class="view fade-transition">
     <button id="auth-back-btn" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Tilbake</button>
     <div class="auth-card scale-in">
-      <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787779910/Code_Generated_Image_1_egznrr.png" class="auth-logo">
+      <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787779910/Code_Generated_Image_1_egznrr.png" alt="Tale Logo" class="auth-logo">
       <h2 id="auth-title">Logg inn</h2>
       
       <form id="auth-form">
-        <!-- Felter spesifikke for Registrering -->
-        <div class="register-only-fields field-group-animated hidden">
+        <!-- Navnefelter ved Registrering -->
+        <div id="name-fields-group" class="field-group-animated hidden">
           <div class="input-row">
             <div class="input-wrapper">
               <i class="fa-regular fa-user input-icon"></i>
@@ -63,7 +63,7 @@
           </div>
         </div>
 
-        <!-- Felles felter -->
+        <!-- E-post og passord -->
         <div class="input-wrapper">
           <i class="fa-regular fa-envelope input-icon"></i>
           <input type="email" id="auth-email" placeholder="E-post" required autocomplete="email">
@@ -72,23 +72,15 @@
         <div class="input-wrapper">
           <i class="fa-solid fa-lock input-icon"></i>
           <input type="password" id="auth-password" placeholder="Passord" required autocomplete="current-password">
-          <button type="button" class="toggle-password-btn" aria-label="Vis passord">
+          <button type="button" id="toggle-password-visibility" class="toggle-password-btn" aria-label="Vis passord">
             <i class="fa-regular fa-eye"></i>
           </button>
-        </div>
-
-        <!-- Ekstra bekreftelsesfelt ved Registrering -->
-        <div class="register-only-fields field-group-animated hidden">
-          <div class="input-wrapper">
-            <i class="fa-solid fa-shield-halved input-icon"></i>
-            <input type="password" id="auth-confirm-password" placeholder="Bekreft passord" autocomplete="new-password">
-          </div>
         </div>
 
         <button type="submit" id="auth-submit-btn" class="btn-primary btn-bounce">Logg inn</button>
       </form>
 
-      <p id="auth-error" class="error-msg shake-animation"></p>
+      <p id="auth-error" class="error-msg"></p>
       
       <div class="auth-footer">
         <button id="toggle-auth-mode" class="btn-link">Har du ikke konto? Registrer deg</button>
@@ -149,13 +141,12 @@
         <div id="radio-sections" class="dynamic-container"></div>
       </section>
 
-      <!-- OPPDATERT KONTOSIDE -->
+      <!-- KONTOSIDE UTEN PREMIUM-SKILT -->
       <section id="account" class="page">
         <div class="account-header">
           <div class="account-avatar-large" id="account-avatar-large">M</div>
-          <h2 id="account-user-fullname">Ola Nordmann</h2>
+          <h2 id="account-user-fullname">Bruker</h2>
           <p id="account-email-display" class="account-email">bruker@tale.no</p>
-          <span class="badge-subscription"><i class="fa-solid fa-crown"></i> Tale Premium</span>
         </div>
 
         <div class="account-grid">
@@ -165,17 +156,17 @@
             <form id="account-details-form">
               <div class="form-group">
                 <label for="account-firstname-input">Fornavn</label>
-                <input type="text" id="account-firstname-input" value="Ola">
+                <input type="text" id="account-firstname-input" placeholder="Ditt fornavn">
               </div>
               <div class="form-group">
                 <label for="account-lastname-input">Etternavn</label>
-                <input type="text" id="account-lastname-input" value="Nordmann">
+                <input type="text" id="account-lastname-input" placeholder="Ditt etternavn">
               </div>
               <button type="submit" class="btn-secondary btn-small">Lagre endringer</button>
             </form>
           </div>
 
-          <!-- Innstillinger & Favoritter -->
+          <!-- Innstillinger & Aktivitet -->
           <div class="account-card card-animated">
             <h3><i class="fa-solid fa-sliders"></i> Innstillinger & Aktivitet</h3>
             <ul class="account-menu-list">
