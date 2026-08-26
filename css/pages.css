@@ -68,7 +68,7 @@
 
 
 /* ==========================================
-   2. LANDING & AUTENTISERING (AUTH)
+   2. LANDING & AUTENTISERING (OPPDATERT DESIGN)
    ========================================== */
 #landing-view, 
 #auth-view {
@@ -76,10 +76,10 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 2rem 1rem;
+  padding: 2.5rem 1.5rem;
   text-align: center;
-  background-color: var(--bg-dark);
-  color: var(--text-light);
+  background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
+  color: #f8fafc;
   min-height: 100vh;
   position: absolute;
   top: 0;
@@ -96,20 +96,27 @@
 
 .landing-logo, 
 .auth-logo {
-  max-height: 70px;
-  margin-bottom: 1.5rem;
+  max-height: 80px;
+  margin-bottom: 2rem;
   object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
 }
 
 .landing-hero h1 {
-  font-size: 1.6rem;
-  margin-bottom: 0.5rem;
-  color: var(--text-light);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.75rem;
+  color: #ffffff;
+  line-height: 1.25;
 }
 
 .landing-hero p {
-  color: var(--text-muted);
-  margin-bottom: 2rem;
+  color: #94a3b8;
+  font-size: 1rem;
+  max-width: 360px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.5;
 }
 
 .landing-actions {
@@ -117,21 +124,21 @@
   flex-direction: column;
   gap: 1rem;
   width: 100%;
-  max-width: 320px;
+  max-width: 340px;
 }
 
-/* Oppdatert auth-kort med glassmorphism og bedre inputs */
+/* Oppdatert auth-kort med mørk glassmorphism og moderne inputs */
 .auth-card {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-lg, 20px);
-  padding: 2rem 1.5rem;
-  max-width: 420px;
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 2.5rem 1.75rem;
+  max-width: 400px;
   width: 100%;
   margin: 0 auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   box-sizing: border-box;
 }
 
@@ -146,35 +153,46 @@
 
 .input-wrapper {
   position: relative;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
 }
 
 .input-wrapper input {
   width: 100%;
-  padding: 0.85rem 1rem 0.85rem 2.75rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  color: var(--text-light, #fff);
+  padding: 0.9rem 1rem 0.9rem 2.8rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: #ffffff;
   font-size: 0.95rem;
-  transition: border-color 0.2s, background-color 0.2s;
+  transition: all 0.2s ease;
   box-sizing: border-box;
+}
+
+.input-wrapper input::placeholder {
+  color: #64748b;
 }
 
 .input-wrapper input:focus {
   outline: none;
   border-color: #6366f1;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.8);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
 }
 
 .input-icon {
   position: absolute;
   left: 1rem;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 1rem;
+  color: #64748b;
+  font-size: 1.1rem;
   pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.input-wrapper input:focus + .input-icon,
+.input-wrapper:focus-within .input-icon {
+  color: #818cf8;
 }
 
 .toggle-password-btn {
@@ -182,14 +200,15 @@
   right: 0.8rem;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: #64748b;
   cursor: pointer;
   padding: 0.4rem;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  transition: color 0.2s ease;
 }
 
 .toggle-password-btn:hover {
-  color: #fff;
+  color: #f8fafc;
 }
 
 
@@ -312,14 +331,23 @@
 
 
 /* ==========================================
-   4. MIN KONTO-SIDE
+   4. MIN KONTO-SIDE (SVART TEKST)
    ========================================== */
+#account-view {
+  color: #0f172a;
+}
+
 .account-header {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   padding: 2rem 1rem 1.5rem;
+  color: #0f172a;
+}
+
+.account-header h2 {
+  color: #0f172a;
 }
 
 .account-avatar-large {
@@ -327,20 +355,21 @@
   height: 80px;
   border-radius: 50%;
   background: linear-gradient(135deg, #6366f1, #a855f7);
-  color: #fff;
+  color: #ffffff;
   font-size: 2.2rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 1rem;
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);
 }
 
 .account-email {
-  color: rgba(255, 255, 255, 0.6);
+  color: #475569;
   font-size: 0.9rem;
   margin-top: 0.2rem;
+  font-weight: 500;
 }
 
 .badge-subscription {
@@ -348,9 +377,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: rgba(234, 179, 8, 0.15);
-  color: #eab308;
-  border: 1px solid rgba(234, 179, 8, 0.3);
+  background: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fef08a;
   padding: 0.35rem 0.85rem;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -367,12 +396,12 @@
 }
 
 .account-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 16px;
   padding: 1.5rem;
-  color: var(--text-light, #fff);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  color: #0f172a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .account-card h3 {
@@ -381,7 +410,8 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+  font-weight: 700;
 }
 
 .form-group {
@@ -393,15 +423,23 @@
 
 .form-group label {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: #475569;
+  font-weight: 600;
 }
 
 .form-group input {
   padding: 0.7rem 0.9rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  color: #fff;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #6366f1;
+  background: #ffffff;
 }
 
 .account-menu-list {
@@ -418,15 +456,16 @@
   padding: 0.85rem 0;
   background: none;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  color: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
   font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
   transition: opacity 0.2s;
 }
 
 .menu-item-btn:hover {
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .menu-item-btn span {
@@ -437,7 +476,7 @@
 
 .icon-arrow {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.3);
+  color: #94a3b8;
 }
 
 .account-actions {
