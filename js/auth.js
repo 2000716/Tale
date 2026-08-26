@@ -6,7 +6,8 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   onAuthStateChanged, 
-  signOut 
+  signOut,
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 export function initAuth() {
@@ -15,11 +16,7 @@ export function initAuth() {
 
     if (user) {
       showView("app-view");
-
-      const emailDisplay = document.getElementById("account-email-display");
-      const userAvatar = document.getElementById("user-avatar");
-      if (emailDisplay) emailDisplay.innerText = user.email || "";
-      if (userAvatar && user.email) userAvatar.innerText = user.email.charAt(0).toUpperCase();
+      updateUserProfileUI(user);
 
       // Hent app-funksjoner dynamisk for å unngå sirkulær import-krasj
       try {
@@ -45,26 +42,150 @@ export function initAuth() {
       updateBottomNavVisibility();
     }
   });
+
+  setupPasswordToggle();
 }
 
+/**
+  Oppdaterer brukergrensesnittet med e-post, fornavn, etternavn og initialer i avataren.
+ */
+export function updateUserProfileUI(user) {
+  if (!user) return;
+
+  const emailDisplay = document.getElementById("account-email-display");
+  const userAvatar = document.getElementById("user-avatar");
+  const accountAvatar = document.getElementById("account-avatar");
+  const firstNameInput = document.getElementById("account-firstname");
+  const lastNameInput = document.getElementById("account-lastname");
+
+  // Del opp displayName (hvis det finnes) i fornavn og etternavn
+  const fullName = user.displayName || "";
+  const nameParts = fullName.trim().split(" ");
+  const firstName = nameParts[0] || "";
+  const lastName = nameParts.slice(1).join(" ") || "";
+
+  // 1. Sett e-post
+  if (emailDisplay) emailDisplay.innerText = user.email || "";
+
+  // 2. Fyll inn skjema på Min konto-siden
+  if (firstNameInput) firstNameInput.value = firstName;
+  if (lastNameInput) lastNameInput.value = lastName;
+
+  // 3. Generer initialer for avatarer
+  let initials = "";
+  if (firstName && lastName) {
+    initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  } else if (firstName) {
+    initials = firstName.charAt(0).toUpperCase();
+  } else if (user.email) {
+    initials = user.email.charAt(0).toUpperCase();
+  } else {
+    initials = "U";
+  }
+
+  if (userAvatar) userAvatar.innerText = initials;
+  if (accountAvatar) accountAvatar.innerText = initials;
+}
+
+/**
+  Bytter mellom Innlogging og Registrering med animasjoner.
+ */
 export function setAuthMode(signUp) {
   state.isSignUp = signUp;
   const authTitle = document.getElementById("auth-title");
   const toggleAuthModeBtn = document.getElementById("toggle-auth-mode");
+  const nameFieldsGroup = document.getElementById("name-fields-group");
+  const submitBtn = document.getElementById("auth-submit-btn");
   
-  if (authTitle) authTitle.innerText = state.isSignUp ? "Opprett konto" : "Logg inn";
+  if (authTitle) {
+    authTitle.innerText = state.isSignUp ? "Opprett konto" : "Logg inn";
+  }
+
+  if (submitBtn) {
+    submitBtn.innerText = state.isSignUp ? "Registrer deg" : "Logg inn";
+  }
+
   if (toggleAuthModeBtn) {
     toggleAuthModeBtn.innerText = state.isSignUp 
       ? "Har du allerede konto? Logg inn" 
       : "Har du ikke konto? Registrer deg";
   }
+
+  // Vis eller skjul navnefeltene glidende
+  if (nameFieldsGroup) {
+    if (state.isSignUp) {
+      nameFieldsGroup.classList.remove("hidden");
+    } else {
+      nameFieldsGroup.classList.add("hidden");
+    }
+  }
 }
 
-export async function submitAuthForm(email, password) {
-  if (state.isSignUp) {
-    return await createUserWithEmailAndPassword(auth, email, password);
-  } else {
-    return await signInWithEmailAndPassword(auth, email, password);
+/**
+  Send inn skjema for innlogging eller registrering.
+ */
+export async function submitAuthForm(email, password, firstName = "", lastName = "") {
+  try {
+    if (state.isSignUp) {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const displayName = `${firstName.trim()} ${lastName.trim()}`.trim();
+
+      if (displayName) {
+        await updateProfile(userCredential.user, { displayName });
+      }
+
+      updateUserProfileUI(userCredential.user);
+      return userCredential;
+    } else {
+      return await signInWithEmailAndPassword(auth, email, password);
+    }
+  } catch (error) {
+    triggerAuthErrorAnimation();
+    throw error;
+  }
+}
+
+/**
+  Oppdaterer brukerens navn på Min Konto-siden
+ */
+export async function saveAccountProfile(firstName, lastName) {
+  if (!auth.currentUser) return;
+  const displayName = `${firstName.trim()} ${lastName.trim()}`.trim();
+  
+  await updateProfile(auth.currentUser, { displayName });
+  updateUserProfileUI(auth.currentUser);
+}
+
+/**
+  Vis/skjul passordfunksjon for øye-knappen
+ */
+function setupPasswordToggle() {
+  const toggleBtn = document.getElementById("toggle-password-visibility");
+  const passwordInput = document.getElementById("auth-password");
+
+  if (toggleBtn && passwordInput) {
+    toggleBtn.addEventListener("click", () => {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      
+      const icon = toggleBtn.querySelector("i");
+      if (icon) {
+        icon.className = isPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+      }
+    });
+  }
+}
+
+/**
+  Legger til en riste-animasjon på innloggingskortet ved feil
+ */
+export function triggerAuthErrorAnimation() {
+  const authCard = document.querySelector(".auth-card");
+  if (authCard) {
+    authCard.classList.remove("shake-animation");
+    // Trigger reflow for å omstarte animasjonen
+    void authCard.offsetWidth;
+    authCard.classList.add("shake-animation");
   }
 }
 
@@ -83,7 +204,6 @@ export function restoreLastPage() {
         import("./player.js").then(module => module.openDetailsView(lastItem));
       }
     } else if (targetPage === "fullscreen-player") {
-      // Åpne bare spilleren dersom det faktisk finnes en lydkilde
       switchPage("home");
       if (globalAudio && globalAudio.src) {
         document.getElementById("fullscreen-player")?.classList.add("active");
