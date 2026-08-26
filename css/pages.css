@@ -755,40 +755,40 @@ body:has(#fullscreen-player.active) .player {
    6. LÅST OG SENTRERT BUNNMENY
    ========================================== */
 .bottom-bar {
-  /* Låser menyen permanent til bunnen */
   position: fixed !important;
   bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
   width: 100% !important;
   
-  /* Layout og sentrering */
   display: flex !important;
-  justify-content: space-around !important; /* Jevn fordeling av menyknapper */
+  justify-content: space-around !important;
   align-items: center !important;
   
-  /* Låser menyen mot scrolling/bevegelse */
   touch-action: none;
   user-select: none;
   overflow: hidden !important;
   
-  /* Lag og synlighet */
-  z-index: 1200 !important; /* Ligger over mini-spiller og innhold */
+  /* Justert z-index slik at menyen ligger under mini-spilleren */
+  z-index: 1000 !important; 
   background-color: var(--bar-bg, #0f172a);
   border-top: 1px solid var(--bar-border, rgba(255, 255, 255, 0.1));
   
-  /* Støtte for nyere iPhoner (hjem-stripe nederst) */
   padding-bottom: env(safe-area-inset-bottom) !important;
   box-sizing: border-box !important;
 }
 
-/* Sørger for at sideinnholdet kan scrolles helt ned uten å bli skjult bak menyen */
 body {
   padding-bottom: calc(75px + env(safe-area-inset-bottom)) !important;
 }
 
-/* Sørger for at mini-spilleren legger seg korrekt rett over bunnmenyen */
+/* Mini-spilleren har z-index 1100 og legger seg rett OVER bunnmenyen */
 .player {
   bottom: calc(60px + env(safe-area-inset-bottom)) !important;
   z-index: 1100 !important;
+}
+
+/* Storspilleren har z-index 2000 og legger seg over ALT */
+#fullscreen-player.active {
+  z-index: 2000 !important;
 }
