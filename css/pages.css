@@ -1,24 +1,45 @@
 /* ==========================================
-   1. ANIMASJONSOVERGANGER OG EFFEKTER
+   1. GLOBAL RENDER & VISNINGSKONTROLL (FIKSET)
    ========================================== */
+body {
+  margin: 0;
+  padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+  min-height: 100vh;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
 
-/* Myk overgang mellom visninger (landing, auth, app) */
-.fade-transition {
+/* Base-stil for ALLE visninger/sider */
+.view {
+  display: none;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem 1rem;
+  box-sizing: border-box;
+  opacity: 0;
+  transform: scale(0.98);
   transition: opacity 0.35s ease-in-out, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.view:not(.active) {
-  opacity: 0;
-  pointer-events: none;
-  transform: scale(0.98);
-}
-
 .view.active {
+  display: block;
   opacity: 1;
   transform: scale(1);
 }
 
-/* Skaleringseffekt på innloggingskortet */
+/* Skjul bunnmeny og minispiller helt når man ikke er i appen */
+body:has(#landing-view.active) .bottom-bar,
+body:has(#auth-view.active) .bottom-bar,
+body:has(#landing-view.active) .player,
+body:has(#auth-view.active) .player {
+  display: none !important;
+}
+
+
+/* ==========================================
+   2. ANIMASJONSOVERGANGER OG EFFEKTER
+   ========================================== */
 .scale-in {
   animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -34,7 +55,6 @@
   }
 }
 
-/* Animering for innloggings/registrerings-felter */
 .field-group-animated {
   max-height: 200px;
   opacity: 1;
@@ -50,7 +70,6 @@
   pointer-events: none;
 }
 
-/* Risting på feilmelding */
 .shake-animation {
   animation: shake 0.4s ease-in-out;
 }
@@ -61,14 +80,13 @@
   40%, 80% { transform: translateX(8px); }
 }
 
-/* Knappetrykk-responsivitet */
 .btn-bounce:active {
   transform: scale(0.97);
 }
 
 
 /* ==========================================
-   2. LANDING & AUTENTISERING (OPPDATERT DESIGN)
+   3. LANDING & AUTENTISERING (FIKSET LAYOUT)
    ========================================== */
 #landing-view, 
 #auth-view {
@@ -81,17 +99,17 @@
   background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
   color: #f8fafc;
   min-height: 100vh;
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 100;
+  z-index: 500;
   box-sizing: border-box;
 }
 
 #landing-view.active, 
 #auth-view.active {
-  display: flex;
+  display: flex !important;
 }
 
 .landing-logo, 
@@ -127,7 +145,6 @@
   max-width: 340px;
 }
 
-/* Oppdatert auth-kort med mørk glassmorphism og moderne inputs */
 .auth-card {
   background: rgba(30, 41, 59, 0.7);
   backdrop-filter: blur(20px);
@@ -213,18 +230,18 @@
 
 
 /* ==========================================
-   3. HOVEDSIDE & KORT
+   4. HOVEDSIDE & KORT
    ========================================== */
 .hero-banner {
   background: linear-gradient(135deg, #0b112c 0%, #1a2550 100%);
-  color: var(--text-light);
+  color: var(--text-light, #ffffff);
   padding: 1.2rem;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 12px);
   margin-bottom: 1.5rem;
 }
 
 .badge {
-  background: var(--accent-blue);
+  background: var(--accent-blue, #AEC2F7);
   color: #0b112c;
   font-size: 0.7rem;
   font-weight: bold;
@@ -234,7 +251,7 @@
 
 .section-header {
   margin: 1.2rem 0 0.6rem 0;
-  color: var(--text-dark);
+  color: var(--text-dark, #0f172a);
 }
 
 .horizontal-scroll,
@@ -273,7 +290,7 @@
 .book-cover {
   width: 130px;
   height: 130px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 12px);
   overflow: hidden;
   background-color: #131b3e;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
@@ -285,7 +302,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 12px);
 }
 
 .generated-cover {
@@ -298,8 +315,9 @@
   justify-content: center;
   padding: 0.8rem;
   text-align: center;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 12px);
   border: 1px solid rgba(174, 194, 247, 0.2);
+  box-sizing: border-box;
 }
 
 .generated-cover span {
@@ -315,7 +333,7 @@
   font-size: 0.85rem;
   font-weight: 600;
   margin-top: 0.5rem;
-  color: var(--text-dark);
+  color: var(--text-dark, #0f172a);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -323,7 +341,7 @@
 
 .book-author {
   font-size: 0.75rem;
-  color: var(--text-muted-dark);
+  color: var(--text-muted-dark, #64748b);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -331,7 +349,7 @@
 
 
 /* ==========================================
-   4. MIN KONTO-SIDE (SVART TEKST)
+   5. MIN KONTO-SIDE
    ========================================== */
 #account-view {
   color: #0f172a;
@@ -390,7 +408,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.25rem;
-  padding: 1rem;
+  padding: 1rem 0;
   max-width: 900px;
   margin: 0 auto;
 }
@@ -487,27 +505,28 @@
 
 
 /* ==========================================
-   5. MINI-SPILLER & FULLSKJERMSPILLER
+   6. MINI-SPILLER & FULLSKJERMSPILLER (FIKSET)
    ========================================== */
 .player {
-  position: fixed;
-  bottom: calc(60px + env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
+  position: fixed !important;
+  bottom: calc(56px + env(safe-area-inset-bottom)) !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  max-width: 480px !important;
   height: 62px;
-  background-color: var(--bar-bg);
-  color: var(--text-light);
+  background-color: var(--bar-bg, #0f172a);
+  color: var(--text-light, #ffffff);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 1rem;
-  border-top: 1px solid var(--bar-border);
+  border-top: 1px solid var(--bar-border, rgba(255, 255, 255, 0.1));
   box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
-  z-index: 1100;
+  z-index: 1100 !important;
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
-  opacity: 1;
+  box-sizing: border-box;
 }
 
 .player-left {
@@ -522,7 +541,7 @@
 #mini-cover-container {
   width: 44px;
   height: 44px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm, 8px);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -531,7 +550,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: var(--radius-sm);
 }
 
 .player-info {
@@ -551,7 +569,7 @@
 
 .player-sub {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-muted, #94a3b8);
 }
 
 .icon-play-btn {
@@ -581,10 +599,9 @@
   max-width: 480px;
   height: 100vh;
   height: 100dvh;
-  background-color: var(--bg-dark);
-  color: var(--text-light);
+  background-color: var(--bg-dark, #0b112c);
+  color: var(--text-light, #ffffff);
   z-index: 2000;
-  
   overflow: hidden;
   touch-action: none;
 
@@ -629,7 +646,7 @@
   position: absolute;
   top: calc(1.2rem + env(safe-area-inset-top));
   left: 1.5rem;
-  color: var(--accent-blue);
+  color: var(--accent-blue, #AEC2F7);
   cursor: pointer;
   z-index: 10;
 }
@@ -656,7 +673,7 @@
   width: 210px;
   height: 210px;
   object-fit: cover;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg, 16px);
   box-shadow: 0 12px 30px rgba(0,0,0,0.5);
   background-color: #1a2550;
 }
@@ -669,7 +686,7 @@
 }
 
 #fullscreen-player p {
-  color: var(--text-muted);
+  color: var(--text-muted, #94a3b8);
   font-size: 0.9rem;
 }
 
@@ -680,7 +697,7 @@
   gap: 0.6rem;
   margin: 2rem 0;
   font-size: 0.85rem;
-  color: var(--accent-blue);
+  color: var(--accent-blue, #AEC2F7);
   font-weight: 600;
 }
 
@@ -746,38 +763,33 @@ body:has(#fullscreen-player.active) .bottom-bar {
 }
 
 body:has(#fullscreen-player.active) .player {
-  transform: translate(-50%, 100px);
-  opacity: 0;
-  pointer-events: none;
+  transform: translateY(100px) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
+
 /* ==========================================
-   6. LÅST OG SENTRERT BUNNMENY
+   7. LÅST OG SENTRERT BUNNMENY (FIKSET)
    ========================================== */
 .bottom-bar {
   position: fixed !important;
   bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  width: 100vw !important; /* Tvinger bakgrunnen til å dekke hele skjermbredden */
-  
+  width: 100% !important;
+  height: 56px;
   display: flex !important;
-  justify-content: center !important; /* Tvinger innholdet til midten av skjermen */
+  justify-content: center !important;
   align-items: center !important;
-  
-  touch-action: none;
-  user-select: none;
-  overflow: hidden !important;
-  
   z-index: 1000 !important; 
   background-color: var(--bar-bg, #0f172a);
   border-top: 1px solid var(--bar-border, rgba(255, 255, 255, 0.1));
-  
   padding-bottom: env(safe-area-inset-bottom) !important;
   box-sizing: border-box !important;
 }
 
-/* Tvinger ALLE direkte barn (ikoner/knapper/containere) til å sentreres og fordeles jevnt */
+/* Sentrerer elementene internt i bunnlinjen */
 .bottom-bar > *,
 .bottom-bar nav,
 .bottom-bar .nav-container {
@@ -785,17 +797,8 @@ body:has(#fullscreen-player.active) .player {
   justify-content: space-around !important;
   align-items: center !important;
   width: 100% !important;
-  max-width: 480px !important; /* Begrenser bredden så ikonene ikke glir ut på kanten */
-  margin: 0 auto !important;   /* Tvinger absolutt sentrering i midten */
-  padding: 0 !important;
-}
-
-body {
-  padding-bottom: calc(75px + env(safe-area-inset-bottom)) !important;
-}
-
-/* Mini-spilleren har z-index 1100 og legger seg rett OVER bunnmenyen */
-.player {
-  bottom: calc(60px + env(safe-area-inset-bottom)) !important;
-  z-index: 1100 !important;
+  max-width: 480px !important;
+  margin: 0 auto !important;
+  padding: 0 1rem !important;
+  box-sizing: border-box !important;
 }
