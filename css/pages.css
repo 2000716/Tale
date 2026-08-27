@@ -757,14 +757,12 @@ body:has(#fullscreen-player.active) .player {
 .bottom-bar {
   position: fixed !important;
   bottom: 0 !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  
-  width: 100% !important;
-  max-width: 480px !important; /* Lik maksbredde som mini-spilleren */
+  left: 0 !important;
+  right: 0 !important;
+  width: 100vw !important; /* Tvinger bakgrunnen til å dekke hele skjermbredden */
   
   display: flex !important;
-  justify-content: space-around !important;
+  justify-content: center !important; /* Tvinger innholdet til midten av skjermen */
   align-items: center !important;
   
   touch-action: none;
@@ -779,6 +777,19 @@ body:has(#fullscreen-player.active) .player {
   box-sizing: border-box !important;
 }
 
+/* Tvinger ALLE direkte barn (ikoner/knapper/containere) til å sentreres og fordeles jevnt */
+.bottom-bar > *,
+.bottom-bar nav,
+.bottom-bar .nav-container {
+  display: flex !important;
+  justify-content: space-around !important;
+  align-items: center !important;
+  width: 100% !important;
+  max-width: 480px !important; /* Begrenser bredden så ikonene ikke glir ut på kanten */
+  margin: 0 auto !important;   /* Tvinger absolutt sentrering i midten */
+  padding: 0 !important;
+}
+
 body {
   padding-bottom: calc(75px + env(safe-area-inset-bottom)) !important;
 }
@@ -787,9 +798,4 @@ body {
 .player {
   bottom: calc(60px + env(safe-area-inset-bottom)) !important;
   z-index: 1100 !important;
-}
-
-/* Storspilleren har z-index 2000 og legger seg over ALT */
-#fullscreen-player.active {
-  z-index: 2000 !important;
 }
