@@ -99,11 +99,6 @@
 /* ==========================================
    2. HOVEDSIDE & KORT
    ========================================== */
-/* Luft i bunnen av siden slik at spilleren ikke dekker innholdet */
-main, .main-content {
-  padding-bottom: calc(140px + env(safe-area-inset-bottom));
-}
-
 .hero-banner {
   background: linear-gradient(135deg, #0b112c 0%, #1a2550 100%);
   color: var(--text-light, #ffffff);
@@ -233,9 +228,8 @@ main, .main-content {
    3. FAST MINISPILLER & FULLSKJERMSPILLER
    ========================================== */
 .player {
-  position: fixed !important;
-  /* Justert fra 60px til 70px slik at den løftes over bunnmenyen */
-  bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+position: fixed !important;
+ bottom: calc(70px + env(safe-area-inset-bottom)) !important; 
   left: 0 !important;
   right: 0 !important;
   width: 100vw !important;
@@ -481,18 +475,6 @@ main, .main-content {
   transform: scale(0.95);
 }
 
-/* ==========================================
-   4. BUNNMENY STYLING (SIKRER AT DEN LIGGER UNDER SPILLEREN)
-   ========================================== */
-.bottom-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: calc(65px + env(safe-area-inset-bottom));
-  z-index: 1000 !important; /* Lavere enn .player sine 1050 */
-}
-
 body:has(#fullscreen-player.active) .bottom-bar {
   display: none !important;
 }
@@ -501,4 +483,9 @@ body:has(#fullscreen-player.active) .player {
   transform: translateY(100px) !important;
   opacity: 0 !important;
   pointer-events: none !important;
+}
+
+main, .content-container {
+  /* Høyde på bunnmeny (ca 70px) + minispiller (62px) + litt luft */
+  padding-bottom: calc(140px + env(safe-area-inset-bottom));
 }
