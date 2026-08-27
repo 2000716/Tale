@@ -757,9 +757,11 @@ body:has(#fullscreen-player.active) .player {
 .bottom-bar {
   position: fixed !important;
   bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  
   width: 100% !important;
+  max-width: 480px !important; /* Lik maksbredde som mini-spilleren */
   
   display: flex !important;
   justify-content: space-around !important;
@@ -769,7 +771,6 @@ body:has(#fullscreen-player.active) .player {
   user-select: none;
   overflow: hidden !important;
   
-  /* Justert z-index slik at menyen ligger under mini-spilleren */
   z-index: 1000 !important; 
   background-color: var(--bar-bg, #0f172a);
   border-top: 1px solid var(--bar-border, rgba(255, 255, 255, 0.1));
