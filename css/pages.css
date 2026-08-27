@@ -1,36 +1,103 @@
 /* ==========================================
-   1. GLOBAL RENDER & VISNINGSKONTROLL (FIKSET)
+   1. GLOBAL APP LAYOUT (FIXED SHELL)
    ========================================== */
-body {
-  margin: 0;
-  padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
-  min-height: 100vh;
-  box-sizing: border-box;
-  overflow-x: hidden;
+:root {
+  --bg-dark: #0b112c;
+  --bar-bg: #0f172a;
+  --bar-border: rgba(255, 255, 255, 0.1);
+  --accent-blue: #AEC2F7;
+  --text-light: #ffffff;
+  --text-dark: #0f172a;
+  --text-muted: #94a3b8;
+  --text-muted-dark: #64748b;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
 }
 
-/* Base-stil for ALLE visninger/sider */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Hindrer hele skjermen/nettleseren i å scrolle */
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f8fafc;
+}
+
+/* ==========================================
+   2. FAST TOPPMENY (FULL BREDDE H/V)
+   ========================================== */
+.top-bar, 
+header,
+.app-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100vw !important;
+  height: 60px;
+  background-color: var(--bar-bg);
+  border-bottom: 1px solid var(--bar-border);
+  z-index: 1000 !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  padding-top: env(safe-area-inset-top);
+  box-sizing: border-box;
+}
+
+
+/* ==========================================
+   3. INNHOLDSSIDENE (KUN DISSE SCROLLER)
+   ========================================== */
 .view {
   display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 1rem 1rem 2rem 1rem;
+  height: 100%;
+  overflow-y: auto !important; /* Gjør at kun innholdet i midten scroller */
+  -webkit-overflow-scrolling: touch;
+  
+  /* Plass til fast toppmeny (60px), minispiller (60px) og bunnmeny (60px) */
+  padding-top: calc(60px + env(safe-area-inset-top)) !important;
+  padding-bottom: calc(125px + env(safe-area-inset-bottom)) !important;
+  padding-left: 1rem;
+  padding-right: 1rem;
   box-sizing: border-box;
+  
   opacity: 0;
-  transform: scale(0.98);
-  transition: opacity 0.35s ease-in-out, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
 }
 
 .view.active {
   display: block;
   opacity: 1;
-  transform: scale(1);
 }
 
-/* Skjul bunnmeny og minispiller helt når man ikke er i appen */
+/* Sentrerer og begrenser bredden på innholdet på større skjermer */
+.view-content,
+.view > * {
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Skjul topp, bunn og spiller når brukeren er på Landing eller Auth-skjermen */
 body:has(#landing-view.active) .bottom-bar,
 body:has(#auth-view.active) .bottom-bar,
+body:has(#landing-view.active) .top-bar,
+body:has(#auth-view.active) .top-bar,
+body:has(#landing-view.active) header,
+body:has(#auth-view.active) header,
+body:has(#landing-view.active) .app-header,
+body:has(#auth-view.active) .app-header,
 body:has(#landing-view.active) .player,
 body:has(#auth-view.active) .player {
   display: none !important;
@@ -38,7 +105,7 @@ body:has(#auth-view.active) .player {
 
 
 /* ==========================================
-   2. ANIMASJONSOVERGANGER OG EFFEKTER
+   4. ANIMASJONSOVERGANGER OG EFFEKTER
    ========================================== */
 .scale-in {
   animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -86,7 +153,7 @@ body:has(#auth-view.active) .player {
 
 
 /* ==========================================
-   3. LANDING & AUTENTISERING (FIKSET LAYOUT)
+   5. LANDING & AUTENTISERING (FULLSKJERM OVERLAY)
    ========================================== */
 #landing-view, 
 #auth-view {
@@ -98,12 +165,12 @@ body:has(#auth-view.active) .player {
   text-align: center;
   background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
   color: #f8fafc;
-  min-height: 100vh;
+  height: 100vh;
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  z-index: 500;
+  width: 100vw;
+  z-index: 2000;
   box-sizing: border-box;
 }
 
@@ -230,18 +297,18 @@ body:has(#auth-view.active) .player {
 
 
 /* ==========================================
-   4. HOVEDSIDE & KORT
+   6. HOVEDSIDE & KORT
    ========================================== */
 .hero-banner {
   background: linear-gradient(135deg, #0b112c 0%, #1a2550 100%);
-  color: var(--text-light, #ffffff);
+  color: var(--text-light);
   padding: 1.2rem;
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
   margin-bottom: 1.5rem;
 }
 
 .badge {
-  background: var(--accent-blue, #AEC2F7);
+  background: var(--accent-blue);
   color: #0b112c;
   font-size: 0.7rem;
   font-weight: bold;
@@ -251,7 +318,7 @@ body:has(#auth-view.active) .player {
 
 .section-header {
   margin: 1.2rem 0 0.6rem 0;
-  color: var(--text-dark, #0f172a);
+  color: var(--text-dark);
 }
 
 .horizontal-scroll,
@@ -290,7 +357,7 @@ body:has(#auth-view.active) .player {
 .book-cover {
   width: 130px;
   height: 130px;
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
   overflow: hidden;
   background-color: #131b3e;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
@@ -302,20 +369,20 @@ body:has(#auth-view.active) .player {
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
 }
 
 .generated-cover {
   width: 100%;
   height: 100%;
   background: linear-gradient(135deg, #1e295d 0%, #070b1e 100%);
-  color: #AEC2F7;
+  color: var(--accent-blue);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0.8rem;
   text-align: center;
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
   border: 1px solid rgba(174, 194, 247, 0.2);
   box-sizing: border-box;
 }
@@ -333,7 +400,7 @@ body:has(#auth-view.active) .player {
   font-size: 0.85rem;
   font-weight: 600;
   margin-top: 0.5rem;
-  color: var(--text-dark, #0f172a);
+  color: var(--text-dark);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -341,7 +408,7 @@ body:has(#auth-view.active) .player {
 
 .book-author {
   font-size: 0.75rem;
-  color: var(--text-muted-dark, #64748b);
+  color: var(--text-muted-dark);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -349,7 +416,7 @@ body:has(#auth-view.active) .player {
 
 
 /* ==========================================
-   5. MIN KONTO-SIDE
+   7. MIN KONTO-SIDE (SVART TEKST)
    ========================================== */
 #account-view {
   color: #0f172a;
@@ -360,7 +427,7 @@ body:has(#auth-view.active) .player {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 2rem 1rem 1.5rem;
+  padding: 1rem 0;
   color: #0f172a;
 }
 
@@ -417,7 +484,7 @@ body:has(#auth-view.active) .player {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   color: #0f172a;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
@@ -505,26 +572,24 @@ body:has(#auth-view.active) .player {
 
 
 /* ==========================================
-   6. MINI-SPILLER & FULLSKJERMSPILLER (FIKSET)
+   8. FAST MINISPILLER & FULLSKJERMSPILLER
    ========================================== */
 .player {
   position: fixed !important;
-  bottom: calc(56px + env(safe-area-inset-bottom)) !important;
+  bottom: calc(60px + env(safe-area-inset-bottom)) !important;
   left: 0 !important;
   right: 0 !important;
-  margin: 0 auto !important;
-  width: 100% !important;
-  max-width: 480px !important;
+  width: 100vw !important;
   height: 62px;
-  background-color: var(--bar-bg, #0f172a);
-  color: var(--text-light, #ffffff);
+  background-color: var(--bar-bg);
+  color: var(--text-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 1rem;
-  border-top: 1px solid var(--bar-border, rgba(255, 255, 255, 0.1));
+  border-top: 1px solid var(--bar-border);
   box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
-  z-index: 1100 !important;
+  z-index: 1050 !important;
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
   box-sizing: border-box;
 }
@@ -541,7 +606,7 @@ body:has(#auth-view.active) .player {
 #mini-cover-container {
   width: 44px;
   height: 44px;
-  border-radius: var(--radius-sm, 8px);
+  border-radius: var(--radius-sm);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -569,7 +634,7 @@ body:has(#auth-view.active) .player {
 
 .player-sub {
   font-size: 0.75rem;
-  color: var(--text-muted, #94a3b8);
+  color: var(--text-muted);
 }
 
 .icon-play-btn {
@@ -577,8 +642,8 @@ body:has(#auth-view.active) .player {
   height: 40px;
   border-radius: 50%;
   background-color: rgba(174, 194, 247, 0.15);
-  border: 1.5px solid #AEC2F7;
-  color: #AEC2F7;
+  border: 1.5px solid var(--accent-blue);
+  color: var(--accent-blue);
   font-size: 1rem;
   cursor: pointer;
   display: flex;
@@ -588,47 +653,35 @@ body:has(#auth-view.active) .player {
 }
 
 .icon-play-btn i {
-  color: #AEC2F7;
+  color: var(--accent-blue);
 }
 
 #fullscreen-player {
   position: fixed;
   top: 0;
-  left: 50%;
-  width: 100%;
-  max-width: 480px;
+  left: 0;
+  width: 100vw;
   height: 100vh;
   height: 100dvh;
-  background-color: var(--bg-dark, #0b112c);
-  color: var(--text-light, #ffffff);
-  z-index: 2000;
-  overflow: hidden;
-  touch-action: none;
-
-  padding-top: calc(0.8rem + env(safe-area-inset-top));
-  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  box-sizing: border-box;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  z-index: 3000;
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: calc(1rem + env(safe-area-inset-top)) 1.5rem calc(2rem + env(safe-area-inset-bottom));
+  box-sizing: border-box;
 
-  transform: translate(-50%, 100%);
+  transform: translateY(100%);
   opacity: 0;
   visibility: hidden;
-  pointer-events: none;
-
-  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), 
-              opacity 0.3s ease,
-              visibility 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, visibility 0.3s ease;
 }
 
 #fullscreen-player.active {
-  transform: translate(-50%, 0);
+  transform: translateY(0);
   opacity: 1;
   visibility: visible;
-  pointer-events: auto;
 }
 
 .drag-handle {
@@ -646,7 +699,7 @@ body:has(#auth-view.active) .player {
   position: absolute;
   top: calc(1.2rem + env(safe-area-inset-top));
   left: 1.5rem;
-  color: var(--accent-blue, #AEC2F7);
+  color: var(--accent-blue);
   cursor: pointer;
   z-index: 10;
 }
@@ -673,7 +726,7 @@ body:has(#auth-view.active) .player {
   width: 210px;
   height: 210px;
   object-fit: cover;
-  border-radius: var(--radius-lg, 16px);
+  border-radius: var(--radius-lg);
   box-shadow: 0 12px 30px rgba(0,0,0,0.5);
   background-color: #1a2550;
 }
@@ -686,7 +739,7 @@ body:has(#auth-view.active) .player {
 }
 
 #fullscreen-player p {
-  color: var(--text-muted, #94a3b8);
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -697,7 +750,7 @@ body:has(#auth-view.active) .player {
   gap: 0.6rem;
   margin: 2rem 0;
   font-size: 0.85rem;
-  color: var(--accent-blue, #AEC2F7);
+  color: var(--accent-blue);
   font-weight: 600;
 }
 
@@ -705,7 +758,7 @@ body:has(#auth-view.active) .player {
   flex: 1;
   height: 5px;
   border-radius: 5px;
-  accent-color: #AEC2F7;
+  accent-color: var(--accent-blue);
   cursor: pointer;
 }
 
@@ -717,8 +770,8 @@ body:has(#auth-view.active) .player {
 
 .skip-btn {
   background: transparent;
-  border: 1.5px solid #AEC2F7;
-  color: #AEC2F7;
+  border: 1.5px solid var(--accent-blue);
+  color: var(--accent-blue);
   padding: 0.6rem 1.1rem;
   border-radius: 20px;
   cursor: pointer;
@@ -731,7 +784,7 @@ body:has(#auth-view.active) .player {
 }
 
 .skip-btn i {
-  color: #AEC2F7;
+  color: var(--accent-blue);
 }
 
 .skip-btn:hover {
@@ -742,7 +795,7 @@ body:has(#auth-view.active) .player {
   width: 65px;
   height: 65px;
   border-radius: 50%;
-  background: #AEC2F7;
+  background: var(--accent-blue);
   color: #070b1e;
   border: none;
   font-size: 1.5rem;
@@ -770,26 +823,25 @@ body:has(#fullscreen-player.active) .player {
 
 
 /* ==========================================
-   7. LÅST OG SENTRERT BUNNMENY (FIKSET)
+   9. FAST BUNNMENY (FULL BREDDE H/V)
    ========================================== */
 .bottom-bar {
   position: fixed !important;
   bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  width: 100% !important;
-  height: 56px;
+  width: 100vw !important;
+  height: 60px;
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  z-index: 1000 !important; 
-  background-color: var(--bar-bg, #0f172a);
-  border-top: 1px solid var(--bar-border, rgba(255, 255, 255, 0.1));
+  z-index: 1100 !important; 
+  background-color: var(--bar-bg);
+  border-top: 1px solid var(--bar-border);
   padding-bottom: env(safe-area-inset-bottom) !important;
   box-sizing: border-box !important;
 }
 
-/* Sentrerer elementene internt i bunnlinjen */
 .bottom-bar > *,
 .bottom-bar nav,
 .bottom-bar .nav-container {
@@ -797,8 +849,7 @@ body:has(#fullscreen-player.active) .player {
   justify-content: space-around !important;
   align-items: center !important;
   width: 100% !important;
-  max-width: 480px !important;
+  max-width: 480px !important; /* Sentrerer menyikoner internt på større skjermer */
   margin: 0 auto !important;
-  padding: 0 1rem !important;
-  box-sizing: border-box !important;
+  padding: 0 !important;
 }
