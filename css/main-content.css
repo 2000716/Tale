@@ -1,0 +1,133 @@
+/* ==========================================
+   HOVEDSIDE, KORT & LAYOUT
+   ========================================== */
+
+/* Pass på at innholdet ikke overlapper bunnmeny/minispiller */
+main, .content-container {
+  padding-bottom: calc(140px + env(safe-area-inset-bottom));
+}
+
+.hero-banner {
+  background: linear-gradient(135deg, #0b112c 0%, #1a2550 100%);
+  color: var(--text-light, #ffffff);
+  padding: 1.2rem;
+  border-radius: var(--radius-md, 12px);
+  margin-bottom: 1.5rem;
+}
+
+.badge {
+  background: var(--accent-blue, #AEC2F7);
+  color: #0b112c;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.section-header {
+  margin: 1.2rem 0 0.6rem 0;
+  color: var(--text-dark, #0f172a);
+}
+
+.horizontal-scroll,
+.horizontal-scroll-container {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  gap: 16px;
+  padding-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.horizontal-scroll::-webkit-scrollbar,
+.horizontal-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.book-card {
+  flex: 0 0 130px !important;
+  width: 130px !important;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+  transition: transform 0.2s ease;
+}
+
+.book-card:active {
+  transform: scale(0.96);
+}
+
+.book-cover {
+  width: 130px;
+  height: 130px;
+  border-radius: var(--radius-md, 12px);
+  overflow: hidden;
+  background-color: #131b3e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  position: relative;
+}
+
+.book-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius-md, 12px);
+}
+
+.generated-cover {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1e295d 0%, #070b1e 100%);
+  color: var(--accent-blue, #AEC2F7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem;
+  text-align: center;
+  border-radius: var(--radius-md, 12px);
+  border: 1px solid rgba(174, 194, 247, 0.2);
+  box-sizing: border-box;
+}
+
+.generated-cover span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  word-break: break-word;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.book-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  color: var(--text-dark, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.book-author {
+  font-size: 0.75rem;
+  color: var(--text-muted-dark, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-card {
+  background: #ffffff;
+  padding: 1.5rem;
+  border-radius: var(--radius-md, 12px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  margin-top: 1rem;
+  color: var(--text-dark, #0f172a);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
