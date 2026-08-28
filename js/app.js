@@ -254,8 +254,8 @@ function extractCardItemData(card) {
 function setupEventListeners() {
   document.addEventListener("click", async (e) => {
     
-    // 0. Håndtering av kort-klikk via event-delegering (Erstatter bindCardClickEvents)
-    const card = e.target.closest(".book-card");
+    // 0. Håndtering av kort-klikk via event-delegering (Støtter nå også continue-cards)
+    const card = e.target.closest(".book-card, .continue-card");
     if (card) {
       const item = extractCardItemData(card);
       openDetailsView(item);
