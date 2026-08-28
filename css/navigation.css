@@ -2,13 +2,13 @@
    BUNNMENY & MINISPILLER
    ========================================== */
 
-/* Fast minispiller (plassert rett over bunnmenyen) */
+/* Fast minispiller (plassert rett over bunnmenyen med litt luft) */
 .player {
   position: fixed !important;
-  bottom: calc(70px + env(safe-area-inset-bottom)) !important; 
-  left: 0 !important;
-  right: 0 !important;
-  width: 100vw !important;
+  bottom: calc(78px + env(safe-area-inset-bottom)) !important; /* Økt fra 70px for mer luft ned til menyen */
+  left: 8px !important;                                       /* Litt luft fra venstre kant */
+  right: 8px !important;                                      /* Litt luft fra høyre kant */
+  width: calc(100% - 16px) !important;                        /* Holder spilleren innenfor skjermen */
   height: 62px;
   background-color: var(--bar-bg, #0f172a);
   color: var(--text-light, #ffffff);
@@ -16,8 +16,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 1rem;
-  border-top: 1px solid var(--bar-border, rgba(255, 255, 255, 0.1));
-  box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
+  border-radius: var(--radius-md, 12px);                     /* Avrundede hjørner for "flytende" kort-effekt */
+  border: 1px solid var(--bar-border, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   z-index: 1050 !important;
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
   box-sizing: border-box;
