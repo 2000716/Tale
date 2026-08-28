@@ -169,26 +169,68 @@ async function executeAppSearch(term) {
   }
 
   resultsContainer.classList.add("active");
-  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster...</p></div>`;
+  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster og radiostasjoner...</p></div>`;
 
   document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => sec.style.display = "none");
 
   try {
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`);
-    const data = await res.json();
-    const podcasts = data.results || [];
+    // Parallele API-kall: iTunes for podkaster og Radio Browser API for radio
+    const [podcastRes, radioRes] = await Promise.allSettled([
+      fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=15`),
+      fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(term)}?limit=15`)
+    ]);
+
+    let podcasts = [];
+    if (podcastRes.status === 'fulfilled' && podcastRes.value.ok) {
+      const data = await podcastRes.value.json();
+      podcasts = data.results || [];
+    }
+
+    let radioStations = [];
+    if (radioRes.status === 'fulfilled' && radioRes.value.ok) {
+      radioStations = await radioRes.value.json();
+    }
 
     let htmlContent = "";
-    if (podcasts.length === 0) {
+
+    if (podcasts.length === 0 && radioStations.length === 0) {
       htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet på "${escapeAttr(term)}".</p>`;
     } else {
       let gridHTML = "";
+
+      // Render radiostasjoner
+      radioStations.forEach((station, index) => {
+        const title = station.name || "Radio";
+        const sub = station.tags ? station.tags.split(',').slice(0, 2).join(', ') : (station.country || "Direkte Radio");
+        const cover = station.favicon || "";
+        const audioUrl = station.url_resolved || station.url || "";
+        const cardId = `search-radio-card-${index}`;
+
+        gridHTML += `
+          <div class="book-card search-result-item" 
+               id="${cardId}"
+               data-id="${cardId}"
+               data-title="${escapeAttr(title)}" 
+               data-sub="${escapeAttr(sub)}" 
+               data-desc="Direktestrøm fra Radio Browser API" 
+               data-cover="${escapeAttr(cover)}"
+               data-rss=""
+               data-audio="${escapeAttr(audioUrl)}"
+               data-type="radio">
+            <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
+            <div class="book-title">${title}</div>
+            <div class="book-author">📻 ${sub}</div>
+          </div>
+        `;
+      });
+
+      // Render podkaster
       podcasts.forEach((podcast, index) => {
         const title = podcast.trackName || podcast.collectionName;
         const sub = podcast.artistName || "Podkast";
         const cover = podcast.artworkUrl600 || podcast.artworkUrl100;
         const feedUrl = podcast.feedUrl || "";
-        const cardId = `search-card-${index}`;
+        const cardId = `search-podcast-card-${index}`;
 
         gridHTML += `
           <div class="book-card search-result-item" 
@@ -203,10 +245,11 @@ async function executeAppSearch(term) {
                data-audio="">
             <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
             <div class="book-title">${title}</div>
-            <div class="book-author">${sub}</div>
+            <div class="book-author">🎙️ ${sub}</div>
           </div>
         `;
       });
+
       htmlContent = `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${gridHTML}</div>`;
     }
 
