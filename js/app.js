@@ -2,8 +2,18 @@ import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
-import { openDetailsView, togglePlay, setupAudioListeners, playEpisode } from "./player.js";
+import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
+function playAudioTrack(audioUrl, title, sub, cover) {
+  playSpecificEpisode({
+    audioUrl: audioUrl,
+    title: title,
+    sub: sub,
+    cover: cover
+  });
+}
 
 function escapeAttr(str) {
   if (!str) return '';
@@ -349,7 +359,7 @@ function setupEventListeners() {
       const cover = radioPlayBtn.dataset.cover || "";
       
       if (audioUrl) {
-        playEpisode(audioUrl, title, "NRK Radio", cover);
+        playAudioTrack(audioUrl, title, "NRK Radio", cover);
       }
       return;
     }
@@ -360,7 +370,7 @@ function setupEventListeners() {
       const title = radioRow.dataset.title || "Direkte Radio";
       const cover = radioRow.dataset.cover || "";
       if (audioUrl) {
-        playEpisode(audioUrl, title, "NRK Radio", cover);
+        playAudioTrack(audioUrl, title, "NRK Radio", cover);
       }
       return;
     }
@@ -371,7 +381,7 @@ function setupEventListeners() {
       const title = radioBanner.dataset.title || "NRK Nyheter Radio";
       const cover = radioBanner.dataset.cover || "";
       if (audioUrl) {
-        playEpisode(audioUrl, title, "NRK Radio", cover);
+        playAudioTrack(audioUrl, title, "NRK Radio", cover);
       }
       return;
     }
