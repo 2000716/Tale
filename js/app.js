@@ -169,62 +169,89 @@ async function executeAppSearch(term) {
   }
 
   resultsContainer.classList.add("active");
-  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster og radiostasjoner...</p></div>`;
+  resultsContainer.innerHTML = `
+    <h2>Søkeresultater for "${escapeAttr(term)}"</h2>
+    <div class="dynamic-container"><p class="loading-episodes">Søker i podkaster og lydbøker...</p></div>
+  `;
 
   document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => sec.style.display = "none");
 
   try {
-    // Parallele API-kall: iTunes for podkaster og Radio Browser API for radio
-    const [podcastRes, radioRes] = await Promise.allSettled([
-      fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=15`),
-      fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(term)}?limit=15`)
-    ]);
-
+    // 1. Hent podkaster fra iTunes API
+    const podcastRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`);
+    
     let podcasts = [];
-    if (podcastRes.status === 'fulfilled' && podcastRes.value.ok) {
-      const data = await podcastRes.value.json();
+    if (podcastRes.ok) {
+      const data = await podcastRes.json();
       podcasts = data.results || [];
     }
 
-    let radioStations = [];
-    if (radioRes.status === 'fulfilled' && radioRes.value.ok) {
-      radioStations = await radioRes.value.json();
+    // 2. Søk i de lokale/Firestore-lagrede lydbøkene og podkastene fra cachen
+    let localMatches = [];
+    const cachedSections = localStorage.getItem("app_sections_cache");
+    if (cachedSections) {
+      try {
+        const sectionsData = JSON.parse(cachedSections);
+        const lowerTerm = term.toLowerCase();
+
+        sectionsData.forEach(sec => {
+          (sec.items || []).forEach(item => {
+            // Ekskluder alt som har typen 'radio'
+            if (item.type === 'radio') return;
+
+            const title = (item.title || '').toLowerCase();
+            const sub = (item.sub || item.author || item.publisher || '').toLowerCase();
+
+            if (title.includes(lowerTerm) || sub.includes(lowerTerm)) {
+              if (!localMatches.some(m => m.id === item.id || m.title === item.title)) {
+                localMatches.push(item);
+              }
+            }
+          });
+        });
+      } catch (e) {
+        console.warn("Kunne ikke søke i lokal cache:", e);
+      }
     }
 
     let htmlContent = "";
 
-    if (podcasts.length === 0 && radioStations.length === 0) {
+    if (podcasts.length === 0 && localMatches.length === 0) {
       htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet på "${escapeAttr(term)}".</p>`;
     } else {
       let gridHTML = "";
 
-      // Render radiostasjoner
-      radioStations.forEach((station, index) => {
-        const title = station.name || "Radio";
-        const sub = station.tags ? station.tags.split(',').slice(0, 2).join(', ') : (station.country || "Direkte Radio");
-        const cover = station.favicon || "";
-        const audioUrl = station.url_resolved || station.url || "";
-        const cardId = `search-radio-card-${index}`;
+      // Render treff fra Firestore (Lydbøker & Podkaster)
+      localMatches.forEach((item, index) => {
+        const title = item.title || 'Innhold';
+        const sub = item.sub || item.author || item.publisher || '';
+        const manualCover = item.coverUrl || item.cover || item.image || '';
+        const rssUrl = item.rssUrl || item.rss || '';
+        const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
+        const type = item.type || 'audiobook';
+        const cardId = `search-local-card-${index}`;
+
+        const typeIcon = type === 'audiobook' ? '📚 Lydbok' : '🎙️ Podkast';
 
         gridHTML += `
           <div class="book-card search-result-item" 
                id="${cardId}"
-               data-id="${cardId}"
+               data-id="${escapeAttr(item.id || cardId)}"
                data-title="${escapeAttr(title)}" 
                data-sub="${escapeAttr(sub)}" 
-               data-desc="Direktestrøm fra Radio Browser API" 
-               data-cover="${escapeAttr(cover)}"
-               data-rss=""
+               data-desc="${escapeAttr(item.desc || item.description || '')}" 
+               data-cover="${escapeAttr(manualCover)}"
+               data-rss="${escapeAttr(rssUrl)}"
                data-audio="${escapeAttr(audioUrl)}"
-               data-type="radio">
-            <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
+               data-type="${escapeAttr(type)}">
+            <div class="book-cover">${buildCoverMarkup(manualCover, title)}</div>
             <div class="book-title">${title}</div>
-            <div class="book-author">📻 ${sub}</div>
+            <div class="book-author">${typeIcon} • ${sub}</div>
           </div>
         `;
       });
 
-      // Render podkaster
+      // Render podkaster fra Apple iTunes API
       podcasts.forEach((podcast, index) => {
         const title = podcast.trackName || podcast.collectionName;
         const sub = podcast.artistName || "Podkast";
@@ -245,7 +272,7 @@ async function executeAppSearch(term) {
                data-audio="">
             <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
             <div class="book-title">${title}</div>
-            <div class="book-author">🎙️ ${sub}</div>
+            <div class="book-author">🎙️ Podkast • ${sub}</div>
           </div>
         `;
       });
@@ -253,7 +280,10 @@ async function executeAppSearch(term) {
       htmlContent = `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${gridHTML}</div>`;
     }
 
-    resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container">${htmlContent}</div>`;
+    resultsContainer.innerHTML = `
+      <h2>Søkeresultater for "${escapeAttr(term)}"</h2>
+      <div class="dynamic-container">${htmlContent}</div>
+    `;
   } catch (err) {
     console.error("Feil under søk:", err);
     resultsContainer.innerHTML = `<h2>Søk</h2><p style="padding:20px; color:red;">Kunne ikke utføre søk akkurat nå.</p>`;
