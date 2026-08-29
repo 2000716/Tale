@@ -138,9 +138,28 @@
         <div id="podcasts-sections" class="dynamic-container"></div>
       </section>
 
+      <!-- RADIO-SEKSJON OPPGRADERT FOR DIREKTE AVSPILLING OG NYHETS-BANNER -->
       <section id="radio" class="page">
         <h2>Direkte Radio</h2>
-        <div id="radio-sections" class="dynamic-container"></div>
+
+        <!-- 1. Dagens NRK Nyheter Banner -->
+        <div id="nrk-news-banner" class="radio-banner">
+          <img src="https://oppdrag.nrk.no/logoer/nrk-radio.svg" alt="NRK Radio Logo" class="banner-logo" />
+          <div class="banner-overlay">
+            <span class="banner-tag">DAGENS NYHETER</span>
+            <h3 id="banner-headline">Laster nyheter fra NRK...</h3>
+            <p id="banner-subtext">Trykk for å høre NRK Nyheter Radio direkte</p>
+          </div>
+        </div>
+
+        <!-- 2. Avlange kanal-seksjoner nedover -->
+        <div class="radio-channels-header">
+          <h3>Kanaler</h3>
+        </div>
+        
+        <div id="radio-channels-list" class="radio-channels-list">
+          <!-- Kanalene rendres dynamisk via JavaScript -->
+        </div>
       </section>
 
       <!-- KONTOSIDE UTEN PREMIUM-SKILT -->
