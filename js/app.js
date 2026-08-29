@@ -2,7 +2,7 @@ import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
-import { openDetailsView, togglePlay, setupAudioListeners } from "./player.js";
+import { openDetailsView, togglePlay, setupAudioListeners, playEpisode } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Hjelpefunksjon for å unngå krasj ved spesialtegn i HTML-attributter
@@ -36,7 +36,6 @@ export function loadContentFromFirestore() {
 
     sectionsList.forEach((sec) => {
       const pagesArray = Array.isArray(sec.pages) ? sec.pages : [sec.page || "home"];
-      const containerClass = sec.layout ? `layout-${sec.layout}` : "horizontal-scroll";
 
       pagesArray.forEach(pageTarget => {
         const targetContainer = document.getElementById(`${pageTarget}-sections`);
@@ -46,50 +45,96 @@ export function loadContentFromFirestore() {
           sectionWrapper.className = "dynamic-section";
 
           let itemsHTML = "";
-          (sec.items || []).forEach((item, index) => {
-            const title = item.title || 'Innhold';
-            const sub = item.sub || item.author || item.publisher || '';
-            const rssUrl = item.rssUrl || item.rss || '';
-            const manualCover = item.coverUrl || item.cover || item.image || '';
-            const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
-            const type = item.type || (pageTarget === 'radio' ? 'radio' : pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
-            const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
-            const seasonsJSON = item.seasons ? JSON.stringify(item.seasons) : '';
-            const episodesJSON = item.episodes ? JSON.stringify(item.episodes) : '';
-            const chaptersJSON = item.chapters ? JSON.stringify(item.chapters) : '';
+          // Spesialhåndtering for Radio-liste (rad-visning i stedet for standard kort)
+          if (sec.layout === "radio-list" || sec.type === "radio-list") {
+            (sec.items || []).forEach((item, index) => {
+              const title = item.title || 'Radiokanal';
+              const sub = item.sub || item.description || 'Direktesending';
+              const manualCover = item.coverUrl || item.cover || item.image || '';
+              const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
+              const cardId = `radio-row-${sec.id || index}-${index}`;
 
-            itemsHTML += `
-              <div class="book-card" 
-                   id="${cardId}"
-                   data-id="${escapeAttr(item.id || cardId)}"
-                   data-title="${escapeAttr(title)}" 
-                   data-sub="${escapeAttr(sub)}" 
-                   data-desc="${escapeAttr(item.desc || item.description || '')}" 
-                   data-cover="${escapeAttr(manualCover)}"
-                   data-rss="${escapeAttr(rssUrl)}"
-                   data-audio="${escapeAttr(audioUrl)}"
-                   data-type="${escapeAttr(type)}"
-                   data-seasons='${escapeAttr(seasonsJSON)}'
-                   data-episodes='${escapeAttr(episodesJSON)}'
-                   data-chapters='${escapeAttr(chaptersJSON)}'>
-                <div class="book-cover" id="cover-${cardId}">
-                  ${buildCoverMarkup(manualCover, title)}
+              itemsHTML += `
+                <div class="radio-channel-row book-card" 
+                     id="${cardId}"
+                     data-id="${escapeAttr(item.id || cardId)}"
+                     data-title="${escapeAttr(title)}" 
+                     data-sub="${escapeAttr(sub)}" 
+                     data-desc="${escapeAttr(item.desc || item.description || '')}" 
+                     data-cover="${escapeAttr(manualCover)}"
+                     data-audio="${escapeAttr(audioUrl)}"
+                     data-type="radio">
+                  <div class="channel-info-group">
+                    <img class="channel-icon" src="${escapeAttr(manualCover)}" alt="${escapeAttr(title)}" onerror="this.src='https://via.placeholder.com/60?text=Radio'">
+                    <div class="channel-texts">
+                      <h4>${title}</h4>
+                      <p>${sub}</p>
+                    </div>
+                  </div>
+                  <button class="channel-play-btn" data-audio="${escapeAttr(audioUrl)}" data-title="${escapeAttr(title)}" data-cover="${escapeAttr(manualCover)}">
+                    <i class="fa-solid fa-play"></i>
+                  </button>
                 </div>
-                <div class="book-title">${title}</div>
-                <div class="book-author">${sub}</div>
+              `;
+            });
+
+            sectionWrapper.innerHTML = `
+              <div class="radio-channels-header">
+                <h3>${sec.title || 'Direkte Radio'}</h3>
               </div>
+              <div class="radio-channels-list">${itemsHTML}</div>
             `;
+          } 
+          // Standard-visning (Kort og horisontal rulling)
+          else {
+            const containerClass = sec.layout ? `layout-${sec.layout}` : "horizontal-scroll";
 
-            if (rssUrl && !manualCover) {
-              fetchRSSImageData(rssUrl, cardId, title);
-            }
-          });
+            (sec.items || []).forEach((item, index) => {
+              const title = item.title || 'Innhold';
+              const sub = item.sub || item.author || item.publisher || '';
+              const rssUrl = item.rssUrl || item.rss || '';
+              const manualCover = item.coverUrl || item.cover || item.image || '';
+              const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
+              const type = item.type || (pageTarget === 'radio' ? 'radio' : pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
+              const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
-          sectionWrapper.innerHTML = `
-            <div class="section-header"><h3>${sec.title}</h3></div>
-            <div class="${containerClass}">${itemsHTML}</div>
-          `;
+              const seasonsJSON = item.seasons ? JSON.stringify(item.seasons) : '';
+              const episodesJSON = item.episodes ? JSON.stringify(item.episodes) : '';
+              const chaptersJSON = item.chapters ? JSON.stringify(item.chapters) : '';
+
+              itemsHTML += `
+                <div class="book-card" 
+                     id="${cardId}"
+                     data-id="${escapeAttr(item.id || cardId)}"
+                     data-title="${escapeAttr(title)}" 
+                     data-sub="${escapeAttr(sub)}" 
+                     data-desc="${escapeAttr(item.desc || item.description || '')}" 
+                     data-cover="${escapeAttr(manualCover)}"
+                     data-rss="${escapeAttr(rssUrl)}"
+                     data-audio="${escapeAttr(audioUrl)}"
+                     data-type="${escapeAttr(type)}"
+                     data-seasons='${escapeAttr(seasonsJSON)}'
+                     data-episodes='${escapeAttr(episodesJSON)}'
+                     data-chapters='${escapeAttr(chaptersJSON)}'>
+                  <div class="book-cover" id="cover-${cardId}">
+                    ${buildCoverMarkup(manualCover, title)}
+                  </div>
+                  <div class="book-title">${title}</div>
+                  <div class="book-author">${sub}</div>
+                </div>
+              `;
+
+              if (rssUrl && !manualCover) {
+                fetchRSSImageData(rssUrl, cardId, title);
+              }
+            });
+
+            sectionWrapper.innerHTML = `
+              <div class="section-header"><h3>${sec.title}</h3></div>
+              <div class="${containerClass}">${itemsHTML}</div>
+            `;
+          }
 
           targetContainer.appendChild(sectionWrapper);
         }
@@ -169,89 +214,62 @@ async function executeAppSearch(term) {
   }
 
   resultsContainer.classList.add("active");
-  resultsContainer.innerHTML = `
-    <h2>Søkeresultater for "${escapeAttr(term)}"</h2>
-    <div class="dynamic-container"><p class="loading-episodes">Søker i podkaster og lydbøker...</p></div>
-  `;
+  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster og radiostasjoner...</p></div>`;
 
   document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => sec.style.display = "none");
 
   try {
-    // 1. Hent podkaster fra iTunes API
-    const podcastRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`);
-    
+    // Parallele API-kall: iTunes for podkaster og Radio Browser API for radio
+    const [podcastRes, radioRes] = await Promise.allSettled([
+      fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=15`),
+      fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(term)}?limit=15`)
+    ]);
+
     let podcasts = [];
-    if (podcastRes.ok) {
-      const data = await podcastRes.json();
+    if (podcastRes.status === 'fulfilled' && podcastRes.value.ok) {
+      const data = await podcastRes.value.json();
       podcasts = data.results || [];
     }
 
-    // 2. Søk i de lokale/Firestore-lagrede lydbøkene og podkastene fra cachen
-    let localMatches = [];
-    const cachedSections = localStorage.getItem("app_sections_cache");
-    if (cachedSections) {
-      try {
-        const sectionsData = JSON.parse(cachedSections);
-        const lowerTerm = term.toLowerCase();
-
-        sectionsData.forEach(sec => {
-          (sec.items || []).forEach(item => {
-            // Ekskluder alt som har typen 'radio'
-            if (item.type === 'radio') return;
-
-            const title = (item.title || '').toLowerCase();
-            const sub = (item.sub || item.author || item.publisher || '').toLowerCase();
-
-            if (title.includes(lowerTerm) || sub.includes(lowerTerm)) {
-              if (!localMatches.some(m => m.id === item.id || m.title === item.title)) {
-                localMatches.push(item);
-              }
-            }
-          });
-        });
-      } catch (e) {
-        console.warn("Kunne ikke søke i lokal cache:", e);
-      }
+    let radioStations = [];
+    if (radioRes.status === 'fulfilled' && radioRes.value.ok) {
+      radioStations = await radioRes.value.json();
     }
 
     let htmlContent = "";
 
-    if (podcasts.length === 0 && localMatches.length === 0) {
+    if (podcasts.length === 0 && radioStations.length === 0) {
       htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet på "${escapeAttr(term)}".</p>`;
     } else {
       let gridHTML = "";
 
-      // Render treff fra Firestore (Lydbøker & Podkaster)
-      localMatches.forEach((item, index) => {
-        const title = item.title || 'Innhold';
-        const sub = item.sub || item.author || item.publisher || '';
-        const manualCover = item.coverUrl || item.cover || item.image || '';
-        const rssUrl = item.rssUrl || item.rss || '';
-        const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
-        const type = item.type || 'audiobook';
-        const cardId = `search-local-card-${index}`;
-
-        const typeIcon = type === 'audiobook' ? '📚 Lydbok' : '🎙️ Podkast';
+      // Render radiostasjoner
+      radioStations.forEach((station, index) => {
+        const title = station.name || "Radio";
+        const sub = station.tags ? station.tags.split(',').slice(0, 2).join(', ') : (station.country || "Direkte Radio");
+        const cover = station.favicon || "";
+        const audioUrl = station.url_resolved || station.url || "";
+        const cardId = `search-radio-card-${index}`;
 
         gridHTML += `
           <div class="book-card search-result-item" 
                id="${cardId}"
-               data-id="${escapeAttr(item.id || cardId)}"
+               data-id="${cardId}"
                data-title="${escapeAttr(title)}" 
                data-sub="${escapeAttr(sub)}" 
-               data-desc="${escapeAttr(item.desc || item.description || '')}" 
-               data-cover="${escapeAttr(manualCover)}"
-               data-rss="${escapeAttr(rssUrl)}"
+               data-desc="Direktestrøm fra Radio Browser API" 
+               data-cover="${escapeAttr(cover)}"
+               data-rss=""
                data-audio="${escapeAttr(audioUrl)}"
-               data-type="${escapeAttr(type)}">
-            <div class="book-cover">${buildCoverMarkup(manualCover, title)}</div>
+               data-type="radio">
+            <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
             <div class="book-title">${title}</div>
-            <div class="book-author">${typeIcon} • ${sub}</div>
+            <div class="book-author">📻 ${sub}</div>
           </div>
         `;
       });
 
-      // Render podkaster fra Apple iTunes API
+      // Render podkaster
       podcasts.forEach((podcast, index) => {
         const title = podcast.trackName || podcast.collectionName;
         const sub = podcast.artistName || "Podkast";
@@ -272,7 +290,7 @@ async function executeAppSearch(term) {
                data-audio="">
             <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
             <div class="book-title">${title}</div>
-            <div class="book-author">🎙️ Podkast • ${sub}</div>
+            <div class="book-author">🎙️ ${sub}</div>
           </div>
         `;
       });
@@ -280,10 +298,7 @@ async function executeAppSearch(term) {
       htmlContent = `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${gridHTML}</div>`;
     }
 
-    resultsContainer.innerHTML = `
-      <h2>Søkeresultater for "${escapeAttr(term)}"</h2>
-      <div class="dynamic-container">${htmlContent}</div>
-    `;
+    resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container">${htmlContent}</div>`;
   } catch (err) {
     console.error("Feil under søk:", err);
     resultsContainer.innerHTML = `<h2>Søk</h2><p style="padding:20px; color:red;">Kunne ikke utføre søk akkurat nå.</p>`;
@@ -327,7 +342,37 @@ function extractCardItemData(card) {
 function setupEventListeners() {
   document.addEventListener("click", async (e) => {
     
-    // 0. Håndtering av kort-klikk via event-delegering (Støtter nå også continue-cards)
+    // Spilleknapp på rad-visning for radiokanaler
+    const radioPlayBtn = e.target.closest(".channel-play-btn");
+    if (radioPlayBtn) {
+      e.stopPropagation();
+      const audioUrl = radioPlayBtn.dataset.audio;
+      const title = radioPlayBtn.dataset.title || "Direkte Radio";
+      const cover = radioPlayBtn.dataset.cover || "";
+      
+      if (audioUrl) {
+        playEpisode(audioUrl, title, "NRK Radio", cover);
+      }
+      return;
+    }
+
+    // Klikk på radio-banneret (Dagens NRK Nyheter)
+    const radioBanner = e.target.closest(".radio-banner");
+    if (radioBanner) {
+      const bannerItem = {
+        id: "nrk-nyheter-banner",
+        title: "NRK Nyheter",
+        sub: "Direkte og oppdaterte nyheter",
+        desc: "Hør de siste nyhetsoppdateringene direkte fra NRK Radio.",
+        cover: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80",
+        audioUrl: "https://nrk-radio-live.akamaized.net/hls/live/2012856/nrk_nyheter/master.m3u8",
+        type: "radio"
+      };
+      openDetailsView(bannerItem);
+      return;
+    }
+
+    // 0. Håndtering av kort-klikk via event-delegering (Støtter nå også continue-cards og radio-channel-row)
     const card = e.target.closest(".book-card, .continue-card");
     if (card) {
       const item = extractCardItemData(card);
