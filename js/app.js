@@ -34,6 +34,9 @@ export function loadContentFromFirestore() {
       if (container) container.innerHTML = "";
     });
 
+    // Sett inn dagens NRK Nyheter-banner øverst på radiosiden
+    renderRadioBanner();
+
     sectionsList.forEach((sec) => {
       const pagesArray = Array.isArray(sec.pages) ? sec.pages : [sec.page || "home"];
 
@@ -46,8 +49,8 @@ export function loadContentFromFirestore() {
 
           let itemsHTML = "";
 
-          // Spesialhåndtering for Radio-liste (rad-visning i stedet for standard kort)
-          if (sec.layout === "radio-list" || sec.type === "radio-list") {
+          // Spesialhåndtering for Radio (avlange seksjoner/rader)
+          if (pageTarget === "radio" || sec.layout === "radio-list" || sec.type === "radio-list") {
             (sec.items || []).forEach((item, index) => {
               const title = item.title || 'Radiokanal';
               const sub = item.sub || item.description || 'Direktesending';
@@ -56,15 +59,13 @@ export function loadContentFromFirestore() {
               const cardId = `radio-row-${sec.id || index}-${index}`;
 
               itemsHTML += `
-                <div class="radio-channel-row book-card" 
+                <div class="radio-channel-row" 
                      id="${cardId}"
                      data-id="${escapeAttr(item.id || cardId)}"
                      data-title="${escapeAttr(title)}" 
                      data-sub="${escapeAttr(sub)}" 
-                     data-desc="${escapeAttr(item.desc || item.description || '')}" 
                      data-cover="${escapeAttr(manualCover)}"
-                     data-audio="${escapeAttr(audioUrl)}"
-                     data-type="radio">
+                     data-audio="${escapeAttr(audioUrl)}">
                   <div class="channel-info-group">
                     <img class="channel-icon" src="${escapeAttr(manualCover)}" alt="${escapeAttr(title)}" onerror="this.src='https://via.placeholder.com/60?text=Radio'">
                     <div class="channel-texts">
@@ -81,12 +82,12 @@ export function loadContentFromFirestore() {
 
             sectionWrapper.innerHTML = `
               <div class="radio-channels-header">
-                <h3>${sec.title || 'Direkte Radio'}</h3>
+                <h3>${sec.title || 'Kanaler'}</h3>
               </div>
               <div class="radio-channels-list">${itemsHTML}</div>
             `;
           } 
-          // Standard-visning (Kort og horisontal rulling)
+          // Standard-visning (Kort og horisontal rulling for podkaster/lydbøker)
           else {
             const containerClass = sec.layout ? `layout-${sec.layout}` : "horizontal-scroll";
 
@@ -96,7 +97,7 @@ export function loadContentFromFirestore() {
               const rssUrl = item.rssUrl || item.rss || '';
               const manualCover = item.coverUrl || item.cover || item.image || '';
               const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
-              const type = item.type || (pageTarget === 'radio' ? 'radio' : pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
+              const type = item.type || (pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
               const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
               const seasonsJSON = item.seasons ? JSON.stringify(item.seasons) : '';
@@ -142,7 +143,7 @@ export function loadContentFromFirestore() {
     });
   };
 
-  // Les fra cache først for lynrask oppstart
+  // Les fra cache først
   const cachedSections = localStorage.getItem("app_sections_cache");
   if (cachedSections) {
     try {
@@ -164,6 +165,52 @@ export function loadContentFromFirestore() {
   }, (err) => {
     console.error("Firestore onSnapshot feilet:", err);
   });
+}
+
+// Henter RSS-nyheter fra NRK for å bygge dagens toppbanner på Radiosiden
+async function renderRadioBanner() {
+  const radioContainer = document.getElementById("radio-sections");
+  if (!radioContainer) return;
+
+  const streamUrl = "https://nrk-radio-live.akamaized.net/hls/live/2012856/nrk_nyheter/master.m3u8";
+  const defaultBg = "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80";
+  const nrkLogo = "https://upload.wikimedia.org/wikipedia/commons/c/c2/NRK_Radio_logo.svg";
+
+  let bannerImage = defaultBg;
+  let bannerHeadline = "Siste Nyheter fra NRK Radio";
+
+  try {
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/nyheter/siste.rss")}`);
+    const data = await res.json();
+    if (data.status === 'ok' && data.items && data.items.length > 0) {
+      const topItem = data.items[0];
+      if (topItem.title) bannerHeadline = topItem.title;
+      bannerImage = topItem.thumbnail || topItem.enclosure?.link || topItem.enclosure?.thumbnail || defaultBg;
+    }
+  } catch (err) {
+    console.warn("Kunne ikke hente NRK RSS for banner, bruker standardbilde.", err);
+  }
+
+  const bannerWrapper = document.createElement("div");
+  bannerWrapper.className = "radio-banner-container";
+  bannerWrapper.innerHTML = `
+    <div class="radio-banner" 
+         style="background-image: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.4) 100%), url('${escapeAttr(bannerImage)}');"
+         data-audio="${escapeAttr(streamUrl)}"
+         data-title="NRK Nyheter Radio"
+         data-cover="${escapeAttr(bannerImage)}">
+      <div class="banner-top-logo">
+        <img src="${nrkLogo}" alt="NRK Radio Logo" onerror="this.style.display='none'">
+      </div>
+      <div class="banner-content">
+        <span class="banner-badge"><i class="fa-solid fa-signal"></i> DIREKTE NYHETER</span>
+        <h2 class="banner-title">${bannerHeadline}</h2>
+        <p class="banner-sub">Trykk for å lytte til NRK Nyheter Radio nå</p>
+      </div>
+    </div>
+  `;
+
+  radioContainer.prepend(bannerWrapper);
 }
 
 async function fetchRSSImageData(rssUrl, cardId, title) {
@@ -203,9 +250,10 @@ export function setupSearchListener() {
   };
 }
 
+// Søkefunksjon: radio er fjernet fra søket – søker kun podkaster via iTunes API
 async function executeAppSearch(term) {
   let resultsContainer = document.getElementById("search-results-page");
-  
+
   if (!resultsContainer) {
     resultsContainer = document.createElement("section");
     resultsContainer.id = "search-results-page";
@@ -214,62 +262,25 @@ async function executeAppSearch(term) {
   }
 
   resultsContainer.classList.add("active");
-  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster og radiostasjoner...</p></div>`;
+  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster...</p></div>`;
 
   document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => sec.style.display = "none");
 
   try {
-    // Parallele API-kall: iTunes for podkaster og Radio Browser API for radio
-    const [podcastRes, radioRes] = await Promise.allSettled([
-      fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=15`),
-      fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(term)}?limit=15`)
-    ]);
-
+    const podcastRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`);
     let podcasts = [];
-    if (podcastRes.status === 'fulfilled' && podcastRes.value.ok) {
-      const data = await podcastRes.value.json();
+    if (podcastRes.ok) {
+      const data = await podcastRes.json();
       podcasts = data.results || [];
-    }
-
-    let radioStations = [];
-    if (radioRes.status === 'fulfilled' && radioRes.value.ok) {
-      radioStations = await radioRes.value.json();
     }
 
     let htmlContent = "";
 
-    if (podcasts.length === 0 && radioStations.length === 0) {
-      htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet på "${escapeAttr(term)}".</p>`;
+    if (podcasts.length === 0) {
+      htmlContent = `<p style="padding: 20px; color: #888;">Ingen podkaster funnet for "${escapeAttr(term)}".</p>`;
     } else {
       let gridHTML = "";
 
-      // Render radiostasjoner
-      radioStations.forEach((station, index) => {
-        const title = station.name || "Radio";
-        const sub = station.tags ? station.tags.split(',').slice(0, 2).join(', ') : (station.country || "Direkte Radio");
-        const cover = station.favicon || "";
-        const audioUrl = station.url_resolved || station.url || "";
-        const cardId = `search-radio-card-${index}`;
-
-        gridHTML += `
-          <div class="book-card search-result-item" 
-               id="${cardId}"
-               data-id="${cardId}"
-               data-title="${escapeAttr(title)}" 
-               data-sub="${escapeAttr(sub)}" 
-               data-desc="Direktestrøm fra Radio Browser API" 
-               data-cover="${escapeAttr(cover)}"
-               data-rss=""
-               data-audio="${escapeAttr(audioUrl)}"
-               data-type="radio">
-            <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
-            <div class="book-title">${title}</div>
-            <div class="book-author">📻 ${sub}</div>
-          </div>
-        `;
-      });
-
-      // Render podkaster
       podcasts.forEach((podcast, index) => {
         const title = podcast.trackName || podcast.collectionName;
         const sub = podcast.artistName || "Podkast";
@@ -342,7 +353,7 @@ function extractCardItemData(card) {
 function setupEventListeners() {
   document.addEventListener("click", async (e) => {
     
-    // Spilleknapp på rad-visning for radiokanaler
+    // 1. Klikk på Spilleknappen på en radio-rad -> start avspilling direkte
     const radioPlayBtn = e.target.closest(".channel-play-btn");
     if (radioPlayBtn) {
       e.stopPropagation();
@@ -356,23 +367,31 @@ function setupEventListeners() {
       return;
     }
 
-    // Klikk på radio-banneret (Dagens NRK Nyheter)
-    const radioBanner = e.target.closest(".radio-banner");
-    if (radioBanner) {
-      const bannerItem = {
-        id: "nrk-nyheter-banner",
-        title: "NRK Nyheter",
-        sub: "Direkte og oppdaterte nyheter",
-        desc: "Hør de siste nyhetsoppdateringene direkte fra NRK Radio.",
-        cover: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80",
-        audioUrl: "https://nrk-radio-live.akamaized.net/hls/live/2012856/nrk_nyheter/master.m3u8",
-        type: "radio"
-      };
-      openDetailsView(bannerItem);
+    // 2. Klikk på selve radio-raden -> start avspilling direkte (ingen infoside åpnes)
+    const radioRow = e.target.closest(".radio-channel-row");
+    if (radioRow) {
+      const audioUrl = radioRow.dataset.audio;
+      const title = radioRow.dataset.title || "Direkte Radio";
+      const cover = radioRow.dataset.cover || "";
+      if (audioUrl) {
+        playEpisode(audioUrl, title, "NRK Radio", cover);
+      }
       return;
     }
 
-    // 0. Håndtering av kort-klikk via event-delegering (Støtter nå også continue-cards og radio-channel-row)
+    // 3. Klikk på Radio Banneret -> start NRK Nyheter Radio direkte (ingen infoside åpnes)
+    const radioBanner = e.target.closest(".radio-banner");
+    if (radioBanner) {
+      const audioUrl = radioBanner.dataset.audio;
+      const title = radioBanner.dataset.title || "NRK Nyheter Radio";
+      const cover = radioBanner.dataset.cover || "";
+      if (audioUrl) {
+        playEpisode(audioUrl, title, "NRK Radio", cover);
+      }
+      return;
+    }
+
+    // 4. Klikk på standard kort (Podkaster / Lydbøker) -> åpne infoside
     const card = e.target.closest(".book-card, .continue-card");
     if (card) {
       const item = extractCardItemData(card);
@@ -380,7 +399,7 @@ function setupEventListeners() {
       return;
     }
 
-    // 1. Gå til Innlogging
+    // Navigasjon og Auth-kontroller
     const loginBtn = e.target.closest("#go-to-login-btn");
     if (loginBtn) {
       setAuthMode(false);
@@ -388,7 +407,6 @@ function setupEventListeners() {
       return;
     }
 
-    // 2. Gå til Registrering
     const regBtn = e.target.closest("#go-to-register-btn");
     if (regBtn) {
       setAuthMode(true);
@@ -396,28 +414,24 @@ function setupEventListeners() {
       return;
     }
 
-    // 3. Tilbake-knapp fra Auth
     const backBtn = e.target.closest("#auth-back-btn");
     if (backBtn) {
       showView("landing-view");
       return;
     }
 
-    // 4. Bytt mellom Logg inn / Registrer
     const toggleBtn = e.target.closest("#toggle-auth-mode");
     if (toggleBtn) {
       setAuthMode(!state.isSignUp);
       return;
     }
 
-    // 5. Logg ut
     const logoutBtn = e.target.closest("#logout-btn");
     if (logoutBtn) {
       handleLogout();
       return;
     }
 
-    // 6. Navigasjonsknapper (Bunnmeny)
     const navBtn = e.target.closest(".nav-btn");
     if (navBtn) {
       removeSearchResultsView();
@@ -425,14 +439,12 @@ function setupEventListeners() {
       return;
     }
 
-    // 7. Konto-knapp
     const accBtn = e.target.closest("#nav-account-btn");
     if (accBtn) {
       switchPage("account");
       return;
     }
 
-    // 8. Logo/Hjem-knapp
     const homeLogoBtn = e.target.closest("#nav-home-logo-btn");
     if (homeLogoBtn) {
       removeSearchResultsView();
@@ -440,7 +452,6 @@ function setupEventListeners() {
       return;
     }
 
-    // 9. Lukk Detaljside
     const closeDetails = e.target.closest("#details-close-btn");
     if (closeDetails) {
       document.getElementById("details-page")?.classList.remove("active");
@@ -449,7 +460,7 @@ function setupEventListeners() {
       return;
     }
 
-    // 10. Spiller-kontrollere
+    // Spillerkontroller
     if (e.target.closest("#mini-play-btn")) {
       e.stopPropagation();
       togglePlay();
@@ -485,7 +496,7 @@ function setupEventListeners() {
     }
   });
 
-  // Skjemainnsending for innlogging
+  // Skjemainnsending
   document.addEventListener("submit", async (e) => {
     if (e.target && e.target.id === "auth-form") {
       e.preventDefault();
