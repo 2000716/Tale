@@ -1,194 +1,413 @@
-import { db } from "./firebase-config.js";
+import { db } from "../firebase-config.js";
 import { 
   collection, 
   addDoc, 
-  onSnapshot, 
+  getDocs, 
   doc, 
+  deleteDoc, 
   updateDoc, 
-  arrayUnion 
+  query, 
+  orderBy, 
+  onSnapshot,
+  arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// DOM-elementer for oppretting av seksjon
-const addSectionForm = document.getElementById("add-section-form");
+// Global tilstand for seksjoner
+let activeSections = [];
 
-// DOM-elementer for API-søk og legg-til
-const targetSectionSelect = document.getElementById("target-section-select");
-const searchInput = document.getElementById("api-search-input");
-const searchBtn = document.getElementById("api-search-btn");
-const resultsContainer = document.getElementById("api-results-container");
+document.addEventListener("DOMContentLoaded", () => {
+  initLiveSectionsListener();
+  setupSectionForm();
+  setupBannerForm();
+  setupManualForm();
+  setupApiSearch();
+});
 
 // ==========================================
-// 1. DYNAMISK HENTING AV SEKSJONER TIL RULLGARDIN
+// 1. FIRESTORE SANNTIDSLYTTER FOR SEKSJONER
 // ==========================================
-function listenToSectionsForDropdown() {
-  if (!targetSectionSelect) return;
-
-  const sectionsRef = collection(db, "sections");
+function initLiveSectionsListener() {
+  const q = query(collection(db, "sections"), orderBy("order", "asc"));
   
-  // Lytter i sanntid slik at nye seksjoner dukker opp umiddelbart i menyen
-  onSnapshot(sectionsRef, (snapshot) => {
-    targetSectionSelect.innerHTML = '<option value="">-- Velg en seksjon --</option>';
+  onSnapshot(q, (snapshot) => {
+    activeSections = [];
+    const manageList = document.getElementById("sections-manage-list");
+    const sectionCountEl = document.getElementById("stat-sections-count");
+    
+    if (manageList) manageList.innerHTML = "";
 
     if (snapshot.empty) {
-      targetSectionSelect.innerHTML = '<option value="">Ingen seksjoner funnet i Firestore</option>';
+      if (manageList) manageList.innerHTML = `<p class="text-muted">Ingen seksjoner opprettet ennå.</p>`;
+      if (sectionCountEl) sectionCountEl.innerText = "0";
+      populateSectionDropdowns([]);
       return;
     }
 
+    if (sectionCountEl) sectionCountEl.innerText = snapshot.size;
+
     snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const option = document.createElement("option");
-      option.value = docSnap.id;
+      const secData = { id: docSnap.id, ...docSnap.data() };
+      activeSections.push(secData);
 
-      const pageTarget = Array.isArray(data.targetPages) 
-        ? data.targetPages.join(", ") 
-        : (data.targetPages || data.pages || data.page || "home");
+      if (manageList) {
+        const itemEl = document.createElement("div");
+        itemEl.className = "manage-item";
+        itemEl.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border-radius: 6px; margin-bottom: 8px;";
+        
+        const itemsCount = (secData.items || []).length;
+        
+        itemEl.innerHTML = `
+          <div>
+            <strong>${escapeHtml(secData.title || 'Uten navn')}</strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+              Side: <code>${escapeHtml(secData.targetPages || secData.page || 'home')}</code> | 
+              Layout: <code>${escapeHtml(secData.layout || 'horizontal-scroll')}</code> | 
+              Innhold: <strong>${itemsCount} elementer</strong> | 
+              Rekkefølge: <strong>${secData.order || 0}</strong>
+            </div>
+          </div>
+          <button class="btn-danger btn-delete-sec" data-id="${docSnap.id}" style="background: var(--danger-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+            <i class="fa-solid fa-trash"></i> Slett
+          </button>
+        `;
 
-      option.textContent = `${data.title || "Uten tittel"} (${pageTarget})`;
-      targetSectionSelect.appendChild(option);
+        manageList.appendChild(itemEl);
+      }
     });
+
+    // Oppdater alle dropdown-menyer der man velger seksjon
+    populateSectionDropdowns(activeSections);
+    setupDeleteButtons();
   }, (err) => {
-    console.error("Feil ved henting av seksjoner til rullgardin:", err);
-    targetSectionSelect.innerHTML = '<option value="">Kunne ikke laste seksjoner</option>';
+    console.error("Feil ved henting av seksjoner:", err);
   });
 }
 
-// Start lytting på seksjoner når skriptet kjører
-listenToSectionsForDropdown();
+function populateSectionDropdowns(sections) {
+  const targetSelect = document.getElementById("target-section-select");
+  const manualSelect = document.getElementById("manual-target-section");
+
+  const optionsHTML = sections.length === 0
+    ? `<option value="">Ingen seksjoner tilgjengelig</option>`
+    : sections.map(s => `<option value="${s.id}">${escapeHtml(s.title)} (${s.page || 'home'})</option>`).join("");
+
+  if (targetSelect) targetSelect.innerHTML = optionsHTML;
+  if (manualSelect) manualSelect.innerHTML = optionsHTML;
+}
+
+function setupDeleteButtons() {
+  document.querySelectorAll(".btn-delete-sec").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      const secId = e.currentTarget.dataset.id;
+      if (confirm("Er du sikker på at du vil slette denne seksjonen?")) {
+        try {
+          await deleteDoc(doc(db, "sections", secId));
+        } catch (err) {
+          alert("Feil ved sletting: " + err.message);
+        }
+      }
+    });
+  });
+}
 
 // ==========================================
-// 2. OPPRETT NY SEKSJON / GALLERI
+// 2. OPPRETT NY SEKSJON
 // ==========================================
-if (addSectionForm) {
-  addSectionForm.addEventListener("submit", async (e) => {
+function setupSectionForm() {
+  const form = document.getElementById("add-section-form");
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const title = document.getElementById("sec-title").value.trim();
-    const order = parseInt(document.getElementById("sec-order").value, 10) || 1;
-    const targetPage = document.getElementById("sec-page").value;
+    const order = parseInt(document.getElementById("sec-order").value) || 1;
+    const page = document.getElementById("sec-page").value;
     const layout = document.getElementById("sec-layout").value;
 
     try {
       await addDoc(collection(db, "sections"), {
         title: title,
         order: order,
-        targetPages: [targetPage],
+        page: page,
+        targetPages: [page],
         layout: layout,
-        items: [] // Starter med tom liste over innhold
+        items: [],
+        createdAt: new Date()
       });
 
-      alert(`Seksjonen "${title}" ble lagt til!`);
-      addSectionForm.reset();
-    } catch (error) {
-      console.error("Feil ved lagring av seksjon til Firestore: ", error);
-      alert("Kunne ikke lagre seksjonen.");
+      form.reset();
+      alert("Seksjon ble opprettet og publisert!");
+    } catch (err) {
+      console.error("Kunne ikke opprette seksjon:", err);
+      alert("Feil ved lagring: " + err.message);
     }
   });
 }
 
 // ==========================================
-// 3. API-SØK MOT APPLE PODCAST API
+// 3. OPPRETT HERO BANNER
 // ==========================================
-if (searchBtn) {
-  searchBtn.addEventListener("click", performApiSearch);
-}
+function setupBannerForm() {
+  const form = document.getElementById("add-banner-form");
+  if (!form) return;
 
-if (searchInput) {
-  searchInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      performApiSearch();
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const title = document.getElementById("banner-title").value.trim();
+    const subtitle = document.getElementById("banner-subtitle").value.trim();
+    const description = document.getElementById("banner-desc").value.trim();
+    const imageUrl = document.getElementById("banner-img").value.trim();
+    const audioUrl = document.getElementById("banner-audio").value.trim();
+    const page = document.getElementById("banner-page").value;
+    const badge = document.getElementById("banner-badge").value.trim();
+
+    try {
+      await addDoc(collection(db, "banners"), {
+        title,
+        subtitle,
+        description,
+        imageUrl,
+        audioUrl,
+        page,
+        targetPage: page,
+        badge,
+        createdAt: new Date()
+      });
+
+      form.reset();
+      alert("Hero Banner ble publisert!");
+    } catch (err) {
+      console.error("Feil ved lagring av banner:", err);
+      alert("Kunne ikke publisere banner: " + err.message);
     }
   });
 }
 
-async function performApiSearch() {
-  const query = searchInput.value.trim();
-  if (!query) return;
+// ==========================================
+// 4. MANUELL REGISTRERING AV LYDBOK / INNHOLD
+// ==========================================
+function setupManualForm() {
+  const form = document.getElementById("add-manual-item-form");
+  if (!form) return;
 
-  resultsContainer.innerHTML = '<p style="color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Søker i Apple Podcast API...</p>';
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  try {
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=podcast&country=NO&limit=12`);
-    const data = await res.json();
-
-    if (!data.results || data.results.length === 0) {
-      resultsContainer.innerHTML = `<p style="color: var(--text-muted);">Ingen treff funnet for "${query}".</p>`;
+    const sectionId = document.getElementById("manual-target-section").value;
+    if (!sectionId) {
+      alert("Du må velge en seksjon først!");
       return;
     }
 
-    renderApiResults(data.results);
-  } catch (err) {
-    console.error("Feil ved API-søk:", err);
-    resultsContainer.innerHTML = '<p style="color: var(--danger-color);">Kunne ikke hente data fra API-et.</p>';
-  }
-}
+    const title = document.getElementById("item-title").value.trim();
+    const author = document.getElementById("item-author").value.trim();
+    const coverUrl = document.getElementById("item-cover").value.trim();
+    const audioUrl = document.getElementById("item-audio").value.trim();
+    const description = document.getElementById("item-desc").value.trim();
 
-// ==========================================
-// 4. RENDERING AV SØKERESULTATER
-// ==========================================
-function renderApiResults(results) {
-  resultsContainer.innerHTML = "";
+    const newItem = {
+      id: "manual_" + Date.now(),
+      title,
+      sub: author,
+      author,
+      coverUrl,
+      cover: coverUrl,
+      audioUrl,
+      audio: audioUrl,
+      description,
+      desc: description,
+      type: "audiobook"
+    };
 
-  results.forEach((item) => {
-    const title = item.trackName || item.collectionName || "Uten tittel";
-    const author = item.artistName || "Ukjent utgiver";
-    const cover = item.artworkUrl600 || item.artworkUrl100 || "";
-    const rssUrl = item.feedUrl || "";
-
-    const card = document.createElement("div");
-    card.className = "api-item-card";
-
-    card.innerHTML = `
-      <img src="${cover}" alt="${title}" onerror="this.src='https://via.placeholder.com/60?text=Podkast'">
-      <div class="api-item-info">
-        <h4>${title}</h4>
-        <p>${author}</p>
-      </div>
-      <button type="button" class="btn-add">
-        <i class="fa-solid fa-plus"></i> Legg til
-      </button>
-    `;
-
-    // Klikk-håndterer for "+ Legg til"-knappen
-    const addBtn = card.querySelector(".btn-add");
-    addBtn.addEventListener("click", () => {
-      const selectedSectionId = targetSectionSelect.value;
-      if (!selectedSectionId) {
-        alert("Vennligst velg en seksjon i rullgardinmenyen øverst først!");
-        return;
-      }
-
-      addItemToFirestore(selectedSectionId, {
-        id: "pod_" + (item.collectionId || Date.now()),
-        title: title,
-        sub: author,
-        author: author,
-        publisher: author,
-        coverUrl: cover,
-        rssUrl: rssUrl,
-        type: "podcast"
+    try {
+      const sectionRef = doc(db, "sections", sectionId);
+      await updateDoc(sectionRef, {
+        items: arrayUnion(newItem)
       });
-    });
 
-    resultsContainer.appendChild(card);
+      form.reset();
+      alert(`"${title}" ble lagt til i seksjonen!`);
+    } catch (err) {
+      console.error("Feil ved manuell tilføyelse:", err);
+      alert("Kunne ikke legge til innhold: " + err.message);
+    }
   });
 }
 
 // ==========================================
-// 5. LAGRE ELEMENT I FIRESTORE
+// 5. API SØK OG IMPORT (APPLE PODCAST & RADIO BROWSER)
 // ==========================================
-async function addItemToFirestore(sectionId, itemData) {
+function setupApiSearch() {
+  const searchBtn = document.getElementById("api-search-btn");
+  const searchInput = document.getElementById("api-search-input");
+
+  if (searchBtn) {
+    searchBtn.addEventListener("click", () => executeApiSearch());
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        executeApiSearch();
+      }
+    });
+  }
+}
+
+async function executeApiSearch() {
+  const queryTerm = document.getElementById("api-search-input").value.trim();
+  const apiType = document.getElementById("api-type-select").value;
+  const resultsContainer = document.getElementById("api-results-container");
+
+  if (!queryTerm) {
+    alert("Skriv inn et søkeord først.");
+    return;
+  }
+
+  resultsContainer.innerHTML = `<p class="text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Søker i ${apiType === 'podcast' ? 'Apple Podcast' : 'Radio Browser'} API...</p>`;
+
+  try {
+    if (apiType === "podcast") {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&media=podcast&country=NO&limit=12`);
+      const data = await res.json();
+      renderPodcastResults(data.results || []);
+    } else {
+      const res = await fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(queryTerm)}?limit=12`);
+      const data = await res.json();
+      renderRadioResults(data || []);
+    }
+  } catch (err) {
+    console.error("Feil under API-søk:", err);
+    resultsContainer.innerHTML = `<p style="color: var(--danger-color);">Feil under søk: ${err.message}</p>`;
+  }
+}
+
+function renderPodcastResults(items) {
+  const container = document.getElementById("api-results-container");
+  if (items.length === 0) {
+    container.innerHTML = `<p class="text-muted">Ingen treff funnet.</p>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  container.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 20px;";
+
+  items.forEach((item, index) => {
+    const card = document.createElement("div");
+    card.style.cssText = "background: var(--input-bg); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;";
+    
+    const title = item.trackName || item.collectionName || 'Ukjent';
+    const sub = item.artistName || 'Podkast';
+    const cover = item.artworkUrl600 || item.artworkUrl100 || '';
+    const rssUrl = item.feedUrl || '';
+
+    card.innerHTML = `
+      <div>
+        <img src="${cover}" alt="${escapeHtml(title)}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 6px; margin-bottom: 8px;">
+        <strong style="display: block; font-size: 0.85rem; margin-bottom: 4px;">${escapeHtml(title)}</strong>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(sub)}</p>
+      </div>
+      <button class="btn-import-podcast" data-index="${index}" style="margin-top: 10px; background: var(--primary-color); color: #fff; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">
+        <i class="fa-solid fa-plus"></i> Importer
+      </button>
+    `;
+
+    container.appendChild(card);
+
+    card.querySelector(".btn-import-podcast").addEventListener("click", () => {
+      importItemToSelectedSection({
+        id: "pod_" + (item.trackId || Date.now()),
+        title,
+        sub,
+        author: sub,
+        coverUrl: cover,
+        cover: cover,
+        rssUrl: rssUrl,
+        rss: rssUrl,
+        type: "podcast"
+      });
+    });
+  });
+}
+
+function renderRadioResults(items) {
+  const container = document.getElementById("api-results-container");
+  if (items.length === 0) {
+    container.innerHTML = `<p class="text-muted">Ingen radiokanaler funnet.</p>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  container.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 20px;";
+
+  items.forEach((item, index) => {
+    const card = document.createElement("div");
+    card.style.cssText = "background: var(--input-bg); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;";
+
+    const title = item.name || 'Radiokanal';
+    const sub = item.country || 'Direktesending';
+    const cover = item.favicon || 'https://via.placeholder.com/100?text=Radio';
+    const audioUrl = item.url_resolved || item.url || '';
+
+    card.innerHTML = `
+      <div>
+        <img src="${cover}" onerror="this.src='https://via.placeholder.com/100?text=Radio'" style="width: 100%; height: 100px; object-fit: contain; border-radius: 6px; margin-bottom: 8px; background: #000;">
+        <strong style="display: block; font-size: 0.85rem; margin-bottom: 4px;">${escapeHtml(title)}</strong>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(sub)}</p>
+      </div>
+      <button class="btn-import-radio" data-index="${index}" style="margin-top: 10px; background: var(--success-color); color: #fff; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">
+        <i class="fa-solid fa-plus"></i> Importer
+      </button>
+    `;
+
+    container.appendChild(card);
+
+    card.querySelector(".btn-import-radio").addEventListener("click", () => {
+      importItemToSelectedSection({
+        id: "radio_" + (item.stationuuid || Date.now()),
+        title,
+        sub,
+        coverUrl: cover,
+        cover: cover,
+        audioUrl: audioUrl,
+        audio: audioUrl,
+        streamUrl: audioUrl,
+        type: "radio"
+      });
+    });
+  });
+}
+
+async function importItemToSelectedSection(itemObj) {
+  const sectionId = document.getElementById("target-section-select").value;
+  if (!sectionId) {
+    alert("Du må velge en målseksjon øverst i skjemaet!");
+    return;
+  }
+
   try {
     const sectionRef = doc(db, "sections", sectionId);
-
-    // Legger til elementet i "items"-arrayen uten å slette det som var der fra før
     await updateDoc(sectionRef, {
-      items: arrayUnion(itemData)
+      items: arrayUnion(itemObj)
     });
 
-    alert(`"${itemData.title}" ble lagt til i seksjonen!`);
+    alert(`"${itemObj.title}" ble importert til seksjonen!`);
   } catch (err) {
-    console.error("Feil ved oppdatering av seksjon i Firestore:", err);
-    alert("Kunne ikke legge til elementet.");
+    console.error("Feil under import:", err);
+    alert("Kunne ikke importere: " + err.message);
   }
+}
+
+// Hjelpefunksjon for å unngå XSS
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
