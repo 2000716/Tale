@@ -68,7 +68,7 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
 
   try {
     // Henter RSS-feed fra NRK Nyheter Siste via rss2json
-    const rssUrl = encodeURIComponent('https://www.nrk.no/nyheter/siste.rss');
+    const rssUrl = encodeURIComponent('www.nrk.no/norge/toppsaker.rss');
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
     const data = await res.json();
 
