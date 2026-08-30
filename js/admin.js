@@ -17,6 +17,7 @@ import {
 let activeSections = [];
 
 document.addEventListener("DOMContentLoaded", () => {
+  setupTabNavigation();
   initLiveSectionsListener();
   initLiveBannersListener();
   setupSectionForm();
@@ -24,6 +25,46 @@ document.addEventListener("DOMContentLoaded", () => {
   setupManualForm();
   setupApiSearch();
 });
+
+// ==========================================
+// 0. FANE-NAVIGASJON (TAB SWITCHER)
+// ==========================================
+function setupTabNavigation() {
+  const navItems = document.querySelectorAll('.nav-item');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  const titles = {
+    'tab-dashboard': ['Dashboard & Analytics', 'Reeltidsovervåkning av strømming, seertall og seksjonsinnhold.'],
+    'tab-sections': ['Seksjoner & Layout', 'Styr oppsettet og galleriene på Tale-plattformen.'],
+    'tab-banners': ['Hero Bannere & Promotering', 'Lag store visuelle bannere i Fabel og Storytel-stil.'],
+    'tab-api': ['API Importer (Podkast & Radio)', 'Søk og legg til fra Apple Podcasts eller Radio Browser.'],
+    'tab-manual': ['Legg til Lydbok / Innhold', 'Manuell oppretting av lydbøker og enkeltepisotder.']
+  };
+
+  navItems.forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      const tabId = button.getAttribute('data-tab');
+
+      // Fjern active-klasse fra alle knapper og faner
+      navItems.forEach(btn => btn.classList.remove('active'));
+      tabContents.forEach(tab => tab.classList.remove('active'));
+
+      // Aktiver den valgte knappen og fanen
+      button.classList.add('active');
+      const targetTab = document.getElementById(tabId);
+      if (targetTab) {
+        targetTab.classList.add('active');
+      }
+
+      // Oppdater tittelen i headeren
+      if (titles[tabId]) {
+        document.getElementById('page-title').innerText = titles[tabId][0];
+        document.getElementById('page-subtitle').innerText = titles[tabId][1];
+      }
+    });
+  });
+}
 
 // ==========================================
 // 1. FIRESTORE SANNTIDSLYTTER FOR SEKSJONER & DASHBOARD STATS
