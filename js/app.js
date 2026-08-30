@@ -181,7 +181,7 @@ async function renderRadioBanner() {
   let bannerHeadline = "NRK Nyheter Radio";
 
   try {
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/toppsaker.rss")}`);
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("www.nrk.no/norge/toppsaker.rss")}`);
     if (res.ok) {
       const data = await res.json();
       if (data.status === 'ok' && data.items?.length > 0) {
