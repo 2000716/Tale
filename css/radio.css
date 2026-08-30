@@ -24,11 +24,11 @@
   transition: background-image 0.4s ease;
 }
 
-/* Gradering slik at teksten i underkant blir lett å lese */
+/* Lysnet graderingen slik at svart tekst vises tydelig */
 .banner-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(7, 11, 30, 0.4) 0%, rgba(7, 11, 30, 0.95) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.9) 100%);
 }
 
 /* NRK Nyheter Logo øverst til venstre */
@@ -39,7 +39,7 @@
   height: 28px;
   width: auto;
   z-index: 2;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
 /* Tekst i bunn av banneret */
@@ -49,7 +49,7 @@
   left: 14px;
   right: 14px;
   z-index: 2;
-  color: #ffffff;
+  color: #000000; /* Endret til svart */
 }
 
 .banner-tag {
@@ -57,7 +57,7 @@
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 1px;
-  color: #ff4b4b;
+  color: #d93838; /* Justert litt mørkere for bedre lesbarhet mot lys bakgrunn */
   text-transform: uppercase;
   margin-bottom: 4px;
 }
@@ -68,12 +68,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #000000; /* Endret til svart */
 }
 
 .banner-overlay-bottom p {
   font-size: 0.85rem;
   margin: 0;
   opacity: 0.8;
+  color: #000000; /* Endret til svart */
 }
 
 /* Avlange radio-seksjoner nedover */
@@ -86,8 +88,8 @@
 .radio-card-horizontal {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.03); /* Justert for lys bakgrunn */
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   padding: 10px 14px;
   gap: 14px;
@@ -110,7 +112,7 @@
 .radio-card-info h4 {
   margin: 0 0 4px 0;
   font-size: 1rem;
-  color: #fff;
+  color: #000000; /* Endret til svart */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -119,15 +121,17 @@
 .radio-card-info p {
   margin: 0;
   font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: #000000; /* Endret til svart */
+  opacity: 0.7;
 }
 
+/* Spilleknapp med Tales farger */
 .radio-play-btn {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #2563eb;
-  color: #fff;
+  background: #AEC2F7; /* Tales farge */
+  color: #000000; /* Svart ikon/tekst for god kontrast */
   border: none;
   cursor: pointer;
   display: flex;
@@ -139,6 +143,6 @@
 }
 
 .radio-play-btn:hover {
-  background: #3b82f6;
+  background: #99B1F5; /* Litt mørkere utgave av #AEC2F7 ved mus-over */
   transform: scale(1.05);
 }
