@@ -1,814 +1,510 @@
-<!DOCTYPE html>
-<html lang="no">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tale Admin</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg-main: #0b0f19;
-      --bg-card: #131b2e;
-      --bg-input: #080c14;
-      --border: #1e293b;
-      --border-light: #334155;
-      --accent: #38bdf8;
-      --primary: #0284c7;
-      --primary-hover: #0369a1;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --danger: #ef4444;
-      --danger-hover: #dc2626;
-      --success: #10b981;
-      --success-hover: #059669;
-      --radius: 10px;
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+  import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged,
+    setPersistence,
+    browserLocalPersistence
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    updateDoc, 
+    deleteDoc, 
+    doc, 
+    onSnapshot, 
+    query, 
+    orderBy, 
+    serverTimestamp 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // 1. Firebase Konfigurasjon
+  const firebaseConfig = {
+    apiKey: "AIzaSyDfJ3IXqeJUkCVcMnPt3ya37Co7Du-f1WU",
+    authDomain: "tale-8cadc.firebaseapp.com",
+    projectId: "tale-8cadc",
+    storageBucket: "tale-8cadc.firebasestorage.app",
+    messagingSenderId: "326781333063",
+    appId: "1:326781333063:web:c7303967acf8ea79184b62",
+    measurementId: "G-W1445B45F4"
+  };
+
+  // 2. Radio API Konfigurasjon
+  const RADIO_API_CONFIG = {
+    baseUrl: "https://de1.api.radio-browser.info/json/stations/search",
+    appName: "TaleAdmin/1.0"
+  };
+
+  // Initialiser Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  setPersistence(auth, browserLocalPersistence);
+
+  if (location.protocol.startsWith("http")) {
+    getAnalytics(app);
+  }
+
+  // Tilstander (State)
+  let sectionsData = [];
+  let mediaQueue = [];
+
+  // DOM Elementer
+  const loginCard = document.getElementById('login-card');
+  const adminContent = document.getElementById('admin-content');
+  const userDisplay = document.getElementById('user-display');
+  const logoutBtn = document.getElementById('logout-btn');
+  const loginForm = document.getElementById('login-form');
+  const loginMsg = document.getElementById('login-msg');
+
+  const addSectionForm = document.getElementById('add-section-form');
+  const addItemForm = document.getElementById('add-item-form');
+  const contentTypeSelect = document.getElementById('content-type-select');
+  const apiSearchBox = document.getElementById('podcast-search-box');
+  const apiSearchLabel = document.getElementById('api-search-label');
+  const urlLabelText = document.getElementById('url-label-text');
+  const itemSectionSelect = document.getElementById('item-section-select');
+  const sectionsList = document.getElementById('sections-list');
+  const filterInput = document.getElementById('filter-sections-input');
+
+  const apiSearchInput = document.getElementById('api-search-input');
+  const apiSearchBtn = document.getElementById('api-search-btn');
+  const apiResults = document.getElementById('api-results');
+  const selectedQueue = document.getElementById('selected-queue');
+  const queueCount = document.getElementById('queue-count');
+  const batchPublishBtn = document.getElementById('batch-publish-btn');
+
+  const editModal = document.getElementById('edit-modal');
+  const editSectionForm = document.getElementById('edit-section-form');
+  const closeModalBtn = document.getElementById('close-modal-btn');
+  const cancelModalBtn = document.getElementById('cancel-modal-btn');
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  // --- Autentisering ---
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      if (loginCard) loginCard.classList.add('hidden');
+      if (adminContent) adminContent.classList.remove('hidden');
+      if (logoutBtn) logoutBtn.classList.remove('hidden');
+      if (userDisplay) userDisplay.textContent = user.email;
+      listenToSections();
+    } else {
+      if (loginCard) loginCard.classList.remove('hidden');
+      if (adminContent) adminContent.classList.add('hidden');
+      if (logoutBtn) logoutBtn.classList.add('hidden');
+      if (userDisplay) userDisplay.textContent = '';
     }
+  });
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-    body { background: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
-    
-    /* Layout Framework */
-    .app-header {
-      background: rgba(19, 27, 46, 0.8);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-    }
-    
-    .brand-title { display: flex; align-items: center; gap: 0.75rem; }
-    .brand-title h1 { font-size: 1.25rem; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
-    .brand-title .badge-tag { background: rgba(56, 189, 248, 0.15); color: var(--accent); padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
-    
-    .container { max-width: 1400px; margin: 0 auto; width: 100%; padding: 2rem; }
-
-    /* Auth Card */
-    .auth-container { max-width: 400px; margin: 5rem auto; width: 100%; }
-    .auth-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 2.5rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
-    
-    /* Grid System */
-    .dashboard-grid { display: grid; grid-template-columns: 380px 1fr; gap: 2rem; align-items: start; }
-    @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr; } }
-
-    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); }
-    .card-header { margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
-    .card-header h3 { color: #fff; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
-
-    /* Inputs & Forms */
-    .form-group { margin-bottom: 1.1rem; }
-    label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    input, select, textarea {
-      width: 100%; padding: 0.7rem 0.9rem; background: var(--bg-input); border: 1px solid var(--border-light);
-      color: var(--text-main); border-radius: 6px; font-size: 0.875rem; transition: all 0.2s;
-    }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
-
-    /* Custom Checkbox Group */
-    .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; background: var(--bg-input); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-light); }
-    .checkbox-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.825rem; color: #cbd5e1; cursor: pointer; user-select: none; }
-    .checkbox-item input { width: auto; cursor: pointer; accent-color: var(--primary); }
-
-    /* Buttons */
-    .btn { background: var(--primary); color: #fff; padding: 0.7rem 1.2rem; border: none; border-radius: 6px; font-weight: 600; font-size: 0.875rem; cursor: pointer; width: 100%; transition: all 0.2s; display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem; }
-    .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
-    .btn-secondary { background: #1e293b; color: var(--text-main); width: auto; border: 1px solid var(--border-light); }
-    .btn-secondary:hover { background: #334155; }
-    .btn-danger { background: var(--danger); width: auto; padding: 0.4rem 0.8rem; font-size: 0.75rem; }
-    .btn-danger:hover { background: var(--danger-hover); }
-    .btn-edit { background: #334155; width: auto; padding: 0.4rem 0.8rem; font-size: 0.75rem; }
-    .btn-edit:hover { background: #475569; }
-
-    /* API Search Box */
-    .api-box { background: rgba(2, 132, 199, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; }
-    .api-search-row { display: flex; gap: 0.5rem; }
-    .api-search-row input { flex: 1; }
-    .api-search-row button { width: auto; white-space: nowrap; }
-
-    .api-results-container { max-height: 240px; overflow-y: auto; margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 4px; }
-    .api-result-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.8rem; border: 1px solid var(--border); }
-    .api-result-left { display: flex; align-items: center; gap: 0.75rem; overflow: hidden; }
-    .api-result-left img { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
-    .api-result-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.75rem; width: auto; border-radius: 4px; }
-    .btn-success { background: var(--success); color: white; }
-    .btn-success:hover { background: var(--success-hover); }
-
-    /* Sections List Display */
-    .search-filter-bar { display: flex; gap: 1rem; margin-bottom: 1rem; }
-    .search-filter-bar input { background: var(--bg-card); }
-
-    .section-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; transition: border-color 0.2s; }
-    .section-card:hover { border-color: var(--border-light); }
-    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
-    
-    .tag-badge { display: inline-block; padding: 0.15rem 0.5rem; background: #1e293b; border-radius: 4px; font-size: 0.68rem; color: var(--accent); font-weight: 600; text-transform: uppercase; margin-right: 0.25rem; }
-    .type-badge { display: inline-block; padding: 0.1rem 0.4rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; font-size: 0.65rem; color: var(--accent); font-weight: 700; text-transform: uppercase; margin-left: 0.4rem; }
-
-    .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
-    .item-card { display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border); }
-    .item-info { display: flex; align-items: center; gap: 0.75rem; overflow: hidden; }
-    .item-thumbnail { width: 40px; height: 40px; background: #1e293b; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
-    
-    .status-msg { font-size: 0.85rem; color: var(--accent); margin-top: 0.75rem; text-align: center; min-height: 1.2rem; font-weight: 500; }
-    .hidden { display: none !important; }
-
-    /* Modals for Edit */
-    .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
-    .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 500px; padding: 1.5rem; }
-
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg-input); }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-  </style>
-</head>
-<body>
-
-  <header class="app-header">
-    <div class="brand-title">
-      <h1>Tale Admin</h1>
-      <span class="badge-tag">v2.0 Realtime</span>
-    </div>
-    <div style="display: flex; gap: 1rem; align-items: center;">
-      <span id="user-display" style="font-size: 0.85rem; color: var(--text-muted);"></span>
-      <button id="logout-btn" class="btn btn-secondary hidden">Logg ut</button>
-    </div>
-  </header>
-
-  <div class="container">
-
-    <div id="login-card" class="auth-container">
-      <div class="auth-card">
-        <div style="text-align: center; margin-bottom: 1.5rem;">
-          <h2 style="font-size: 1.4rem;">Velkommen</h2>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Logg inn for å behandle Tale app-innhold</p>
-        </div>
-        <form id="login-form">
-          <div class="form-group">
-            <label>E-postadresse</label>
-            <input type="email" id="login-email" placeholder="admin@tale.no" required>
-          </div>
-          <div class="form-group">
-            <label>Passord</label>
-            <input type="password" id="login-password" placeholder="••••••••" required>
-          </div>
-          <button type="submit" class="btn">Logg inn</button>
-          <div id="login-msg" class="status-msg"></div>
-        </form>
-      </div>
-    </div>
-
-    <div id="admin-content" class="dashboard-grid hidden">
-      
-      <div>
-        
-        <div class="card">
-          <div class="card-header">
-            <h3>Ny Seksjon</h3>
-          </div>
-          <form id="add-section-form">
-            <div class="form-group">
-              <label>Seksjonsnavn</label>
-              <input type="text" id="sec-title" placeholder="f.eks. Populære Radiokanaler" required>
-            </div>
-            
-            <div class="form-group">
-              <label>Vis på sider</label>
-              <div class="checkbox-grid">
-                <label class="checkbox-item"><input type="checkbox" value="home" class="sec-target-pages" checked> Hjem</label>
-                <label class="checkbox-item"><input type="checkbox" value="audiobooks" class="sec-target-pages"> Lydbøker</label>
-                <label class="checkbox-item"><input type="checkbox" value="podcasts" class="sec-target-pages"> Podkaster</label>
-                <label class="checkbox-item"><input type="checkbox" value="radio" class="sec-target-pages"> Radio</label>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Rekkefølge / Prioritet</label>
-              <input type="number" id="sec-order" value="1" required>
-            </div>
-
-            <button type="submit" class="btn">Opprett Seksjon</button>
-          </form>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h3>Legg til Innhold</h3>
-          </div>
-          
-          <div class="form-group">
-            <label>Innholdstype</label>
-            <select id="content-type-select">
-              <option value="podcast">Podkast (Apple API Search / RSS)</option>
-              <option value="radio">Radio Stream (MP3 / AAC / HLS Direct URL)</option>
-              <option value="audiobook">Lydbok (Direkte MP3 / Lydfil URL)</option>
-            </select>
-          </div>
-
-          <div id="podcast-search-box" class="api-box">
-            <label id="api-search-label" style="color: var(--accent);">Søk Apple Podkaster</label>
-            <div class="api-search-row" style="margin-top: 0.4rem;">
-              <input type="text" id="api-search-input" placeholder="Søk f.eks. 'NRK'">
-              <button type="button" id="api-search-btn" class="btn btn-secondary">Søk</button>
-            </div>
-            <div id="api-results" class="api-results-container"></div>
-            
-            <div id="selected-queue" class="hidden" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-light); display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 0.8rem;">Kø: <strong id="queue-count" style="color: var(--accent);">0</strong> elementer</span>
-              <button type="button" id="batch-publish-btn" class="btn btn-sm btn-success">Publiser alle i kø</button>
-            </div>
-          </div>
-
-          <form id="add-item-form">
-            <div class="form-group">
-              <label>Målseksjon</label>
-              <select id="item-section-select" required>
-                <option value="">Laster seksjoner...</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Tittel</label>
-              <input type="text" id="item-title" placeholder="f.eks. NRK P3" required>
-            </div>
-
-            <div class="form-group">
-              <label>Undertittel / Opphavseier</label>
-              <input type="text" id="item-sub" placeholder="f.eks. NRK / Ungdom & Musikk" required>
-            </div>
-
-            <div class="form-group">
-              <label>Bilde URL (Cover / Logo)</label>
-              <input type="url" id="item-cover" placeholder="https://domain.com/logo.jpg">
-            </div>
-
-            <div class="form-group">
-              <label id="url-label-text">RSS Feed URL</label>
-              <input type="url" id="item-url" placeholder="https://domain.com/feed.xml" required>
-            </div>
-
-            <div class="form-group">
-              <label>Beskrivelse</label>
-              <textarea id="item-desc" rows="2" placeholder="Kort sammendrag..."></textarea>
-            </div>
-
-            <button type="submit" class="btn">Publiser Enkeltinnhold</button>
-            <div id="status-msg" class="status-msg"></div>
-          </form>
-        </div>
-
-      </div>
-
-      <div>
-        <div class="search-filter-bar">
-          <input type="text" id="filter-sections-input" placeholder="Søk i eksisterende seksjoner eller media...">
-        </div>
-
-        <div id="sections-list">
-          <div style="text-align: center; color: var(--text-muted); padding: 3rem;">Laster inn databasen...</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <div id="edit-modal" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="card-header">
-        <h3>Rediger Seksjon</h3>
-        <button type="button" id="close-modal-btn" class="btn btn-secondary btn-sm">X</button>
-      </div>
-      <form id="edit-section-form">
-        <input type="hidden" id="edit-sec-id">
-        <div class="form-group">
-          <label>Seksjonsnavn</label>
-          <input type="text" id="edit-sec-title" required>
-        </div>
-        <div class="form-group">
-          <label>Vis på sider</label>
-          <div class="checkbox-grid">
-            <label class="checkbox-item"><input type="checkbox" value="home" class="edit-sec-target-pages"> Hjem</label>
-            <label class="checkbox-item"><input type="checkbox" value="audiobooks" class="edit-sec-target-pages"> Lydbøker</label>
-            <label class="checkbox-item"><input type="checkbox" value="podcasts" class="edit-sec-target-pages"> Podkaster</label>
-            <label class="checkbox-item"><input type="checkbox" value="radio" class="edit-sec-target-pages"> Radio</label>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Rekkefølge / Prioritet</label>
-          <input type="number" id="edit-sec-order" required>
-        </div>
-        <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
-          <button type="button" id="cancel-modal-btn" class="btn btn-secondary">Avbryt</button>
-          <button type="submit" class="btn">Lagre Endringer</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-    import { 
-      getAuth, 
-      signInWithEmailAndPassword, 
-      signOut, 
-      onAuthStateChanged,
-      setPersistence,
-      browserLocalPersistence
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { 
-      getFirestore, 
-      collection, 
-      addDoc, 
-      updateDoc, 
-      deleteDoc, 
-      doc, 
-      onSnapshot, 
-      query, 
-      orderBy, 
-      serverTimestamp 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    // 1. Firebase Konfigurasjon
-    const firebaseConfig = {
-      apiKey: "AIzaSyDfJ3IXqeJUkCVcMnPt3ya37Co7Du-f1WU",
-      authDomain: "tale-8cadc.firebaseapp.com",
-      projectId: "tale-8cadc",
-      storageBucket: "tale-8cadc.firebasestorage.app",
-      messagingSenderId: "326781333063",
-      appId: "1:326781333063:web:c7303967acf8ea79184b62",
-      measurementId: "G-W1445B45F4"
-    };
-
-    // 2. Radio API Konfigurasjon
-    const RADIO_API_CONFIG = {
-      baseUrl: "https://de1.api.radio-browser.info/json/stations/search",
-      appName: "TaleAdmin/1.0"
-    };
-
-    // Initialiser Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // Persistens for innlogging
-    setPersistence(auth, browserLocalPersistence);
-
-    if (location.protocol.startsWith("http")) {
-      getAnalytics(app);
-    }
-
-    // Tilstander (State)
-    let sectionsData = [];
-    let mediaQueue = [];
-
-    // DOM Elementer
-    const loginCard = document.getElementById('login-card');
-    const adminContent = document.getElementById('admin-content');
-    const userDisplay = document.getElementById('user-display');
-    const logoutBtn = document.getElementById('logout-btn');
-    const loginForm = document.getElementById('login-form');
-    const loginMsg = document.getElementById('login-msg');
-
-    const addSectionForm = document.getElementById('add-section-form');
-    const addItemForm = document.getElementById('add-item-form');
-    const contentTypeSelect = document.getElementById('content-type-select');
-    const apiSearchBox = document.getElementById('podcast-search-box');
-    const apiSearchLabel = document.getElementById('api-search-label');
-    const urlLabelText = document.getElementById('url-label-text');
-    const itemSectionSelect = document.getElementById('item-section-select');
-    const sectionsList = document.getElementById('sections-list');
-    const filterInput = document.getElementById('filter-sections-input');
-
-    const apiSearchInput = document.getElementById('api-search-input');
-    const apiSearchBtn = document.getElementById('api-search-btn');
-    const apiResults = document.getElementById('api-results');
-    const selectedQueue = document.getElementById('selected-queue');
-    const queueCount = document.getElementById('queue-count');
-    const batchPublishBtn = document.getElementById('batch-publish-btn');
-
-    const editModal = document.getElementById('edit-modal');
-    const editSectionForm = document.getElementById('edit-section-form');
-    const closeModalBtn = document.getElementById('close-modal-btn');
-    const cancelModalBtn = document.getElementById('cancel-modal-btn');
-
-    // Hjelpefunksjon for å unngå XSS
-    function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    // --- Autentisering ---
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        if (loginCard) loginCard.classList.add('hidden');
-        if (adminContent) adminContent.classList.remove('hidden');
-        if (logoutBtn) logoutBtn.classList.remove('hidden');
-        if (userDisplay) userDisplay.textContent = user.email;
-        listenToSections();
-      } else {
-        if (loginCard) loginCard.classList.remove('hidden');
-        if (adminContent) adminContent.classList.add('hidden');
-        if (logoutBtn) logoutBtn.classList.add('hidden');
-        if (userDisplay) userDisplay.textContent = '';
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (loginMsg) loginMsg.textContent = "Logger inn...";
+      try {
+        await signInWithEmailAndPassword(
+          auth, 
+          document.getElementById('login-email').value, 
+          document.getElementById('login-password').value
+        );
+        if (loginMsg) loginMsg.textContent = "";
+      } catch (err) {
+        if (loginMsg) loginMsg.textContent = "Feil ved innlogging: " + err.message;
       }
     });
+  }
 
-    if (loginForm) {
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (loginMsg) loginMsg.textContent = "Logger inn...";
-        try {
-          await signInWithEmailAndPassword(
-            auth, 
-            document.getElementById('login-email').value, 
-            document.getElementById('login-password').value
-          );
-          if (loginMsg) loginMsg.textContent = "";
-        } catch (err) {
-          if (loginMsg) loginMsg.textContent = "Feil ved innlogging: " + err.message;
-        }
-      });
-    }
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => signOut(auth));
+  }
 
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => signOut(auth));
-    }
+  // --- Sanntidssynkronisering av data ---
+  function listenToSections() {
+    const q = query(collection(db, "sections"), orderBy("order", "asc"));
+    onSnapshot(q, (snapshot) => {
+      sectionsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderSections();
+      populateSectionDropdown();
+    });
+  }
 
-    // --- Sanntidssynkronisering av data ---
-    function listenToSections() {
-      const q = query(collection(db, "sections"), orderBy("order", "asc"));
-      onSnapshot(q, (snapshot) => {
-        sectionsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderSections();
-        populateSectionDropdown();
-      });
-    }
+  // --- Dynamisk endring av skjema basert på innholdstype ---
+  if (contentTypeSelect) {
+    contentTypeSelect.addEventListener('change', (e) => {
+      const type = e.target.value;
+      if (apiResults) apiResults.innerHTML = '';
+      if (apiSearchInput) apiSearchInput.value = '';
 
-    // --- Dynamisk endring av skjema basert på innholdstype ---
-    if (contentTypeSelect) {
-      contentTypeSelect.addEventListener('change', (e) => {
-        const type = e.target.value;
-        if (apiResults) apiResults.innerHTML = '';
-        if (apiSearchInput) apiSearchInput.value = '';
-
-        if (type === 'podcast') {
-          if (apiSearchBox) apiSearchBox.classList.remove('hidden');
-          if (apiSearchLabel) apiSearchLabel.textContent = "Søk Apple Podkaster";
-          if (apiSearchInput) apiSearchInput.placeholder = "Søk etter podcast på iTunes...";
-          if (urlLabelText) urlLabelText.textContent = "RSS Feed URL";
-        } else if (type === 'radio') {
-          if (apiSearchBox) apiSearchBox.classList.remove('hidden');
-          if (apiSearchLabel) apiSearchLabel.textContent = "Søk Radiokanaler (Radio-Browser API)";
-          if (apiSearchInput) apiSearchInput.placeholder = "Søk etter radiokanal (f.eks. NRK, P4)...";
-          if (urlLabelText) urlLabelText.textContent = "Radio Stream URL (MP3/AAC/HLS)";
-        } else {
-          if (apiSearchBox) apiSearchBox.classList.add('hidden');
-          if (urlLabelText) urlLabelText.textContent = "Lydfil URL (MP3)";
-        }
-      });
-    }
-
-    function populateSectionDropdown() {
-      if (!itemSectionSelect) return;
-      itemSectionSelect.innerHTML = sectionsData.length ? '' : '<option value="">Ingen seksjoner tilgjengelig</option>';
-      sectionsData.forEach(sec => {
-        const opt = document.createElement('option');
-        opt.value = sec.id;
-        opt.textContent = `${sec.title} (${(sec.targetPages || []).join(', ')})`;
-        itemSectionSelect.appendChild(opt);
-      });
-    }
-
-    // --- Legg til ny seksjon ---
-    if (addSectionForm) {
-      addSectionForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const targetPages = Array.from(document.querySelectorAll('.sec-target-pages:checked')).map(cb => cb.value);
-        const title = document.getElementById('sec-title').value;
-        const order = parseInt(document.getElementById('sec-order').value, 10);
-
-        try {
-          await addDoc(collection(db, "sections"), {
-            title,
-            targetPages,
-            order,
-            items: [],
-            createdAt: serverTimestamp()
-          });
-          addSectionForm.reset();
-        } catch (err) {
-          alert("Feil ved opprettelse: " + err.message);
-        }
-      });
-    }
-
-    // --- Legg til enkelt-element manuelt ---
-    if (addItemForm) {
-      addItemForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const sectionId = itemSectionSelect.value;
-        if (!sectionId) return alert("Vennligst velg en seksjon");
-
-        const newItem = {
-          id: crypto.randomUUID(),
-          type: contentTypeSelect.value,
-          title: document.getElementById('item-title').value,
-          subtitle: document.getElementById('item-sub').value,
-          coverUrl: document.getElementById('item-cover').value,
-          streamUrl: document.getElementById('item-url').value,
-          description: document.getElementById('item-desc').value
-        };
-
-        const sec = sectionsData.find(s => s.id === sectionId);
-        if (!sec) return;
-
-        try {
-          await updateDoc(doc(db, "sections", sectionId), {
-            items: [...(sec.items || []), newItem]
-          });
-          addItemForm.reset();
-          const statusMsg = document.getElementById('status-msg');
-          if (statusMsg) {
-            statusMsg.textContent = "Innhold publisert!";
-            setTimeout(() => statusMsg.textContent = "", 3000);
-          }
-        } catch (err) {
-          alert("Feil ved lagring av innhold: " + err.message);
-        }
-      });
-    }
-
-    // --- API Søk ---
-    if (apiSearchBtn) apiSearchBtn.addEventListener('click', performApiSearch);
-    if (apiSearchInput) {
-      apiSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performApiSearch(); });
-    }
-
-    function performApiSearch() {
-      const type = contentTypeSelect.value;
       if (type === 'podcast') {
-        searchiTunes();
+        if (apiSearchBox) apiSearchBox.classList.remove('hidden');
+        if (apiSearchLabel) apiSearchLabel.textContent = "Søk Apple Podkaster";
+        if (apiSearchInput) apiSearchInput.placeholder = "Søk etter podcast på iTunes...";
+        if (urlLabelText) urlLabelText.textContent = "RSS Feed URL";
       } else if (type === 'radio') {
-        searchRadioAPI();
+        if (apiSearchBox) apiSearchBox.classList.remove('hidden');
+        if (apiSearchLabel) apiSearchLabel.textContent = "Søk Radiokanaler (Radio-Browser API)";
+        if (apiSearchInput) apiSearchInput.placeholder = "Søk etter radiokanal (f.eks. NRK, P4)...";
+        if (urlLabelText) urlLabelText.textContent = "Radio Stream URL (MP3/AAC/HLS)";
+      } else {
+        if (apiSearchBox) apiSearchBox.classList.add('hidden');
+        if (urlLabelText) urlLabelText.textContent = "Lydfil URL (MP3)";
       }
-    }
+    });
+  }
 
-    async function searchiTunes() {
-      const term = apiSearchInput.value.trim();
-      if (!term) return;
-      apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">Søker i iTunes...</div>';
+  function populateSectionDropdown() {
+    if (!itemSectionSelect) return;
+    itemSectionSelect.innerHTML = sectionsData.length ? '' : '<option value="">Ingen seksjoner tilgjengelig</option>';
+    sectionsData.forEach(sec => {
+      const opt = document.createElement('option');
+      opt.value = sec.id;
+      opt.textContent = `${sec.title} (${(sec.targetPages || []).join(', ')})`;
+      itemSectionSelect.appendChild(opt);
+    });
+  }
+
+  // --- Legg til ny seksjon ---
+  if (addSectionForm) {
+    addSectionForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const targetPages = Array.from(document.querySelectorAll('.sec-target-pages:checked')).map(cb => cb.value);
+      const title = document.getElementById('sec-title').value;
+      const order = parseInt(document.getElementById('sec-order').value, 10);
 
       try {
-        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=podcast&limit=10`);
-        const data = await res.json();
-        
-        apiResults.innerHTML = '';
-        if(!data.results || data.results.length === 0) {
-          apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">Ingen podkaster funnet.</div>';
-          return;
-        }
-
-        data.results.forEach(pod => {
-          const itemData = {
-            id: crypto.randomUUID(),
-            type: 'podcast',
-            title: pod.collectionName,
-            subtitle: pod.artistName,
-            coverUrl: pod.artworkUrl600 || pod.artworkUrl100,
-            streamUrl: pod.feedUrl,
-            description: pod.primaryGenreName || ''
-          };
-          renderApiResultCard(pod.artworkUrl60, pod.collectionName, pod.artistName, itemData);
+        await addDoc(collection(db, "sections"), {
+          title,
+          targetPages,
+          order,
+          items: [],
+          createdAt: serverTimestamp()
         });
+        addSectionForm.reset();
       } catch (err) {
-        apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--danger);">Klarte ikke hente fra iTunes API.</div>';
+        alert("Feil ved opprettelse: " + err.message);
       }
-    }
+    });
+  }
 
-    async function searchRadioAPI() {
-      const term = apiSearchInput.value.trim();
-      if (!term) return;
-      apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">Søker i Radio Database...</div>';
+  // --- Legg til enkelt-element manuelt ---
+  if (addItemForm) {
+    addItemForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const sectionId = itemSectionSelect.value;
+      if (!sectionId) return alert("Vennligst velg en seksjon");
+
+      const newItem = {
+        id: crypto.randomUUID(),
+        type: contentTypeSelect.value,
+        title: document.getElementById('item-title').value,
+        subtitle: document.getElementById('item-sub').value,
+        coverUrl: document.getElementById('item-cover').value,
+        streamUrl: document.getElementById('item-url').value,
+        description: document.getElementById('item-desc').value
+      };
+
+      const sec = sectionsData.find(s => s.id === sectionId);
+      if (!sec) return;
 
       try {
-        const url = `${RADIO_API_CONFIG.baseUrl}?name=${encodeURIComponent(term)}&limit=10&order=clickcount&reverse=true`;
-        const res = await fetch(url, {
-          headers: {
-            'User-Agent': RADIO_API_CONFIG.appName
-          }
+        await updateDoc(doc(db, "sections", sectionId), {
+          items: [...(sec.items || []), newItem]
         });
-        const data = await res.json();
-
-        apiResults.innerHTML = '';
-        if (!data || !data.length) {
-          apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">Ingen radiokanaler funnet.</div>';
-          return;
+        addItemForm.reset();
+        const statusMsg = document.getElementById('status-msg');
+        if (statusMsg) {
+          statusMsg.textContent = "Innhold publisert!";
+          setTimeout(() => statusMsg.textContent = "", 3000);
         }
-
-        data.forEach(station => {
-          const itemData = {
-            id: crypto.randomUUID(),
-            type: 'radio',
-            title: station.name.trim(),
-            subtitle: station.country ? `${station.country} • ${station.tags}` : station.tags,
-            coverUrl: station.favicon || 'https://via.placeholder.com/100?text=Radio',
-            streamUrl: station.url_resolved || station.url,
-            description: `Codec: ${station.codec} | Bitrate: ${station.bitrate}kbps`
-          };
-          
-          renderApiResultCard(
-            station.favicon || 'https://via.placeholder.com/40?text=Radio', 
-            station.name, 
-            station.country || 'Radio', 
-            itemData
-          );
-        });
       } catch (err) {
-        apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--danger);">Klarte ikke hente fra Radio API.</div>';
+        alert("Feil ved lagring av innhold: " + err.message);
       }
+    });
+  }
+
+  // --- API Søk ---
+  if (apiSearchBtn) apiSearchBtn.addEventListener('click', performApiSearch);
+  if (apiSearchInput) {
+    apiSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performApiSearch(); });
+  }
+
+  function performApiSearch() {
+    const type = contentTypeSelect.value;
+    if (type === 'podcast') {
+      searchiTunes();
+    } else if (type === 'radio') {
+      searchRadioAPI();
     }
+  }
 
-    function renderApiResultCard(imageSrc, title, subtitle, itemData) {
-      const item = document.createElement('div');
-      item.className = 'api-result-item';
-      item.innerHTML = `
-        <div class="api-result-left">
-          <img src="${imageSrc}" alt="Cover" onerror="this.src='https://via.placeholder.com/40'">
-          <div class="api-result-text">
-            <strong>${escapeHtml(title)}</strong><br>
-            <small style="color:var(--text-muted);">${escapeHtml(subtitle)}</small>
-          </div>
-        </div>
-        <button type="button" class="btn btn-sm btn-secondary">+ Legg i kø</button>
-      `;
+  async function searchiTunes() {
+    const term = apiSearchInput.value.trim();
+    if (!term) return;
+    apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">Søker i iTunes...</div>';
 
-      item.querySelector('button').addEventListener('click', () => addToQueue(itemData));
-      apiResults.appendChild(item);
-    }
-
-    // --- Køhåndtering & Batch Publisering ---
-    function addToQueue(item) {
-      mediaQueue.push(item);
-      if (queueCount) queueCount.textContent = mediaQueue.length;
-      if (selectedQueue) selectedQueue.classList.remove('hidden');
-    }
-
-    if (batchPublishBtn) {
-      batchPublishBtn.addEventListener('click', async () => {
-        const sectionId = itemSectionSelect.value;
-        if (!sectionId) return alert("Velg en målseksjon før du publiserer køen.");
-        if (!mediaQueue.length) return;
-
-        const sec = sectionsData.find(s => s.id === sectionId);
-        if (!sec) return;
-
-        try {
-          await updateDoc(doc(db, "sections", sectionId), {
-            items: [...(sec.items || []), ...mediaQueue]
-          });
-          mediaQueue = [];
-          if (queueCount) queueCount.textContent = "0";
-          if (selectedQueue) selectedQueue.classList.add('hidden');
-          alert("Køen er publisert!");
-        } catch (err) {
-          alert("Feil ved publisering av batch: " + err.message);
-        }
-      });
-    }
-
-    // --- Vis Seksjoner og Innhold ---
-    function renderSections() {
-      if (!sectionsList) return;
-      const queryVal = filterInput ? filterInput.value.toLowerCase() : '';
-      sectionsList.innerHTML = '';
-
-      const filtered = sectionsData.filter(sec => 
-        sec.title.toLowerCase().includes(queryVal) || 
-        (sec.items && sec.items.some(i => i.title.toLowerCase().includes(queryVal)))
-      );
-
-      if (!filtered.length) {
-        sectionsList.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:2rem;">Ingen seksjoner funnet.</div>';
+    try {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=podcast&limit=10`);
+      const data = await res.json();
+      
+      apiResults.innerHTML = '';
+      if(!data.results || data.results.length === 0) {
+        apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">Ingen podkaster funnet.</div>';
         return;
       }
 
-      filtered.forEach(sec => {
-        const card = document.createElement('div');
-        card.className = 'section-card';
-        
-        const tags = (sec.targetPages || []).map(p => `<span class="tag-badge">${p}</span>`).join('');
-        const itemsHtml = (sec.items || []).map(item => `
-          <div class="item-card">
-            <div class="item-info">
-              <img src="${item.coverUrl || 'https://via.placeholder.com/40'}" class="item-thumbnail" onerror="this.src='https://via.placeholder.com/40'">
-              <div style="overflow:hidden;">
-                <div style="font-size:0.85rem; font-weight:600; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
-                  ${escapeHtml(item.title)} <span class="type-badge">${item.type}</span>
-                </div>
-                <div style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(item.subtitle)}</div>
-              </div>
-            </div>
-            <button class="btn btn-danger" onclick="deleteItem('${sec.id}', '${item.id}')">Slett</button>
-          </div>
-        `).join('');
-
-        card.innerHTML = `
-          <div class="section-header">
-            <div>
-              <h4 style="font-size:1.1rem; color:#fff;">${escapeHtml(sec.title)} <small style="font-size:0.75rem; color:var(--text-muted);">(Ordre: ${sec.order})</small></h4>
-              <div style="margin-top:0.3rem;">${tags}</div>
-            </div>
-            <div style="display:flex; gap:0.5rem;">
-              <button class="btn btn-edit" onclick="openEditModal('${sec.id}')">Rediger</button>
-              <button class="btn btn-danger" onclick="deleteSection('${sec.id}')">Slett Seksjon</button>
-            </div>
-          </div>
-          <div class="item-grid">
-            ${itemsHtml || '<div style="font-size:0.8rem; color:var(--text-muted);">Ingen elementer i denne seksjonen enda.</div>'}
-          </div>
-        `;
-
-        sectionsList.appendChild(card);
+      data.results.forEach(pod => {
+        const itemData = {
+          id: crypto.randomUUID(),
+          type: 'podcast',
+          title: pod.collectionName,
+          subtitle: pod.artistName,
+          coverUrl: pod.artworkUrl600 || pod.artworkUrl100,
+          streamUrl: pod.feedUrl,
+          description: pod.primaryGenreName || ''
+        };
+        renderApiResultCard(pod.artworkUrl60, pod.collectionName, pod.artistName, itemData);
       });
+    } catch (err) {
+      apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--danger);">Klarte ikke hente fra iTunes API.</div>';
     }
+  }
 
-    if (filterInput) {
-      filterInput.addEventListener('input', renderSections);
-    }
+  async function searchRadioAPI() {
+    const term = apiSearchInput.value.trim();
+    if (!term) return;
+    apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">Søker i Radio Database...</div>';
 
-    // --- Global funksjoner for Sletting & Redigering ---
-    window.deleteSection = async function(secId) {
-      if (!confirm("Er du sikker på at du vil slette hele seksjonen og alt innholdet i den?")) return;
-      try {
-        await deleteDoc(doc(db, "sections", secId));
-      } catch (err) {
-        alert("Feil ved sletting: " + err.message);
-      }
-    };
-
-    window.deleteItem = async function(secId, itemId) {
-      const sec = sectionsData.find(s => s.id === secId);
-      if (!sec) return;
-
-      const updatedItems = (sec.items || []).filter(item => item.id !== itemId);
-      try {
-        await updateDoc(doc(db, "sections", secId), { items: updatedItems });
-      } catch (err) {
-        alert("Feil ved sletting av element: " + err.message);
-      }
-    };
-
-    window.openEditModal = function(secId) {
-      const sec = sectionsData.find(s => s.id === secId);
-      if (!sec) return;
-
-      document.getElementById('edit-sec-id').value = sec.id;
-      document.getElementById('edit-sec-title').value = sec.title;
-      document.getElementById('edit-sec-order').value = sec.order;
-
-      const checkboxes = document.querySelectorAll('.edit-sec-target-pages');
-      checkboxes.forEach(cb => {
-        cb.checked = (sec.targetPages || []).includes(cb.value);
-      });
-
-      editModal.classList.remove('hidden');
-    };
-
-    window.closeEditModal = function() {
-      editModal.classList.add('hidden');
-    };
-
-    if (closeModalBtn) closeModalBtn.addEventListener('click', window.closeEditModal);
-    if (cancelModalBtn) cancelModalBtn.addEventListener('click', window.closeEditModal);
-
-    if (editSectionForm) {
-      editSectionForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const secId = document.getElementById('edit-sec-id').value;
-        const title = document.getElementById('edit-sec-title').value;
-        const order = parseInt(document.getElementById('edit-sec-order').value, 10);
-        const targetPages = Array.from(document.querySelectorAll('.edit-sec-target-pages:checked')).map(cb => cb.value);
-
-        try {
-          await updateDoc(doc(db, "sections", secId), {
-            title,
-            order,
-            targetPages
-          });
-          window.closeEditModal();
-        } catch (err) {
-          alert("Feil ved oppdatering: " + err.message);
+    try {
+      const url = `${RADIO_API_CONFIG.baseUrl}?name=${encodeURIComponent(term)}&limit=10&order=clickcount&reverse=true`;
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': RADIO_API_CONFIG.appName
         }
       });
+      const data = await res.json();
+
+      apiResults.innerHTML = '';
+      if (!data || !data.length) {
+        apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">Ingen radiokanaler funnet.</div>';
+        return;
+      }
+
+      data.forEach(station => {
+        const itemData = {
+          id: crypto.randomUUID(),
+          type: 'radio',
+          title: station.name.trim(),
+          subtitle: station.country ? `${station.country} • ${station.tags}` : station.tags,
+          coverUrl: station.favicon || 'https://via.placeholder.com/100?text=Radio',
+          streamUrl: station.url_resolved || station.url,
+          description: `Codec: ${station.codec} | Bitrate: ${station.bitrate}kbps`
+        };
+        
+        renderApiResultCard(
+          station.favicon || 'https://via.placeholder.com/40?text=Radio', 
+          station.name, 
+          station.country || 'Radio', 
+          itemData
+        );
+      });
+    } catch (err) {
+      apiResults.innerHTML = '<div style="font-size:0.8rem; color:var(--danger);">Klarte ikke hente fra Radio API.</div>';
     }
-  </script>
+  }
+
+  function renderApiResultCard(imageSrc, title, subtitle, itemData) {
+    const item = document.createElement('div');
+    item.className = 'api-result-item';
+    item.innerHTML = `
+      <div class="api-result-left">
+        <img src="${imageSrc}" alt="Cover" onerror="this.src='https://via.placeholder.com/40'">
+        <div class="api-result-text">
+          <strong>${escapeHtml(title)}</strong><br>
+          <small style="color:var(--text-muted);">${escapeHtml(subtitle)}</small>
+        </div>
+      </div>
+      <button type="button" class="btn btn-sm btn-secondary">+ Legg i kø</button>
+    `;
+
+    item.querySelector('button').addEventListener('click', () => addToQueue(itemData));
+    apiResults.appendChild(item);
+  }
+
+  // --- Køhåndtering & Batch Publisering ---
+  function addToQueue(item) {
+    mediaQueue.push(item);
+    if (queueCount) queueCount.textContent = mediaQueue.length;
+    if (selectedQueue) selectedQueue.classList.remove('hidden');
+  }
+
+  if (batchPublishBtn) {
+    batchPublishBtn.addEventListener('click', async () => {
+      const sectionId = itemSectionSelect.value;
+      if (!sectionId) return alert("Velg en målseksjon før du publiserer køen.");
+      if (!mediaQueue.length) return;
+
+      const sec = sectionsData.find(s => s.id === sectionId);
+      if (!sec) return;
+
+      try {
+        await updateDoc(doc(db, "sections", sectionId), {
+          items: [...(sec.items || []), ...mediaQueue]
+        });
+        mediaQueue = [];
+        if (queueCount) queueCount.textContent = "0";
+        if (selectedQueue) selectedQueue.classList.add('hidden');
+        alert("Køen er publisert!");
+      } catch (err) {
+        alert("Feil ved publisering av batch: " + err.message);
+      }
+    });
+  }
+
+  // --- Filtrering av seksjoner ---
+  if (filterInput) {
+    filterInput.addEventListener('input', renderSections);
+  }
+
+  // --- Vis Seksjoner og Innhold ---
+  function renderSections() {
+    if (!sectionsList) return;
+    const queryVal = filterInput ? filterInput.value.toLowerCase() : '';
+    sectionsList.innerHTML = '';
+
+    const filtered = sectionsData.filter(sec => 
+      sec.title.toLowerCase().includes(queryVal) || 
+      (sec.items && sec.items.some(i => i.title.toLowerCase().includes(queryVal)))
+    );
+
+    if (!filtered.length) {
+      sectionsList.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:2rem;">Ingen seksjoner funnet.</div>';
+      return;
+    }
+
+    filtered.forEach(sec => {
+      const card = document.createElement('div');
+      card.className = 'section-card';
+      
+      const tags = (sec.targetPages || []).map(p => `<span class="tag-badge">${p}</span>`).join('');
+      
+      const itemsHtml = (sec.items || []).map(item => `
+        <div class="item-card">
+          <div class="item-info">
+            <img src="${item.coverUrl || 'https://via.placeholder.com/40'}" class="item-thumbnail" onerror="this.src='https://via.placeholder.com/40'">
+            <div style="overflow:hidden;">
+              <div style="font-size:0.85rem; font-weight:600; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                ${escapeHtml(item.title)} <span class="type-badge">${item.type}</span>
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(item.subtitle)}</div>
+            </div>
+          </div>
+          <button class="btn btn-danger btn-delete-item" data-sec-id="${sec.id}" data-item-id="${item.id}">Slett</button>
+        </div>
+      `).join('');
+
+      card.innerHTML = `
+        <div class="section-header">
+          <div>
+            <h4 style="font-size:1.1rem; font-weight:600;">${escapeHtml(sec.title)} <small style="font-size:0.75rem; color:var(--text-muted);">(Rekkefølge: ${sec.order})</small></h4>
+            <div style="margin-top:0.3rem;">${tags}</div>
+          </div>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-edit btn-edit-sec" data-id="${sec.id}">Rediger</button>
+            <button class="btn btn-danger btn-delete-sec" data-id="${sec.id}">Slett</button>
+          </div>
+        </div>
+        <div class="item-grid">${itemsHtml || '<div style="font-size:0.8rem; color:var(--text-muted);">Ingen innhold lagt til ennå.</div>'}</div>
+      `;
+
+      sectionsList.appendChild(card);
+    });
+
+    // Event listeners for dynamiske knapper i seksjonslisten
+    document.querySelectorAll('.btn-delete-sec').forEach(btn => {
+      btn.addEventListener('click', (e) => deleteSection(e.target.dataset.id));
+    });
+
+    document.querySelectorAll('.btn-edit-sec').forEach(btn => {
+      btn.addEventListener('click', (e) => openEditModal(e.target.dataset.id));
+    });
+
+    document.querySelectorAll('.btn-delete-item').forEach(btn => {
+      btn.addEventListener('click', (e) => deleteItem(e.target.dataset.secId, e.target.dataset.itemId));
+    });
+  }
+
+  // --- Sletting av seksjon og innhold ---
+  async function deleteSection(id) {
+    if (!confirm("Er du sikker på at du vil slette denne seksjonen og alt innhold i den?")) return;
+    try {
+      await deleteDoc(doc(db, "sections", id));
+    } catch (err) {
+      alert("Feil ved sletting av seksjon: " + err.message);
+    }
+  }
+
+  async function deleteItem(secId, itemId) {
+    const sec = sectionsData.find(s => s.id === secId);
+    if (!sec) return;
+    const updatedItems = (sec.items || []).filter(i => i.id !== itemId);
+    try {
+      await updateDoc(doc(db, "sections", secId), { items: updatedItems });
+    } catch (err) {
+      alert("Feil ved sletting av element: " + err.message);
+    }
+  }
+
+  // --- Redigeringsmodal Logikk ---
+  function openEditModal(id) {
+    const sec = sectionsData.find(s => s.id === id);
+    if (!sec) return;
+
+    document.getElementById('edit-sec-id').value = sec.id;
+    document.getElementById('edit-sec-title').value = sec.title;
+    document.getElementById('edit-sec-order').value = sec.order;
+
+    document.querySelectorAll('.edit-sec-target-pages').forEach(cb => {
+      cb.checked = (sec.targetPages || []).includes(cb.value);
+    });
+
+    editModal.classList.remove('hidden');
+  }
+
+  function closeEditModal() {
+    editModal.classList.add('hidden');
+  }
+
+  if (closeModalBtn) closeModalBtn.addEventListener('click', closeEditModal);
+  if (cancelModalBtn) cancelModalBtn.addEventListener('click', closeEditModal);
+
+  if (editSectionForm) {
+    editSectionForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('edit-sec-id').value;
+      const title = document.getElementById('edit-sec-title').value;
+      const order = parseInt(document.getElementById('edit-sec-order').value, 10);
+      const targetPages = Array.from(document.querySelectorAll('.edit-sec-target-pages:checked')).map(cb => cb.value);
+
+      try {
+        await updateDoc(doc(db, "sections", id), {
+          title,
+          order,
+          targetPages
+        });
+        closeEditModal();
+      } catch (err) {
+        alert("Feil ved oppdatering av seksjon: " + err.message);
+      }
+    });
+  }
+</script>
 </body>
 </html>
