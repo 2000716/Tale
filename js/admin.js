@@ -434,3 +434,92 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+// ==========================================
+// 6. FLYTTING AV SEKSJONER (OPP / NED)
+// ==========================================
+window.moveSectionOrder = async function(sectionId, direction) {
+  const index = activeSections.findIndex(s => s.id === sectionId);
+  if (index === -1) return;
+
+  const targetIndex = direction === 'up' ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= activeSections.length) return;
+
+  const currentSec = activeSections[index];
+  const targetSec = activeSections[targetIndex];
+
+  // Bytt om order-verdiene i Firestore
+  try {
+    const batchUpdates = [
+      updateDoc(doc(db, "sections", currentSec.id), { order: targetSec.order ?? targetIndex }),
+      updateDoc(doc(db, "sections", targetSec.id), { order: currentSec.order ?? index })
+    ];
+    await Promise.all(batchUpdates);
+  } catch (err) {
+    console.error("Feil ved endring av rekkefølge:", err);
+    alert("Kunne ikke flytte seksjonen: " + err.message);
+  }
+};
+
+// ==========================================
+// 7. BANNER ADMINISTRASJON & SANNTIDSLYTTER
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+  initLiveBannersListener();
+});
+
+function initLiveBannersListener() {
+  const bannersQuery = query(collection(db, "banners"), orderBy("createdAt", "desc"));
+  
+  onSnapshot(bannersQuery, (snapshot) => {
+    const bannersList = document.getElementById("banners-manage-list");
+    if (!bannersList) return;
+
+    bannersList.innerHTML = "";
+
+    if (snapshot.empty) {
+      bannersList.innerHTML = `<p class="text-muted">Ingen aktive bannere.</p>`;
+      return;
+    }
+
+    snapshot.forEach((docSnap) => {
+      const bannerData = docSnap.data();
+      const bannerEl = document.createElement("div");
+      bannerEl.className = "manage-item";
+      bannerEl.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border-radius: 6px; margin-bottom: 8px;";
+      
+      bannerEl.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <img src="${escapeHtml(bannerData.imageUrl)}" alt="" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+          <div>
+            <strong>${escapeHtml(bannerData.title || 'Uten tittel')}</strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+              Side: <code>${escapeHtml(bannerData.page || 'home')}</code> | Badge: ${escapeHtml(bannerData.badge || 'Ingen')}
+            </div>
+          </div>
+        </div>
+        <button class="btn-danger btn-delete-banner" data-id="${docSnap.id}" style="background: var(--danger-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+          <i class="fa-solid fa-trash"></i> Slett
+        </button>
+      `;
+
+      bannersList.appendChild(bannerEl);
+    });
+
+    // Aktiver sletteknapper for bannere
+    document.querySelectorAll(".btn-delete-banner").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const bannerId = e.currentTarget.dataset.id;
+        if (confirm("Vil du slette dette banneret?")) {
+          try {
+            await deleteDoc(doc(db, "banners", bannerId));
+          } catch (err) {
+            alert("Feil ved sletting av banner: " + err.message);
+          }
+        }
+      });
+    });
+  }, (err) => {
+    console.error("Feil ved henting av bannere:", err);
+  });
+}
