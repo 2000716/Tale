@@ -265,8 +265,14 @@ body.admin-body {
   margin-bottom: 24px;
 }
 
+/* Ekstra justering for to-spalters grid i Tab 3 (Bannere) */
+#tab-banners .dashboard-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
 @media (max-width: 1024px) {
-  .dashboard-grid {
+  .dashboard-grid,
+  #tab-banners .dashboard-grid {
     grid-template-columns: 1fr;
   }
 }
