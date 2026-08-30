@@ -139,36 +139,11 @@
         <div id="podcasts-sections" class="dynamic-container"></div>
       </section>
 
-<!-- RADIO-SEKSJON MED NYHETS-BANNER OG DIREKTE AVSPILLING -->
-<section id="radio" class="page">
-  <h2>Direkte Radio</h2>
-
-  <!-- 1. Dagens NRK Nyheter Banner -->
-  <div id="nrk-news-banner" class="radio-banner" role="button" tabindex="0">
-    <!-- Bakgrunnsbilde satt dynamisk fra RSS -->
-    <div id="banner-bg" class="banner-bg"></div>
-    <div class="banner-gradient"></div>
-    
-    <!-- NRK Logo øverst til venstre -->
-    <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1788038957/NRK_Nyheter_on-dark_RGB_mwbstr.png" alt="NRK Radio Logo" class="banner-logo" />
-    
-    <!-- Tekst i underkant -->
-    <div class="banner-overlay-bottom">
-      <span class="banner-tag">DAGENS NYHETER</span>
-      <h3 id="banner-headline">Laster nyheter fra NRK...</h3>
-      <p id="banner-subtext">Trykk for å høre NRK Nyheter Radio direkte</p>
-    </div>
-  </div>
-
-  <!-- 2. Avlange kanal-seksjoner nedover -->
-  <div class="radio-channels-header">
-    <h3>Kanaler</h3>
-  </div>
-  
-  <div id="radio-channels-list" class="radio-channels-list">
-    <!-- Kanalene rendres dynamisk via JavaScript -->
-  </div>
-</section>
+      <!-- RADIO-SEKSJON MED DYNAMISK BANNER OG KANALER -->
+      <section id="radio" class="page">
+        <h2>Direkte Radio</h2>
+        <div id="radio-sections" class="dynamic-container"></div>
+      </section>
 
       <!-- KONTOSIDE UTEN PREMIUM-SKILT -->
       <section id="account" class="page">
