@@ -29,20 +29,20 @@ document.addEventListener("DOMContentLoaded", () => {
 // ==========================================
 function initLiveSectionsListener() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
-    
+  
   onSnapshot(q, (snapshot) => {
     activeSections = [];
     const manageList = document.getElementById("sections-manage-list");
     const sectionCountEl = document.getElementById("stat-sections-count");
     const activeUsersEl = document.getElementById("stat-active-users");
     const hoursEl = document.getElementById("stat-hours");
-      
+    
     if (manageList) manageList.innerHTML = "";
 
     if (snapshot.empty) {
       if (manageList) manageList.innerHTML = `<p class="text-muted">Ingen seksjoner opprettet ennå.</p>`;
       if (sectionCountEl) sectionCountEl.innerText = "0";
-        
+      
       if (activeUsersEl) activeUsersEl.innerText = "1 240";
       if (hoursEl) hoursEl.innerText = "4 500 t";
 
@@ -65,7 +65,7 @@ function initLiveSectionsListener() {
         const itemEl = document.createElement("div");
         itemEl.className = "manage-item";
         itemEl.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border-radius: 6px; margin-bottom: 8px;";
-          
+        
         // Sjekk om det er den låste systemseksjonen
         const isSystemLocked = docSnap.id === 'system-continue-listening';
 
@@ -387,7 +387,7 @@ function renderPodcastResults(items) {
   items.forEach((item, index) => {
     const card = document.createElement("div");
     card.style.cssText = "background: var(--input-bg); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;";
-      
+    
     const title = item.trackName || item.collectionName || 'Ukjent';
     const sub = item.artistName || 'Podkast';
     const cover = item.artworkUrl600 || item.artworkUrl100 || '';
