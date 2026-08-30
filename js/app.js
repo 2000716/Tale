@@ -37,15 +37,17 @@ export function loadContentFromFirestore() {
   const pages = ["home", "audiobooks", "podcasts", "radio"];
 
   const renderSectionsData = (sectionsList) => {
+    // 1. Tøm alle containere først
     pages.forEach(p => {
       const container = document.getElementById(`${p}-sections`);
       if (container) container.innerHTML = "";
     });
 
-    renderRadioBanner();
-
+    // 2. Bygg seksjonene fra Firestore
     sectionsList.forEach((sec) => {
-      const pagesArray = Array.isArray(sec.pages) ? sec.pages : [sec.page || "home"];
+      // Støtter både targetPages (array), pages (array) og page (streng)
+      const rawPages = sec.targetPages || sec.pages || sec.page || "home";
+      const pagesArray = Array.isArray(rawPages) ? rawPages : [rawPages];
 
       pagesArray.forEach(pageTarget => {
         const targetContainer = document.getElementById(`${pageTarget}-sections`);
@@ -140,6 +142,9 @@ export function loadContentFromFirestore() {
         targetContainer.appendChild(sectionWrapper);
       });
     });
+
+    // 3. Generer radio-banneret helt til slutt (prependes i containeren)
+    renderRadioBanner();
   };
 
   const cachedSections = localStorage.getItem("app_sections_cache");
@@ -338,7 +343,6 @@ export function removeSearchResultsView() {
 }
 
 function extractCardItemData(card) {
-  // Sjekk om det finnes et lagret datatall på window
   const itemKey = card.dataset.itemKey;
   if (itemKey && window[itemKey]) {
     return window[itemKey];
@@ -379,7 +383,7 @@ function setupEventListeners() {
       return;
     }
 
-    // 2. Klikk på selve avlange radiokortet (starter avspilling direkte)
+    // 2. Klikk på selve avlange radiokortet
     const radioCard = e.target.closest(".radio-card-horizontal");
     if (radioCard) {
       const audioUrl = radioCard.dataset.audio;
