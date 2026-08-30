@@ -5,18 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tale - Control Center & Studio Admin</title>
   
-  <!-- CSS Referanser (Ligger i admin/admin.css) -->
   <link rel="stylesheet" href="css/admin.css" />
   
-  <!-- FontAwesome for ikoner -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <!-- Google Fonts: Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="admin-body">
 
   <div class="app-layout">
-    <!-- SIDEBAR NAVIGATION -->
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-logo">
@@ -54,9 +50,7 @@
       </div>
     </aside>
 
-    <!-- MAIN CONTENT AREA -->
     <main class="main-content">
-      <!-- TOP HEADER -->
       <header class="top-header">
         <div class="header-title">
           <h1 id="page-title">Dashboard & Analytics</h1>
@@ -69,9 +63,7 @@
         </div>
       </header>
 
-      <!-- TAB 1: DASHBOARD & ANALYTICS -->
       <section id="tab-dashboard" class="tab-content active">
-        <!-- KPI METRICS GRID -->
         <div class="metrics-grid">
           <div class="metric-card">
             <div class="metric-icon blue"><i class="fa-solid fa-users"></i></div>
@@ -110,7 +102,6 @@
           </div>
         </div>
 
-        <!-- ANALYTICS WIDGETS -->
         <div class="dashboard-grid">
           <div class="card card-large">
             <div class="card-header">
@@ -121,7 +112,6 @@
               </select>
             </div>
             <div class="chart-container">
-              <!-- Visual Simulated Chart Bar -->
               <div class="simulated-chart">
                 <div class="bar-col"><div class="bar" style="height: 40%"></div><span>00:00</span></div>
                 <div class="bar-col"><div class="bar" style="height: 25%"></div><span>04:00</span></div>
@@ -165,10 +155,8 @@
         </div>
       </section>
 
-      <!-- TAB 2: SEKSJONER & LAYOUT -->
       <section id="tab-sections" class="tab-content">
         <div class="dashboard-grid">
-          <!-- SKJEMA FOR OPPRETTING AV SEKSJON -->
           <div class="card">
             <div class="card-header">
               <h3><i class="fa-solid fa-folder-plus"></i> Opprett Ny Seksjon</h3>
@@ -210,7 +198,6 @@
             </form>
           </div>
 
-          <!-- LISTE OVER EKSISTERENDE SEKSJONER -->
           <div class="card">
             <div class="card-header">
               <h3><i class="fa-solid fa-list-check"></i> Aktive Seksjoner i Firestore</h3>
@@ -222,77 +209,73 @@
         </div>
       </section>
 
-     <!-- TAB 3: HERO BANNERE & PROMOTERING -->
-<section id="tab-banners" class="tab-content">
-  <div class="dashboard-grid">
-    <!-- Skjema for å opprette banner -->
-    <div class="card">
-      <div class="card-header">
-        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Opprett Promotert Hero Banner</h3>
-      </div>
-      <form id="add-banner-form">
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="banner-title">Bannertittel / Hovedoverskrift</label>
-            <input type="text" id="banner-title" placeholder="f.eks. Månedens Eksklusive Lydbok" required />
+      <section id="tab-banners" class="tab-content">
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Opprett Promotert Hero Banner</h3>
+            </div>
+            <form id="add-banner-form">
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="banner-title">Bannertittel / Hovedoverskrift</label>
+                  <input type="text" id="banner-title" placeholder="f.eks. Månedens Eksklusive Lydbok" required />
+                </div>
+                <div class="form-group">
+                  <label for="banner-subtitle">Undertittel / Forfatter</label>
+                  <input type="text" id="banner-subtitle" placeholder="f.eks. Av Jo Nesbø" required />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="banner-desc">Beskrivelse / Teaser Tekst</label>
+                <textarea id="banner-desc" rows="3" placeholder="Kort handlingsreferat..." required></textarea>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="banner-img">Bakgrunnsbilde / Cover URL</label>
+                  <input type="url" id="banner-img" placeholder="https://..." required />
+                </div>
+                <div class="form-group">
+                  <label for="banner-audio">Lyd-fil / Stream URL</label>
+                  <input type="url" id="banner-audio" placeholder="https://..." required />
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="banner-page">Vis på Side</label>
+                  <select id="banner-page">
+                    <option value="home">Hjem (Hovedbanner)</option>
+                    <option value="audiobooks">Lydbøker Top-Hero</option>
+                    <option value="podcasts">Podkaster Featured</option>
+                    <option value="radio">Radio Side (Banner)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="banner-badge">Badge Tag (Valgfritt)</label>
+                  <input type="text" id="banner-badge" placeholder="f.eks. EKSKLUSIVT" />
+                </div>
+              </div>
+
+              <button type="submit" class="btn-submit">
+                <i class="fa-solid fa-rectangle-ad"></i> Publisere Banner
+              </button>
+            </form>
           </div>
-          <div class="form-group">
-            <label for="banner-subtitle">Undertittel / Forfatter</label>
-            <input type="text" id="banner-subtitle" placeholder="f.eks. Av Jo Nesbø" required />
+
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-id-card"></i> Aktive Bannere</h3>
+            </div>
+            <div id="banners-manage-list" class="manage-list">
+              <p class="text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Laster bannere...</p>
+            </div>
           </div>
         </div>
+      </section>
 
-        <div class="form-group">
-          <label for="banner-desc">Beskrivelse / Teaser Tekst</label>
-          <textarea id="banner-desc" rows="3" placeholder="Kort handlingsreferat..." required></textarea>
-        </div>
-
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="banner-img">Bakgrunnsbilde / Cover URL</label>
-            <input type="url" id="banner-img" placeholder="https://..." required />
-          </div>
-          <div class="form-group">
-            <label for="banner-audio">Lyd-fil / Stream URL</label>
-            <input type="url" id="banner-audio" placeholder="https://..." required />
-          </div>
-        </div>
-
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="banner-page">Vis på Side</label>
-            <select id="banner-page">
-              <option value="home">Hjem (Hovedbanner)</option>
-              <option value="audiobooks">Lydbøker Top-Hero</option>
-              <option value="podcasts">Podkaster Featured</option>
-              <option value="radio">Radio Side (Banner)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="banner-badge">Badge Tag (Valgfritt)</label>
-            <input type="text" id="banner-badge" placeholder="f.eks. EKSKLUSIVT" />
-          </div>
-        </div>
-
-        <button type="submit" class="btn-submit">
-          <i class="fa-solid fa-rectangle-ad"></i> Publisere Banner
-        </button>
-      </form>
-    </div>
-
-    <!-- Liste for å slette/administrere bannere -->
-    <div class="card">
-      <div class="card-header">
-        <h3><i class="fa-solid id-card"></i> Aktive Bannere</h3>
-      </div>
-      <div id="banners-manage-list" class="manage-list">
-        <p class="text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Laster bannere...</p>
-      </div>
-    </div>
-  </div>
-</section>
-      
-      <!-- TAB 4: API IMPORTER -->
       <section id="tab-api" class="tab-content">
         <div class="card">
           <div class="card-header">
@@ -316,18 +299,16 @@
           </div>
 
           <div class="form-group search-row">
-            <input type="text" id="api-search-input" placeholder="Søk etter podkast eller radiokanal (f.eks. Aftenpodden, NRK P3)..." />
+            <input type="text" id="api-search-input" placeholder="Søk etter podkast eller radiokanal..." />
             <button type="button" id="api-search-btn" class="btn-submit">
               <i class="fa-solid fa-magnifying-glass"></i> Søk i API
             </button>
           </div>
 
-          <!-- Søkeresultater -->
           <div id="api-results-container" class="api-results-grid"></div>
         </div>
       </section>
 
-      <!-- TAB 5: MANUELT INNHOLD (LYDBØKER) -->
       <section id="tab-manual" class="tab-content">
         <div class="card">
           <div class="card-header">
@@ -379,38 +360,6 @@
     </main>
   </div>
 
-  <!-- Siden alt ligger i admin/-mappen refererer du til ./admin.js -->
-<script type="module" src="./js/admin.js"></script>
-
-  <!-- Enkel script for å veksle mellom faner (Tabs) -->
-  <script>
-    document.querySelectorAll('.nav-item').forEach(button => {
-      button.addEventListener('click', () => {
-        const tabId = button.getAttribute('data-tab');
-        
-        // Fjern active fra alle knapper og faner
-        document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-        
-        // Sett active på valgt knapp og fane
-        button.classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-
-        // Oppdater tittelen i toppen
-        const titles = {
-          'tab-dashboard': ['Dashboard & Analytics', 'Reeltidsovervåkning av strømming, seertall og seksjonsinnhold.'],
-          'tab-sections': ['Seksjoner & Layout', 'Styr oppsettet og galleriene på Tale-plattformen.'],
-          'tab-banners': ['Hero Bannere & Promotering', 'Lag store visuelle bannere i Fabel og Storytel-stil.'],
-          'tab-api': ['API Importer (Podkast & Radio)', 'Søk og legg til fra Apple Podcasts eller Radio Browser.'],
-          'tab-manual': ['Legg til Lydbok / Innhold', 'Manuell oppretting av lydbøker og enkeltepisotder.']
-        };
-
-        if (titles[tabId]) {
-          document.getElementById('page-title').innerText = titles[tabId][0];
-          document.getElementById('page-subtitle').innerText = titles[tabId][1];
-        }
-      });
-    });
-  </script>
+  <script type="module" src="./js/admin.js"></script>
 </body>
 </html>
