@@ -173,15 +173,17 @@ async function renderRadioBanner() {
   const radioContainer = document.getElementById("radio-sections");
   if (!radioContainer) return;
 
-  const streamUrl = "https://nrk-radio-live.akamaized.net/hls/live/2012856/nrk_nyheter/master.m3u8";
-  const defaultBg = "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80";
+  // Satt direkte til NRK P2 lydstrøm
+  const streamUrl = "https://lyd.nrk.no/icecast/aac/high/s0w7hwn47m/p2";
+  const defaultBg = "https://res.cloudinary.com/ocv4zhpk/image/upload/v1788038957/NRK_Nyheter_on-dark_RGB_mwbstr.png";
   const nrkLogo = "https://res.cloudinary.com/ocv4zhpk/image/upload/v1788038957/NRK_Nyheter_on-dark_RGB_mwbstr.png";
 
   let bannerImage = defaultBg;
-  let bannerHeadline = "NRK Nyheter Radio";
+  let bannerHeadline = "NRK P2 Nyheter";
 
   try {
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("www.nrk.no/norge/toppsaker.rss")}`);
+    // Korrigert til https:// for at RSS-apiet skal returnere toppsaker og bilder riktig
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/norge/toppsaker.rss")}`);
     if (res.ok) {
       const data = await res.json();
       if (data.status === 'ok' && data.items?.length > 0) {
@@ -209,7 +211,8 @@ async function renderRadioBanner() {
   bannerWrapper.innerHTML = `
     <div class="radio-banner" 
          data-audio="${escapeAttr(streamUrl)}"
-         data-title="NRK Nyheter Radio"
+         data-title="NRK P2"
+         data-sub="Nyheter og samfunn"
          data-cover="${escapeAttr(bannerImage)}"
          role="button"
          tabindex="0">
@@ -217,9 +220,9 @@ async function renderRadioBanner() {
       <div class="banner-gradient"></div>
       <img src="${nrkLogo}" alt="NRK Nyheter Logo" class="banner-logo" onerror="this.style.display='none'">
       <div class="banner-overlay-bottom">
-        <span class="banner-tag"><i class="fa-solid fa-signal"></i> DAGENS NYHETER</span>
+        <span class="banner-tag"><i class="fa-solid fa-signal"></i> NRK P2 DIREKTE</span>
         <h3 class="banner-headline">${escapeAttr(bannerHeadline)}</h3>
-        <p class="banner-subtext">Trykk for å høre NRK Nyheter Radio direkte</p>
+        <p class="banner-subtext">Trykk for å høre NRK P2 Direkte</p>
       </div>
     </div>
   `;
@@ -395,14 +398,15 @@ function setupEventListeners() {
       return;
     }
 
-    // 3. Klikk på nyhets-banneret øverst
+    // 3. Klikk på nyhets-banneret øverst (Spiller NRK P2)
     const radioBanner = e.target.closest(".radio-banner");
     if (radioBanner) {
-      const audioUrl = radioBanner.dataset.audio;
-      const title = radioBanner.dataset.title || "NRK Nyheter Radio";
+      const audioUrl = radioBanner.dataset.audio || "https://lyd.nrk.no/icecast/aac/high/s0w7hwn47m/p2";
+      const title = radioBanner.dataset.title || "NRK P2";
+      const sub = radioBanner.dataset.sub || "Nyheter og samfunn";
       const cover = radioBanner.dataset.cover || "";
       if (audioUrl) {
-        playAudioTrack(audioUrl, title, "NRK Radio", cover);
+        playAudioTrack(audioUrl, title, sub, cover);
       }
       return;
     }
