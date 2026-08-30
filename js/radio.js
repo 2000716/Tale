@@ -55,7 +55,7 @@ export function renderRadioChannels(channels, playAudioCallback) {
   });
 }
 
-// 3. HENT NRK RSS NYHETER FOR BANNERET (Henter bilde fra www.nrk.no/nyheter/siste.rss)
+// 3. HENT NRK RSS NYHETER FOR BANNERET (Henter fra https://www.nrk.no/norge/toppsaker.rss)
 export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
   const banner = document.getElementById('nrk-news-banner');
   const bannerBg = document.getElementById('banner-bg');
@@ -67,8 +67,8 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
   const defaultImage = 'https://res.cloudinary.com/ocv4zhpk/image/upload/v1788038957/NRK_Nyheter_on-dark_RGB_mwbstr.png';
 
   try {
-    // Henter RSS-feed fra NRK Nyheter Siste via rss2json
-    const rssUrl = encodeURIComponent('www.nrk.no/norge/toppsaker.rss');
+    // Henter Toppsaker fra NRK RSS
+    const rssUrl = encodeURIComponent('https://www.nrk.no/norge/toppsaker.rss');
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
     const data = await res.json();
 
@@ -80,10 +80,7 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
         headlineEl.textContent = topStory.title || 'NRK Nyheter Direct';
       }
 
-      // Hent bilde fra RSS-saken dersom tilgjengelig:
-      // 1. Sjekk enclosure (hvor NRK RSS vanligvis plasserer bildet)
-      // 2. Sjekk thumbnail
-      // 3. Søk etter <img> tag i description med regex
+      // 1. Sjekk enclosure 2. Sjekk thumbnail 3. Sjekk description (regex)
       let imageUrl = topStory.enclosure?.link || topStory.thumbnail;
       
       if (!imageUrl && topStory.description) {
