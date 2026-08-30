@@ -55,7 +55,7 @@ export function renderRadioChannels(channels, playAudioCallback) {
   });
 }
 
-// 3. HENT NRK RSS NYHETER FOR BANNERET (Henter fra https://www.nrk.no/norge/toppsaker.rss)
+// 3. HENT NRK RSS NYHETER FOR BANNERET OG SPILL NRK P2 VED KLIKK
 export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
   const banner = document.getElementById('nrk-news-banner');
   const bannerBg = document.getElementById('banner-bg');
@@ -80,7 +80,7 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
         headlineEl.textContent = topStory.title || 'NRK Nyheter Direct';
       }
 
-      // 1. Sjekk enclosure 2. Sjekk thumbnail 3. Sjekk description (regex)
+      // Hent bilde fra RSS-saken
       let imageUrl = topStory.enclosure?.link || topStory.thumbnail;
       
       if (!imageUrl && topStory.description) {
@@ -102,10 +102,16 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
     if (bannerBg) bannerBg.style.backgroundImage = `url('${defaultImage}')`;
   }
 
-  // Klikk på banneret starter NRK Nyheter Radio direkte
+  // Definerer NRK P2 objektet dersom nrkNewsChannel ikke er sendt med
+  const p2Channel = nrkNewsChannel || {
+    title: 'NRK P2',
+    description: 'Nyheter og samfunn',
+    streamUrl: 'https://lyd.nrk.no/icecast/aac/high/s0w7hwn47m/p2',
+    image: defaultImage
+  };
+
+  // Klikk på banneret starter avspilling av NRK P2
   banner.onclick = () => {
-    if (nrkNewsChannel) {
-      playAudioCallback(nrkNewsChannel);
-    }
+    playAudioCallback(p2Channel);
   };
 }
