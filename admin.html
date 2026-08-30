@@ -222,62 +222,76 @@
         </div>
       </section>
 
-      <!-- TAB 3: HERO BANNERE & PROMOTERING -->
-      <section id="tab-banners" class="tab-content">
-        <div class="card">
-          <div class="card-header">
-            <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Opprett Promotert Hero Banner (Storytel/Fabel Stil)</h3>
+     <!-- TAB 3: HERO BANNERE & PROMOTERING -->
+<section id="tab-banners" class="tab-content">
+  <div class="dashboard-grid">
+    <!-- Skjema for å opprette banner -->
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Opprett Promotert Hero Banner</h3>
+      </div>
+      <form id="add-banner-form">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="banner-title">Bannertittel / Hovedoverskrift</label>
+            <input type="text" id="banner-title" placeholder="f.eks. Månedens Eksklusive Lydbok" required />
           </div>
-          <form id="add-banner-form">
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label for="banner-title">Bannertittel / Hovedoverskrift</label>
-                <input type="text" id="banner-title" placeholder="f.eks. Månedens Eksklusive Lydbok" required />
-              </div>
-              <div class="form-group">
-                <label for="banner-subtitle">Undertittel / Forfatter</label>
-                <input type="text" id="banner-subtitle" placeholder="f.eks. Av Jo Nesbø • Innlest av..." required />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="banner-desc">Beskrivelse / Teaser Tekst</label>
-              <textarea id="banner-desc" rows="3" placeholder="Kort handlingsreferat som skal fange lytteren..." required></textarea>
-            </div>
-
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label for="banner-img">Bakgrunnsbilde / Cover URL (Cloudinary eller høy oppløsning)</label>
-                <input type="url" id="banner-img" placeholder="https://res.cloudinary.com/..." required />
-              </div>
-              <div class="form-group">
-                <label for="banner-audio">Lyd-fil / Stream URL (Koble til spiller)</label>
-                <input type="url" id="banner-audio" placeholder="https://..." required />
-              </div>
-            </div>
-
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label for="banner-page">Vis på Side</label>
-                <select id="banner-page">
-                  <option value="home">Hjem (Hovedbanner)</option>
-                  <option value="audiobooks">Lydbøker Top-Hero</option>
-                  <option value="podcasts">Podkaster Featured</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="banner-badge">Badge Tag (Valgfritt)</label>
-                <input type="text" id="banner-badge" placeholder="f.eks. EKSKLUSIVT, NYHET, POPULÆR" />
-              </div>
-            </div>
-
-            <button type="submit" class="btn-submit">
-              <i class="fa-solid fa-rectangle-ad"></i> Publisere Banner på Tale
-            </button>
-          </form>
+          <div class="form-group">
+            <label for="banner-subtitle">Undertittel / Forfatter</label>
+            <input type="text" id="banner-subtitle" placeholder="f.eks. Av Jo Nesbø" required />
+          </div>
         </div>
-      </section>
 
+        <div class="form-group">
+          <label for="banner-desc">Beskrivelse / Teaser Tekst</label>
+          <textarea id="banner-desc" rows="3" placeholder="Kort handlingsreferat..." required></textarea>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="banner-img">Bakgrunnsbilde / Cover URL</label>
+            <input type="url" id="banner-img" placeholder="https://..." required />
+          </div>
+          <div class="form-group">
+            <label for="banner-audio">Lyd-fil / Stream URL</label>
+            <input type="url" id="banner-audio" placeholder="https://..." required />
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="banner-page">Vis på Side</label>
+            <select id="banner-page">
+              <option value="home">Hjem (Hovedbanner)</option>
+              <option value="audiobooks">Lydbøker Top-Hero</option>
+              <option value="podcasts">Podkaster Featured</option>
+              <option value="radio">Radio Side (Banner)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="banner-badge">Badge Tag (Valgfritt)</label>
+            <input type="text" id="banner-badge" placeholder="f.eks. EKSKLUSIVT" />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <i class="fa-solid fa-rectangle-ad"></i> Publisere Banner
+        </button>
+      </form>
+    </div>
+
+    <!-- Liste for å slette/administrere bannere -->
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fa-solid id-card"></i> Aktive Bannere</h3>
+      </div>
+      <div id="banners-manage-list" class="manage-list">
+        <p class="text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Laster bannere...</p>
+      </div>
+    </div>
+  </div>
+</section>
+      
       <!-- TAB 4: API IMPORTER -->
       <section id="tab-api" class="tab-content">
         <div class="card">
