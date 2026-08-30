@@ -1,32 +1,32 @@
 /* ==========================================
-   HOVEDSIDE, KORT & LAYOUT (TALE APP)
+   HOVEDSIDE, KORT & LAYOUT
    ========================================== */
 
 /* Pass på at innholdet ikke overlapper bunnmeny/minispiller */
 main, .content-container {
-  padding-bottom: calc(140px + env(safe-area-inset-bottom)) !important;
+  padding-bottom: calc(140px + env(safe-area-inset-bottom));
 }
 
 .hero-banner {
-  background: linear-gradient(135deg, #0b112c 0%, #1a2550 100%) !important;
-  color: var(--text-light, #ffffff) !important;
-  padding: 1.2rem !important;
-  border-radius: var(--radius-md, 12px) !important;
-  margin-bottom: 1.5rem !important;
+  background: linear-gradient(135deg, #0b112c 0%, #1a2550 100%);
+  color: var(--text-light, #ffffff);
+  padding: 1.2rem;
+  border-radius: var(--radius-md, 12px);
+  margin-bottom: 1.5rem;
 }
 
 .badge {
-  background: var(--accent-blue, #AEC2F7) !important;
-  color: #0b112c !important;
-  font-size: 0.7rem !important;
-  font-weight: bold !important;
-  padding: 0.2rem 0.5rem !important;
-  border-radius: 4px !important;
+  background: var(--accent-blue, #AEC2F7);
+  color: #0b112c;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
 }
 
 .section-header {
-  margin: 1.2rem 0 0.6rem 0 !important;
-  color: var(--text-dark, #0f172a) !important;
+  margin: 1.2rem 0 0.6rem 0;
+  color: var(--text-dark, #0f172a);
 }
 
 .horizontal-scroll,
@@ -36,257 +36,98 @@ main, .content-container {
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
-  gap: 16px !important;
-  padding-bottom: 10px !important;
-  -webkit-overflow-scrolling: touch !important;
-  scroll-snap-type: x mandatory !important;
-  scrollbar-width: none !important;
+  gap: 16px;
+  padding-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
 }
 
 .horizontal-scroll::-webkit-scrollbar,
 .horizontal-scroll-container::-webkit-scrollbar {
-  display: none !important;
+  display: none;
 }
 
-/* --- BOKKORT & INNHOLD --- */
 .book-card {
   flex: 0 0 130px !important;
   width: 130px !important;
-  cursor: pointer !important;
-  display: flex !important;
-  flex-direction: column !important;
-  scroll-snap-align: start !important;
-  transition: transform 0.2s ease !important;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+  transition: transform 0.2s ease;
 }
 
 .book-card:active {
-  transform: scale(0.96) !important;
+  transform: scale(0.96);
 }
 
 .book-cover {
-  width: 130px !important;
-  height: 130px !important;
-  border-radius: var(--radius-md, 12px) !important;
-  overflow: hidden !important;
-  background-color: #131b3e !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
-  position: relative !important;
+  width: 130px;
+  height: 130px;
+  border-radius: var(--radius-md, 12px);
+  overflow: hidden;
+  background-color: #131b3e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  position: relative;
 }
 
 .book-cover-img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  display: block !important;
-  border-radius: var(--radius-md, 12px) !important;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius-md, 12px);
 }
 
 .generated-cover {
-  width: 100% !important;
-  height: 100% !important;
-  background: linear-gradient(135deg, #1e295d 0%, #070b1e 100%) !important;
-  color: var(--accent-blue, #AEC2F7) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0.8rem !important;
-  text-align: center !important;
-  border-radius: var(--radius-md, 12px) !important;
-  border: 1px solid rgba(174, 194, 247, 0.2) !important;
-  box-sizing: border-box !important;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1e295d 0%, #070b1e 100%);
+  color: var(--accent-blue, #AEC2F7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem;
+  text-align: center;
+  border-radius: var(--radius-md, 12px);
+  border: 1px solid rgba(174, 194, 247, 0.2);
+  box-sizing: border-box;
 }
 
 .generated-cover span {
-  font-size: 0.8rem !important;
-  font-weight: 700 !important;
-  line-height: 1.2 !important;
-  word-break: break-word !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  word-break: break-word;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .book-title {
-  font-size: 0.85rem !important;
-  font-weight: 600 !important;
-  margin-top: 0.5rem !important;
-  color: var(--text-dark, #0f172a) !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  color: var(--text-dark, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .book-author {
-  font-size: 0.75rem !important;
-  color: var(--text-muted-dark, #64748b) !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  font-size: 0.75rem;
+  color: var(--text-muted-dark, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .account-card {
-  background: #ffffff !important;
-  padding: 1.5rem !important;
-  border-radius: var(--radius-md, 12px) !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  margin-top: 1rem !important;
-  color: var(--text-dark, #0f172a) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-}
-
-/* ==========================================
-   BANNEER, RADIO & EKSTRA OPPSETT
-   ========================================== */
-
-/* --- STORE TOPPBANNER --- */
-.hero-banner-large {
-  position: relative !important;
-  width: 100% !important;
-  height: 180px !important;
-  border-radius: var(--radius-md, 12px) !important;
-  overflow: hidden !important;
-  margin-bottom: 1.5rem !important;
-  background-size: cover !important;
-  background-position: center !important;
-  display: flex !important;
-  align-items: flex-end !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
-}
-
-.hero-banner-overlay {
-  width: 100% !important;
-  padding: 1.2rem !important;
-  background: linear-gradient(to top, rgba(7, 11, 30, 0.95) 0%, rgba(7, 11, 30, 0.4) 70%, transparent 100%) !important;
-  color: #ffffff !important;
-}
-
-.hero-banner-overlay h2 {
-  font-size: 1.2rem !important;
-  font-weight: 700 !important;
-  margin-bottom: 0.3rem !important;
-  color: #ffffff !important;
-}
-
-.hero-banner-overlay p {
-  font-size: 0.85rem !important;
-  color: var(--accent-blue, #AEC2F7) !important;
-  margin: 0 !important;
-}
-
-/* --- RADIOKANALER --- */
-.radio-card {
-  flex: 0 0 150px !important;
-  width: 150px !important;
-  cursor: pointer !important;
-  display: flex !important;
-  flex-direction: column !important;
-  background: rgba(255, 255, 255, 0.03) !important;
-  border: 1px solid rgba(174, 194, 247, 0.1) !important;
-  border-radius: var(--radius-md, 12px) !important;
-  padding: 12px !important;
-  align-items: center !important;
-  text-align: center !important;
-  scroll-snap-align: start !important;
-  transition: transform 0.2s ease !important;
-}
-
-.radio-card:active {
-  transform: scale(0.96) !important;
-}
-
-.radio-logo-container {
-  width: 80px !important;
-  height: 80px !important;
-  border-radius: 50% !important;
-  overflow: hidden !important;
-  margin-bottom: 10px !important;
-  background-color: #131b3e !important;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
-}
-
-.radio-logo-img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  display: block !important;
-}
-
-.radio-title {
-  font-size: 0.9rem !important;
-  font-weight: 600 !important;
-  color: var(--text-light, #ffffff) !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  width: 100% !important;
-}
-
-.radio-subtitle {
-  font-size: 0.75rem !important;
-  color: var(--text-muted, #a0a5c0) !important;
-  margin-top: 2px !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  width: 100% !important;
-}
-
-/* --- GRID VISNING FOR HELSEKSJONER --- */
-.media-grid-container {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
-  gap: 16px !important;
-  margin-bottom: 2rem !important;
-}
-
-/* --- FORTSETT Å LYTTE (BREDT KORT) --- */
-.continue-card {
-  flex: 0 0 240px !important;
-  width: 240px !important;
-  background: #12193b !important;
-  border-radius: var(--radius-md, 12px) !important;
-  display: flex !important;
-  align-items: center !important;
-  padding: 10px !important;
-  gap: 12px !important;
-  cursor: pointer !important;
-  border: 1px solid rgba(174, 194, 247, 0.1) !important;
-  scroll-snap-align: start !important;
-}
-
-.continue-thumb {
-  width: 50px !important;
-  height: 50px !important;
-  border-radius: 8px !important;
-  object-fit: cover !important;
-  flex-shrink: 0 !important;
-}
-
-.continue-info {
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  width: 100% !important;
-}
-
-.continue-title {
-  font-size: 0.85rem !important;
-  font-weight: 600 !important;
-  color: #fff !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-.continue-progress-bar {
-  width: 100% !important;
-  height: 4px !important;
-  background: rgba(255,255,255,0.2) !important;
-  border-radius: 2px !important;
-  margin-top: 6px !important;
-  overflow: hidden !important;
-}
-
-.continue-progress-fill {
-  height: 100% !important;
-  background: var(--accent-blue, #AEC2F7) !important;
+  background: #ffffff;
+  padding: 1.5rem;
+  border-radius: var(--radius-md, 12px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  margin-top: 1rem;
+  color: var(--text-dark, #0f172a);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
