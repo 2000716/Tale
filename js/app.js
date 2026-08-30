@@ -62,24 +62,22 @@ export function loadContentFromFirestore() {
             const sub = item.sub || item.description || 'Direktesending';
             const manualCover = item.coverUrl || item.cover || item.image || '';
             const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
-            const cardId = `radio-row-${sec.id || index}-${index}`;
+            const cardId = `radio-card-${sec.id || index}-${index}`;
 
             itemsHTML += `
-              <div class="radio-channel-row" 
+              <div class="radio-card-horizontal" 
                    id="${cardId}"
                    data-id="${escapeAttr(item.id || cardId)}"
                    data-title="${escapeAttr(title)}" 
                    data-sub="${escapeAttr(sub)}" 
                    data-cover="${escapeAttr(manualCover)}"
                    data-audio="${escapeAttr(audioUrl)}">
-                <div class="channel-info-group">
-                  <img class="channel-icon" src="${escapeAttr(manualCover)}" alt="${escapeAttr(title)}" onerror="this.src='https://via.placeholder.com/60?text=Radio'">
-                  <div class="channel-texts">
-                    <h4>${escapeAttr(title)}</h4>
-                    <p>${escapeAttr(sub)}</p>
-                  </div>
+                <img src="${escapeAttr(manualCover)}" alt="${escapeAttr(title)}" onerror="this.src='https://via.placeholder.com/60?text=Radio'">
+                <div class="radio-card-info">
+                  <h4>${escapeAttr(title)}</h4>
+                  <p>${escapeAttr(sub)}</p>
                 </div>
-                <button class="channel-play-btn" data-audio="${escapeAttr(audioUrl)}" data-title="${escapeAttr(title)}" data-cover="${escapeAttr(manualCover)}">
+                <button class="radio-play-btn" data-audio="${escapeAttr(audioUrl)}" data-title="${escapeAttr(title)}" data-cover="${escapeAttr(manualCover)}" aria-label="Spill ${escapeAttr(title)}">
                   <i class="fa-solid fa-play"></i>
                 </button>
               </div>
@@ -174,38 +172,46 @@ async function renderRadioBanner() {
 
   const streamUrl = "https://nrk-radio-live.akamaized.net/hls/live/2012856/nrk_nyheter/master.m3u8";
   const defaultBg = "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80";
-  const nrkLogo = "https://upload.wikimedia.org/wikipedia/commons/c/c2/NRK_Radio_logo.svg";
+  const nrkLogo = "https://res.cloudinary.com/ocv4zhpk/image/upload/v1788038957/NRK_Nyheter_on-dark_RGB_mwbstr.png";
 
   let bannerImage = defaultBg;
-  let bannerHeadline = "Siste Nyheter fra NRK Radio";
+  let bannerHeadline = "Laster siste nyheter fra NRK...";
 
   try {
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/nyheter/siste.rss")}`);
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/toppsaker.rss")}`);
     const data = await res.json();
     if (data.status === 'ok' && data.items?.length > 0) {
       const topItem = data.items[0];
       if (topItem.title) bannerHeadline = topItem.title;
-      bannerImage = topItem.thumbnail || topItem.enclosure?.link || topItem.enclosure?.thumbnail || defaultBg;
+      
+      let fetchedImg = topItem.thumbnail || topItem.enclosure?.link || topItem.enclosure?.thumbnail;
+      if (!fetchedImg && topItem.description) {
+        const imgMatch = topItem.description.match(/src="([^"]+)"/);
+        if (imgMatch) fetchedImg = imgMatch[1];
+      }
+      if (fetchedImg) bannerImage = fetchedImg;
     }
   } catch (err) {
     console.warn("Kunne ikke hente NRK RSS for banner, bruker standardbilde.", err);
+    bannerHeadline = "NRK Nyheter Radio";
   }
 
   const bannerWrapper = document.createElement("div");
   bannerWrapper.className = "radio-banner-container";
   bannerWrapper.innerHTML = `
     <div class="radio-banner" 
-         style="background-image: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.4) 100%), url('${escapeAttr(bannerImage)}');"
          data-audio="${escapeAttr(streamUrl)}"
          data-title="NRK Nyheter Radio"
-         data-cover="${escapeAttr(bannerImage)}">
-      <div class="banner-top-logo">
-        <img src="${nrkLogo}" alt="NRK Radio Logo" onerror="this.style.display='none'">
-      </div>
-      <div class="banner-content">
-        <span class="banner-badge"><i class="fa-solid fa-signal"></i> DIREKTE NYHETER</span>
-        <h2 class="banner-title">${escapeAttr(bannerHeadline)}</h2>
-        <p class="banner-sub">Trykk for å lytte til NRK Nyheter Radio nå</p>
+         data-cover="${escapeAttr(bannerImage)}"
+         role="button"
+         tabindex="0">
+      <div class="banner-bg" style="background-image: url('${escapeAttr(bannerImage)}');"></div>
+      <div class="banner-gradient"></div>
+      <img src="${nrkLogo}" alt="NRK Nyheter Logo" class="banner-logo" onerror="this.style.display='none'">
+      <div class="banner-overlay-bottom">
+        <span class="banner-tag"><i class="fa-solid fa-signal"></i> DAGENS NYHETER</span>
+        <h3 class="banner-headline">${escapeAttr(bannerHeadline)}</h3>
+        <p class="banner-subtext">Trykk for å høre NRK Nyheter Radio direkte</p>
       </div>
     </div>
   `;
@@ -261,7 +267,7 @@ async function executeAppSearch(term) {
   }
 
   resultsContainer.classList.add("active");
-  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster...</p></div>`;
+  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container"><p class="loading-episodes">Søker i podkaster og lydbøker...</p></div>`;
 
   document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => sec.style.display = "none");
 
@@ -273,14 +279,21 @@ async function executeAppSearch(term) {
       podcasts = data.results || [];
     }
 
+    // Ekstra filtrering for å forsikre at ingen radiokanaler slipper igjennom i søk
+    const filteredPodcasts = podcasts.filter(item => {
+      const title = (item.trackName || item.collectionName || '').toLowerCase();
+      const artist = (item.artistName || '').toLowerCase();
+      return !title.includes('radio') && !artist.includes('radio');
+    });
+
     let htmlContent = "";
 
-    if (podcasts.length === 0) {
-      htmlContent = `<p style="padding: 20px; color: #888;">Ingen podkaster funnet for "${escapeAttr(term)}".</p>`;
+    if (filteredPodcasts.length === 0) {
+      htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet for "${escapeAttr(term)}".</p>`;
     } else {
       let gridHTML = "";
 
-      podcasts.forEach((podcast, index) => {
+      filteredPodcasts.forEach((podcast, index) => {
         const title = podcast.trackName || podcast.collectionName;
         const sub = podcast.artistName || "Podkast";
         const cover = podcast.artworkUrl600 || podcast.artworkUrl100;
@@ -351,7 +364,8 @@ function extractCardItemData(card) {
 
 function setupEventListeners() {
   document.addEventListener("click", async (e) => {
-    const radioPlayBtn = e.target.closest(".channel-play-btn");
+    // 1. Klikk på direkte-knapp i radiokort
+    const radioPlayBtn = e.target.closest(".radio-play-btn");
     if (radioPlayBtn) {
       e.stopPropagation();
       const audioUrl = radioPlayBtn.dataset.audio;
@@ -364,17 +378,19 @@ function setupEventListeners() {
       return;
     }
 
-    const radioRow = e.target.closest(".radio-channel-row");
-    if (radioRow) {
-      const audioUrl = radioRow.dataset.audio;
-      const title = radioRow.dataset.title || "Direkte Radio";
-      const cover = radioRow.dataset.cover || "";
+    // 2. Klikk på selve avlange radiokortet (starter avspilling direkte)
+    const radioCard = e.target.closest(".radio-card-horizontal");
+    if (radioCard) {
+      const audioUrl = radioCard.dataset.audio;
+      const title = radioCard.dataset.title || "Direkte Radio";
+      const cover = radioCard.dataset.cover || "";
       if (audioUrl) {
         playAudioTrack(audioUrl, title, "NRK Radio", cover);
       }
       return;
     }
 
+    // 3. Klikk på nyhets-banneret øverst
     const radioBanner = e.target.closest(".radio-banner");
     if (radioBanner) {
       const audioUrl = radioBanner.dataset.audio;
@@ -386,6 +402,7 @@ function setupEventListeners() {
       return;
     }
 
+    // 4. Klikk på vanlige bok/podkast-kort
     const card = e.target.closest(".book-card, .continue-card");
     if (card) {
       const item = extractCardItemData(card);
