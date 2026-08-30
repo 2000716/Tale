@@ -1,49 +1,84 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tale - Admin Panel</title>
-  <link rel="stylesheet" href="css/base.css">
-  <style>
-    .admin-container { max-width: 800px; margin: 40px auto; padding: 20px; background: #121838; color: #fff; border-radius: 8px; }
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 5px; }
-    .form-group input, .form-group select { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #333; background: #070b1e; color: #fff; }
-    .btn-submit { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-  </style>
+  
+  <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
+
   <div class="admin-container">
-    <h2>Opprett Ny Seksjon / Galleri</h2>
-    <form id="add-section-form">
+    <div class="admin-header">
+      <h2><i class="fa-solid fa-sliders"></i> Tale Admin Panel</h2>
+      <p>Administrer seksjoner, gallerier og legg til nytt innhold uten å røre HTML-koden.</p>
+    </div>
+
+    <div style="margin-bottom: 40px;">
+      <h3>1. Opprett Ny Seksjon / Galleri</h3>
+      <form id="add-section-form" style="margin-top: 15px;">
+        <div class="form-group">
+          <label for="sec-title">Seksjonstittel</label>
+          <input type="text" id="sec-title" placeholder="f.eks. Populære Podkaster" required />
+        </div>
+
+        <div class="form-group">
+          <label for="sec-order">Rekkefølge (Order)</label>
+          <input type="number" id="sec-order" value="1" required />
+        </div>
+
+        <div class="form-group">
+          <label for="sec-page">Vis på side (Target Page)</label>
+          <select id="sec-page">
+            <option value="home">Hjem</option>
+            <option value="audiobooks">Lydbøker</option>
+            <option value="podcasts">Podkaster</option>
+            <option value="radio">Radio</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="sec-layout">Layout type</label>
+          <select id="sec-layout">
+            <option value="horizontal-scroll">Horisontal Rull (Bok-/Podkast-gallerier)</option>
+            <option value="radio-list">Radio Liste (Avlange kort)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <i class="fa-solid fa-plus"></i> Lagre Ny Seksjon
+        </button>
+      </form>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 30px 0;" />
+
+    <div>
+      <h3>2. Legg til Innhold via API (Podkaster)</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">
+        Søk opp podkaster og legg dem direkte inn i en eksisterende seksjon.
+      </p>
+
       <div class="form-group">
-        <label>Seksjonstittel</label>
-        <input type="text" id="sec-title" placeholder="f.eks. Anbefalte Podkaster" required>
-      </div>
-      <div class="form-group">
-        <label>Rekkefølge (Order)</label>
-        <input type="number" id="sec-order" value="1" required>
-      </div>
-      <div class="form-group">
-        <label>Side (Target Page)</label>
-        <select id="sec-page">
-          <option value="home">Hjem</option>
-          <option value="audiobooks">Lydbøker</option>
-          <option value="podcasts">Podkaster</option>
-          <option value="radio">Radio</option>
+        <label for="target-section-select">Velg seksjon du vil legge til i:</label>
+        <select id="target-section-select">
+          <option value="">Laster seksjoner fra Firestore...</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Layout</label>
-        <select id="sec-layout">
-          <option value="horizontal-scroll">Horisontal Rull (Gallerier)</option>
-          <option value="radio-list">Radio Liste</option>
-        </select>
+
+      <div class="form-group search-row">
+        <input type="text" id="api-search-input" placeholder="Søk etter podkast (f.eks. Misjonen, Aftenpodden)..." />
+        <button type="button" id="api-search-btn" class="btn-submit">
+          <i class="fa-solid fa-magnifying-glass"></i> Søk API
+        </button>
       </div>
-      <button type="submit" class="btn-submit">Lagre Seksjon</button>
-    </form>
+
+      <div id="api-results-container" class="api-results-grid"></div>
+    </div>
   </div>
 
-  <script type="module" src="js/admin.js"></script>
+  <script type="module" src="admin.js"></script>
 </body>
 </html>
