@@ -224,6 +224,7 @@ body.admin-body {
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
+  flex-shrink: 0;
 }
 
 .metric-icon.blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
@@ -254,6 +255,7 @@ body.admin-body {
 }
 
 .metric-trend.positive { color: var(--success-color); }
+.metric-sub { font-size: 0.75rem; color: var(--text-muted); }
 
 /* Dashboard Grids & Cards */
 .dashboard-grid {
@@ -370,7 +372,7 @@ body.admin-body {
   font-size: 0.75rem;
 }
 
-/* Forms Grid */
+/* Forms & Inputs Styling */
 .form-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -399,4 +401,69 @@ body.admin-body {
 .form-group select,
 .form-group textarea {
   width: 100%;
-  padding: 10px 12
+  padding: 10px 12px;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--primary-color);
+}
+
+.search-row {
+  display: flex;
+  gap: 10px;
+}
+
+.search-row input {
+  flex: 1;
+}
+
+/* Primary Submit Buttons */
+.btn-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 8px;
+}
+
+.btn-submit:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Manage Lists & Dynamic Results Grids */
+.manage-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.api-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
