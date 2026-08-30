@@ -86,25 +86,35 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
   if (!banner) return;
 
   try {
-    // Henter Toppsaker fra NRK RSS via rss2json
-    const rssUrl = encodeURIComponent('https://www.nrk.no/norge/toppsaker.rss');
+    // Riktig direkte-adresse til NRKs toppsaker
+    const rssUrl = encodeURIComponent('https://www.nrk.no/toppsaker.rss');
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
     const data = await res.json();
 
     if (data.status === 'ok' && data.items && data.items.length > 0) {
       const topStory = data.items[0];
-      
+
       // Sett overskriften fra den nyeste nyheten
       if (headlineEl) {
         headlineEl.textContent = topStory.title || 'NRK Nyheter Direct';
       }
 
-      // Hent bilde fra RSS-saken
-      let imageUrl = topStory.enclosure?.link || topStory.thumbnail;
-      
-      if (!imageUrl && topStory.description) {
-        const imgMatch = topStory.description.match(/src=["']([^"']+)["']/i);
-        if (imgMatch) imageUrl = imgMatch[1];
+      // Omfattende søk etter bilde-URL i RSS-dataene
+      let imageUrl = null;
+
+      if (topStory.enclosure && topStory.enclosure.link) {
+        imageUrl = topStory.enclosure.link;
+      } else if (topStory.thumbnail) {
+        imageUrl = topStory.thumbnail;
+      }
+
+      // Søk etter <img>-tagger i tekstfeltene dersom bildelenke mangler over
+      if (!imageUrl) {
+        const contentToSearch = (topStory.description || '') + (topStory.content || '');
+        const imgMatch = contentToSearch.match(/src=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/i);
+        if (imgMatch) {
+          imageUrl = imgMatch[1];
+        }
       }
 
       // Oppdater bakgrunnsbildet på banneret
@@ -121,7 +131,7 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
     if (bannerBg) bannerBg.style.backgroundImage = `url('${DEFAULT_RADIO_IMAGE}')`;
   }
 
-  // Definerer NRK P2 objektet dersom nrkNewsChannel ikke er sendt med
+  // Definerer NRK P2-objektet dersom nrkNewsChannel ikke er sendt med
   const p2Channel = nrkNewsChannel || {
     title: 'NRK P2',
     description: 'Nyheter og samfunn',
