@@ -9,7 +9,8 @@ import {
   query, 
   orderBy, 
   onSnapshot,
-  arrayUnion
+  arrayUnion,
+  arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Global tilstand for seksjoner
@@ -64,36 +65,56 @@ function initLiveSectionsListener() {
       if (manageList) {
         const itemEl = document.createElement("div");
         itemEl.className = "manage-item";
-        itemEl.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border-radius: 6px; margin-bottom: 8px;";
+        itemEl.style.cssText = "display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--input-bg); border-radius: 6px; margin-bottom: 8px;";
         
-        // Sjekk om det er den låste systemseksjonen
         const isSystemLocked = docSnap.id === 'system-continue-listening';
 
+        let itemsPreviewHTML = "";
+        if (secData.items && secData.items.length > 0) {
+          itemsPreviewHTML = `
+            <div style="margin-top: 6px; border-top: 1px solid var(--border-color); padding-top: 6px;">
+              <span style="font-size: 0.75rem; font-weight: bold; color: var(--text-muted);">Innhold i seksjonen:</span>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">
+                ${secData.items.map(item => `
+                  <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; background: var(--card-bg); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">
+                    ${escapeHtml(item.title || 'Uten navn')}
+                    <i class="fa-solid fa-xmark" onclick="removeItemFromSection('${docSnap.id}', '${item.id}')" style="cursor: pointer; color: var(--danger-color); margin-left: 2px;" title="Fjern fra seksjon"></i>
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
         itemEl.innerHTML = `
-          <div>
-            <strong>${escapeHtml(secData.title || 'Uten navn')}</strong>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">
-              Side: <code>${escapeHtml(secData.targetPages || secData.page || 'home')}</code> | 
-              Layout: <code>${escapeHtml(secData.layout || 'horizontal-scroll')}</code> | 
-              Innhold: <strong>${itemsCount} elementer</strong> | 
-              Rekkefølge: <strong>${secData.order || 0}</strong>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong>${escapeHtml(secData.title || 'Uten navn')}</strong>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">
+                Side: <code>${escapeHtml(secData.targetPages || secData.page || 'home')}</code> | 
+                Layout: <code>${escapeHtml(secData.layout || 'horizontal-scroll')}</code> | 
+                Innhold: <strong>${itemsCount} elementer</strong> | 
+                Rekkefølge: <strong>${secData.order || 0}</strong>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button onclick="editSectionTitle('${docSnap.id}', '${escapeHtml(secData.title)}')" title="Rediger tittel" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-pen"></i> Rediger</button>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <button onclick="moveSectionOrder('${docSnap.id}', 'up')" title="Flytt opp" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-up"></i></button>
+                <button onclick="moveSectionOrder('${docSnap.id}', 'down')" title="Flytt ned" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-down"></i></button>
+              </div>
+              ${!isSystemLocked ? `
+                <button class="btn-danger btn-delete-sec" data-id="${docSnap.id}" style="background: var(--danger-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                  <i class="fa-solid fa-trash"></i> Slett
+                </button>
+              ` : `
+                <span style="font-size: 0.75rem; color: var(--text-muted); padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                  <i class="fa-solid fa-lock"></i> Låst
+                </span>
+              `}
             </div>
           </div>
-          <div style="display: flex; gap: 6px; align-items: center;">
-            <div style="display: flex; flex-direction: column; gap: 2px;">
-              <button onclick="moveSectionOrder('${docSnap.id}', 'up')" title="Flytt opp" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-up"></i></button>
-              <button onclick="moveSectionOrder('${docSnap.id}', 'down')" title="Flytt ned" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-down"></i></button>
-            </div>
-            ${!isSystemLocked ? `
-              <button class="btn-danger btn-delete-sec" data-id="${docSnap.id}" style="background: var(--danger-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-                <i class="fa-solid fa-trash"></i> Slett
-              </button>
-            ` : `
-              <span style="font-size: 0.75rem; color: var(--text-muted); padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                <i class="fa-solid fa-lock"></i> Låst
-              </span>
-            `}
-          </div>
+          ${itemsPreviewHTML}
         `;
 
         manageList.appendChild(itemEl);
@@ -491,7 +512,7 @@ async function importItemToSelectedSection(itemObj) {
 }
 
 // ==========================================
-// 6. GLOBAL FUNKSJON FOR FLYTTING AV SEKSJONER
+// 6. ADM-FUNKSJONER FOR EDITERING OG ORGANISERING
 // ==========================================
 window.moveSectionOrder = async function(sectionId, direction) {
   const index = activeSections.findIndex(s => s.id === sectionId);
@@ -515,7 +536,39 @@ window.moveSectionOrder = async function(sectionId, direction) {
   }
 };
 
-// Hjelpefunksjon for å unngå XSS
+window.editSectionTitle = async function(sectionId, currentTitle) {
+  const newTitle = prompt("Endre seksjonstittel:", currentTitle);
+  if (newTitle === null || newTitle.trim() === "") return;
+
+  try {
+    await updateDoc(doc(db, "sections", sectionId), {
+      title: newTitle.trim()
+    });
+  } catch (err) {
+    console.error("Feil ved oppdatering av tittel:", err);
+    alert("Kunne ikke endre tittel: " + err.message);
+  }
+};
+
+window.removeItemFromSection = async function(sectionId, itemId) {
+  const section = activeSections.find(s => s.id === sectionId);
+  if (!section || !section.items) return;
+
+  const itemToRemove = section.items.find(i => i.id === itemId);
+  if (!itemToRemove) return;
+
+  if (confirm(`Vil du fjerne "${itemToRemove.title}" fra denne seksjonen?`)) {
+    try {
+      await updateDoc(doc(db, "sections", sectionId), {
+        items: arrayRemove(itemToRemove)
+      });
+    } catch (err) {
+      console.error("Feil ved sletting av element:", err);
+      alert("Kunne ikke fjerne elementet: " + err.message);
+    }
+  }
+};
+
 function escapeHtml(str) {
   if (!str) return "";
   return String(str)
