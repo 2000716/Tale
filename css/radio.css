@@ -1,8 +1,8 @@
-/* Nyhetsbanner helt øverst */
+/* Nyhetsbanner helt øverst (Gjort høyere) */
 .radio-banner {
   position: relative;
   width: 100%;
-  height: 180px;
+  height: 240px; /* Økt fra 180px for et lengre banner */
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
@@ -24,58 +24,59 @@
   transition: background-image 0.4s ease;
 }
 
-/* Lysnet graderingen slik at svart tekst vises tydelig */
+/* Stilfull mørk gradering i Tales mørkeblå tone */
 .banner-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(13, 27, 42, 0.2) 0%, rgba(13, 27, 42, 0.92) 100%);
 }
 
 /* NRK Nyheter Logo øverst til venstre */
 .banner-logo {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: 16px;
+  left: 16px;
   height: 28px;
   width: auto;
   z-index: 2;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
 /* Tekst i bunn av banneret */
 .banner-overlay-bottom {
   position: absolute;
-  bottom: 14px;
-  left: 14px;
-  right: 14px;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
   z-index: 2;
-  color: #000000; /* Endret til svart */
+  color: #000000; /* Svart tekst */
 }
 
 .banner-tag {
   display: inline-block;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 1px;
-  color: #d93838; /* Justert litt mørkere for bedre lesbarhet mot lys bakgrunn */
+  color: #AEC2F7; /* Tales lyseblå på taggen for god kontrast mot mørk bakgrunn */
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .banner-overlay-bottom h3 {
-  font-size: 1.1rem;
-  margin: 0 0 4px 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 6px 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #000000; /* Endret til svart */
+  color: #000000; /* Svart tekst */
 }
 
 .banner-overlay-bottom p {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   margin: 0;
-  opacity: 0.8;
-  color: #000000; /* Endret til svart */
+  color: #000000; /* Svart tekst */
+  opacity: 0.9;
 }
 
 /* Avlange radio-seksjoner nedover */
@@ -88,10 +89,10 @@
 .radio-card-horizontal {
   display: flex;
   align-items: center;
-  background: rgba(0, 0, 0, 0.03); /* Justert for lys bakgrunn */
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(13, 27, 42, 0.05); /* Tales mørkeblå som en svak tone */
+  border: 1px solid rgba(13, 27, 42, 0.1);
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   gap: 14px;
   backdrop-filter: blur(10px);
 }
@@ -112,7 +113,7 @@
 .radio-card-info h4 {
   margin: 0 0 4px 0;
   font-size: 1rem;
-  color: #000000; /* Endret til svart */
+  color: #000000; /* Svart tekst */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -121,28 +122,28 @@
 .radio-card-info p {
   margin: 0;
   font-size: 0.82rem;
-  color: #000000; /* Endret til svart */
-  opacity: 0.7;
+  color: #000000; /* Svart tekst */
+  opacity: 0.75;
 }
 
-/* Spilleknapp med Tales farger */
+/* Spilleknapp i Tales lysblå med mørkeblått ikon */
 .radio-play-btn {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: #AEC2F7; /* Tales farge */
-  color: #000000; /* Svart ikon/tekst for god kontrast */
+  background: #AEC2F7; /* Tales lysblå */
+  color: #0D1B2A; /* Tales mørkeblå på ikonet/teksten */
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.95rem;
+  font-size: 1rem;
   flex-shrink: 0;
   transition: background 0.2s ease, transform 0.15s ease;
 }
 
 .radio-play-btn:hover {
-  background: #99B1F5; /* Litt mørkere utgave av #AEC2F7 ved mus-over */
+  background: #99B1F5; /* Litt mørkere lysblå ved hover */
   transform: scale(1.05);
 }
