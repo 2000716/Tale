@@ -3,82 +3,400 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tale - Admin Panel</title>
+  <title>Tale - Control Center & Studio Admin</title>
   
+  <!-- CSS Referanser (Ligger i admin/admin.css) -->
   <link rel="stylesheet" href="admin/admin.css" />
+  
+  <!-- FontAwesome for ikoner -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="admin-body">
 
-  <div class="admin-container">
-    <div class="admin-header">
-      <h2><i class="fa-solid fa-sliders"></i> Tale Admin Panel</h2>
-      <p>Administrer seksjoner, gallerier og legg til nytt innhold uten å røre HTML-koden.</p>
-    </div>
-
-    <div style="margin-bottom: 40px;">
-      <h3>1. Opprett Ny Seksjon / Galleri</h3>
-      <form id="add-section-form" style="margin-top: 15px;">
-        <div class="form-group">
-          <label for="sec-title">Seksjonstittel</label>
-          <input type="text" id="sec-title" placeholder="f.eks. Populære Podkaster" required />
+  <div class="app-layout">
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">
+          <i class="fa-solid fa-wave-square"></i>
         </div>
-
-        <div class="form-group">
-          <label for="sec-order">Rekkefølge (Order)</label>
-          <input type="number" id="sec-order" value="1" required />
+        <div class="brand-text">
+          <h2>TALE</h2>
+          <span>STUDIO ADMIN v2.5</span>
         </div>
-
-        <div class="form-group">
-          <label for="sec-page">Vis på side (Target Page)</label>
-          <select id="sec-page">
-            <option value="home">Hjem</option>
-            <option value="audiobooks">Lydbøker</option>
-            <option value="podcasts">Podkaster</option>
-            <option value="radio">Radio</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="sec-layout">Layout type</label>
-          <select id="sec-layout">
-            <option value="horizontal-scroll">Horisontal Rull (Bok-/Podkast-gallerier)</option>
-            <option value="radio-list">Radio Liste (Avlange kort)</option>
-          </select>
-        </div>
-
-        <button type="submit" class="btn-submit">
-          <i class="fa-solid fa-plus"></i> Lagre Ny Seksjon
-        </button>
-      </form>
-    </div>
-
-    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 30px 0;" />
-
-    <div>
-      <h3>2. Legg til Innhold via API (Podkaster)</h3>
-      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">
-        Søk opp podkaster og legg dem direkte inn i en eksisterende seksjon.
-      </p>
-
-      <div class="form-group">
-        <label for="target-section-select">Velg seksjon du vil legge til i:</label>
-        <select id="target-section-select">
-          <option value="">Laster seksjoner fra Firestore...</option>
-        </select>
       </div>
 
-      <div class="form-group search-row">
-        <input type="text" id="api-search-input" placeholder="Søk etter podkast (f.eks. Misjonen, Aftenpodden)..." />
-        <button type="button" id="api-search-btn" class="btn-submit">
-          <i class="fa-solid fa-magnifying-glass"></i> Søk API
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="tab-dashboard">
+          <i class="fa-solid fa-chart-line"></i> Dashboard & Analytics
         </button>
-      </div>
+        <button class="nav-item" data-tab="tab-sections">
+          <i class="fa-solid fa-layer-group"></i> Seksjoner & Layout
+        </button>
+        <button class="nav-item" data-tab="tab-banners">
+          <i class="fa-solid fa-rectangle-ad"></i> Hero Bannere & Promotering
+        </button>
+        <button class="nav-item" data-tab="tab-api">
+          <i class="fa-solid fa-cloud-arrow-down"></i> API Importer (Pod/Radio)
+        </button>
+        <button class="nav-item" data-tab="tab-manual">
+          <i class="fa-solid fa-book-bookmark"></i> Legg til Lydbok / Innhold
+        </button>
+      </nav>
 
-      <div id="api-results-container" class="api-results-grid"></div>
-    </div>
+      <div class="sidebar-footer">
+        <div class="system-status">
+          <span class="status-indicator online"></span>
+          <span>Firestore Live Connected</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+      <!-- TOP HEADER -->
+      <header class="top-header">
+        <div class="header-title">
+          <h1 id="page-title">Dashboard & Analytics</h1>
+          <p id="page-subtitle">Reeltidsovervåkning av strømming, seertall og seksjonsinnhold.</p>
+        </div>
+        <div class="header-actions">
+          <a href="../index.html" target="_blank" class="btn-secondary">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Åpne Tale App
+          </a>
+        </div>
+      </header>
+
+      <!-- TAB 1: DASHBOARD & ANALYTICS -->
+      <section id="tab-dashboard" class="tab-content active">
+        <!-- KPI METRICS GRID -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon blue"><i class="fa-solid fa-users"></i></div>
+            <div class="metric-info">
+              <span class="metric-label">Aktive Lyttere Nå</span>
+              <h3 class="metric-value" id="stat-active-users">1 420</h3>
+              <span class="metric-trend positive"><i class="fa-solid fa-arrow-up"></i> +12% fra i går</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon purple"><i class="fa-solid fa-headphones"></i></div>
+            <div class="metric-info">
+              <span class="metric-label">Totalt Avspilte Timer (I dag)</span>
+              <h3 class="metric-value" id="stat-hours">8 940 t</h3>
+              <span class="metric-trend positive"><i class="fa-solid fa-arrow-up"></i> +8.4%</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon green"><i class="fa-solid fa-layer-group"></i></div>
+            <div class="metric-info">
+              <span class="metric-label">Aktive Seksjoner</span>
+              <h3 class="metric-value" id="stat-sections-count">0</h3>
+              <span class="metric-sub">Publisert i appen</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon orange"><i class="fa-solid fa-database"></i></div>
+            <div class="metric-info">
+              <span class="metric-label">API Status</span>
+              <h3 class="metric-value" style="color: #10b981;">Operativ</h3>
+              <span class="metric-sub">iTunes & Radio Browser API</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ANALYTICS WIDGETS -->
+        <div class="dashboard-grid">
+          <div class="card card-large">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-chart-area"></i> Strømmeaktivitet & Seertall</h3>
+              <select class="select-mini">
+                <option>Siste 24 timer</option>
+                <option>Siste 7 dager</option>
+              </select>
+            </div>
+            <div class="chart-container">
+              <!-- Visual Simulated Chart Bar -->
+              <div class="simulated-chart">
+                <div class="bar-col"><div class="bar" style="height: 40%"></div><span>00:00</span></div>
+                <div class="bar-col"><div class="bar" style="height: 25%"></div><span>04:00</span></div>
+                <div class="bar-col"><div class="bar" style="height: 55%"></div><span>08:00</span></div>
+                <div class="bar-col"><div class="bar" style="height: 85%"></div><span>12:00</span></div>
+                <div class="bar-col"><div class="bar" style="height: 95%"></div><span>16:00</span></div>
+                <div class="bar-col"><div class="bar active" style="height: 100%"></div><span>20:00</span></div>
+                <div class="bar-col"><div class="bar" style="height: 70%"></div><span>Nå</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-fire"></i> Mest Populært Innhold</h3>
+            </div>
+            <ul class="top-list">
+              <li>
+                <span class="rank">1</span>
+                <div class="item-title">
+                  <strong>Kongen av Gulset</strong>
+                  <small>Podkast • 45.2k lyttere</small>
+                </div>
+              </li>
+              <li>
+                <span class="rank">2</span>
+                <div class="item-title">
+                  <strong>Menn som hater kvinner</strong>
+                  <small>Lydbok • 38.1k lyttere</small>
+                </div>
+              </li>
+              <li>
+                <span class="rank">3</span>
+                <div class="item-title">
+                  <strong>NRK P1 Direct</strong>
+                  <small>Radio • 29.8k lyttere</small>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: SEKSJONER & LAYOUT -->
+      <section id="tab-sections" class="tab-content">
+        <div class="dashboard-grid">
+          <!-- SKJEMA FOR OPPRETTING AV SEKSJON -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-folder-plus"></i> Opprett Ny Seksjon</h3>
+            </div>
+            <form id="add-section-form">
+              <div class="form-group">
+                <label for="sec-title">Seksjonstittel (f.eks. "Anbefalte Podkaster")</label>
+                <input type="text" id="sec-title" placeholder="Skriv inn tittel..." required />
+              </div>
+
+              <div class="form-group">
+                <label for="sec-order">Rekkefølge / Sortering (Order)</label>
+                <input type="number" id="sec-order" value="1" required />
+              </div>
+
+              <div class="form-group">
+                <label for="sec-page">Målside (Hvor skal den vises?)</label>
+                <select id="sec-page">
+                  <option value="home">Hjem-side</option>
+                  <option value="audiobooks">Lydbøker-side</option>
+                  <option value="podcasts">Podkaster-side</option>
+                  <option value="radio">Radio-side</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="sec-layout">Visningstype / Layout</label>
+                <select id="sec-layout">
+                  <option value="horizontal-scroll">Horisontal Rull (Fabel/Storytel Galleri)</option>
+                  <option value="grid">Grid (Flere rader med kort)</option>
+                  <option value="radio-list">Radio Liste (Avlange stasjonskort)</option>
+                  <option value="featured-banner">Featured Highlight Banner</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn-submit">
+                <i class="fa-solid fa-plus"></i> Lagre og Publisere Seksjon
+              </button>
+            </form>
+          </div>
+
+          <!-- LISTE OVER EKSISTERENDE SEKSJONER -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-list-check"></i> Aktive Seksjoner i Firestore</h3>
+            </div>
+            <div id="sections-manage-list" class="manage-list">
+              <p class="text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Laster seksjoner...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: HERO BANNERE & PROMOTERING -->
+      <section id="tab-banners" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Opprett Promotert Hero Banner (Storytel/Fabel Stil)</h3>
+          </div>
+          <form id="add-banner-form">
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="banner-title">Bannertittel / Hovedoverskrift</label>
+                <input type="text" id="banner-title" placeholder="f.eks. Månedens Eksklusive Lydbok" required />
+              </div>
+              <div class="form-group">
+                <label for="banner-subtitle">Undertittel / Forfatter</label>
+                <input type="text" id="banner-subtitle" placeholder="f.eks. Av Jo Nesbø • Innlest av..." required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="banner-desc">Beskrivelse / Teaser Tekst</label>
+              <textarea id="banner-desc" rows="3" placeholder="Kort handlingsreferat som skal fange lytteren..." required></textarea>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="banner-img">Bakgrunnsbilde / Cover URL (Cloudinary eller høy oppløsning)</label>
+                <input type="url" id="banner-img" placeholder="https://res.cloudinary.com/..." required />
+              </div>
+              <div class="form-group">
+                <label for="banner-audio">Lyd-fil / Stream URL (Koble til spiller)</label>
+                <input type="url" id="banner-audio" placeholder="https://..." required />
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="banner-page">Vis på Side</label>
+                <select id="banner-page">
+                  <option value="home">Hjem (Hovedbanner)</option>
+                  <option value="audiobooks">Lydbøker Top-Hero</option>
+                  <option value="podcasts">Podkaster Featured</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="banner-badge">Badge Tag (Valgfritt)</label>
+                <input type="text" id="banner-badge" placeholder="f.eks. EKSKLUSIVT, NYHET, POPULÆR" />
+              </div>
+            </div>
+
+            <button type="submit" class="btn-submit">
+              <i class="fa-solid fa-rectangle-ad"></i> Publisere Banner på Tale
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB 4: API IMPORTER -->
+      <section id="tab-api" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-magnifying-glass"></i> Søk og Importer fra Apple Podcast & Radio API</h3>
+          </div>
+
+          <div class="form-grid-2" style="margin-bottom: 20px;">
+            <div class="form-group">
+              <label for="target-section-select">Velg seksjon å hekte innholdet på:</label>
+              <select id="target-section-select">
+                <option value="">Laster seksjoner fra Firestore...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="api-type-select">Kilde / API Type</label>
+              <select id="api-type-select">
+                <option value="podcast">Apple Podcast API</option>
+                <option value="radio">Radio Browser API (Norske & globale radiokanaler)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group search-row">
+            <input type="text" id="api-search-input" placeholder="Søk etter podkast eller radiokanal (f.eks. Aftenpodden, NRK P3)..." />
+            <button type="button" id="api-search-btn" class="btn-submit">
+              <i class="fa-solid fa-magnifying-glass"></i> Søk i API
+            </button>
+          </div>
+
+          <!-- Søkeresultater -->
+          <div id="api-results-container" class="api-results-grid"></div>
+        </div>
+      </section>
+
+      <!-- TAB 5: MANUELT INNHOLD (LYDBØKER) -->
+      <section id="tab-manual" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-book-medical"></i> Legg til Manuell Lydbok eller Egen Fil</h3>
+          </div>
+
+          <form id="add-manual-item-form">
+            <div class="form-group">
+              <label for="manual-target-section">Velg seksjon:</label>
+              <select id="manual-target-section" required>
+                <option value="">Laster seksjoner...</option>
+              </select>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="item-title">Boktittel</label>
+                <input type="text" id="item-title" placeholder="f.eks. Snømannen" required />
+              </div>
+              <div class="form-group">
+                <label for="item-author">Forfatter / Utgiver</label>
+                <input type="text" id="item-author" placeholder="f.eks. Jo Nesbø" required />
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="item-cover">Bilde URL (Cover Art)</label>
+                <input type="url" id="item-cover" placeholder="https://res.cloudinary.com/..." required />
+              </div>
+              <div class="form-group">
+                <label for="item-audio">Lydfil URL (MP3 / Audio stream)</label>
+                <input type="url" id="item-audio" placeholder="https://domain.com/audio.mp3" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="item-desc">Beskrivelse / Sammendrag</label>
+              <textarea id="item-desc" rows="3" placeholder="Kort om boken..."></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">
+              <i class="fa-solid fa-plus-circle"></i> Legg til Lydbok i Seksjon
+            </button>
+          </form>
+        </div>
+      </section>
+
+    </main>
   </div>
 
-  <script type="module" src="./admin/admin.js"></script>
+  <!-- Siden alt ligger i admin/-mappen refererer du til ./admin.js -->
+  <script type="module" src="admin/admin.js"></script>
+
+  <!-- Enkel script for å veksle mellom faner (Tabs) -->
+  <script>
+    document.querySelectorAll('.nav-item').forEach(button => {
+      button.addEventListener('click', () => {
+        const tabId = button.getAttribute('data-tab');
+        
+        // Fjern active fra alle knapper og faner
+        document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        
+        // Sett active på valgt knapp og fane
+        button.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+
+        // Oppdater tittelen i toppen
+        const titles = {
+          'tab-dashboard': ['Dashboard & Analytics', 'Reeltidsovervåkning av strømming, seertall og seksjonsinnhold.'],
+          'tab-sections': ['Seksjoner & Layout', 'Styr oppsettet og galleriene på Tale-plattformen.'],
+          'tab-banners': ['Hero Bannere & Promotering', 'Lag store visuelle bannere i Fabel og Storytel-stil.'],
+          'tab-api': ['API Importer (Podkast & Radio)', 'Søk og legg til fra Apple Podcasts eller Radio Browser.'],
+          'tab-manual': ['Legg til Lydbok / Innhold', 'Manuell oppretting av lydbøker og enkeltepisotder.']
+        };
+
+        if (titles[tabId]) {
+          document.getElementById('page-title').innerText = titles[tabId][0];
+          document.getElementById('page-subtitle').innerText = titles[tabId][1];
+        }
+      });
+    });
+  </script>
 </body>
 </html>
