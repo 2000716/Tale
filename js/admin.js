@@ -27,12 +27,9 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ==========================================
-// 0. FANE-NAVIGASJON (TAB SWITCHER)
+// 0. FANE-NAVIGASJON (EVENT DELEGATION)
 // ==========================================
 function setupTabNavigation() {
-  const navItems = document.querySelectorAll('.nav-item');
-  const tabContents = document.querySelectorAll('.tab-content');
-
   const titles = {
     'tab-dashboard': ['Dashboard & Analytics', 'Reeltidsovervåkning av strømming, seertall og seksjonsinnhold.'],
     'tab-sections': ['Seksjoner & Layout', 'Styr oppsettet og galleriene på Tale-plattformen.'],
@@ -41,28 +38,35 @@ function setupTabNavigation() {
     'tab-manual': ['Legg til Lydbok / Innhold', 'Manuell oppretting av lydbøker og enkeltepisotder.']
   };
 
-  navItems.forEach(button => {
-    button.addEventListener('click', (e) => {
-      e.preventDefault();
-      const tabId = button.getAttribute('data-tab');
+  document.addEventListener('click', (e) => {
+    const navButton = e.target.closest('.nav-item');
+    if (!navButton) return;
 
-      // Fjern active-klasse fra alle knapper og faner
-      navItems.forEach(btn => btn.classList.remove('active'));
-      tabContents.forEach(tab => tab.classList.remove('active'));
+    e.preventDefault();
+    const tabId = navButton.getAttribute('data-tab');
+    if (!tabId) return;
 
-      // Aktiver den valgte knappen og fanen
-      button.classList.add('active');
-      const targetTab = document.getElementById(tabId);
-      if (targetTab) {
-        targetTab.classList.add('active');
-      }
+    const navItems = document.querySelectorAll('.nav-item');
+    const tabContents = document.querySelectorAll('.tab-content');
 
-      // Oppdater tittelen i headeren
-      if (titles[tabId]) {
-        document.getElementById('page-title').innerText = titles[tabId][0];
-        document.getElementById('page-subtitle').innerText = titles[tabId][1];
-      }
-    });
+    // Fjern active-klasse fra alle knapper og faner
+    navItems.forEach(btn => btn.classList.remove('active'));
+    tabContents.forEach(tab => tab.classList.remove('active'));
+
+    // Aktiver valgt knapp og fane
+    navButton.classList.add('active');
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) {
+      targetTab.classList.add('active');
+    }
+
+    // Oppdater tittel i header
+    if (titles[tabId]) {
+      const pageTitle = document.getElementById('page-title');
+      const pageSubtitle = document.getElementById('page-subtitle');
+      if (pageTitle) pageTitle.innerText = titles[tabId][0];
+      if (pageSubtitle) pageSubtitle.innerText = titles[tabId][1];
+    }
   });
 }
 
