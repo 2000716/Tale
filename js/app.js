@@ -45,6 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
 function initHeroCarousel() {
   const slides = document.querySelectorAll("#hero-banner-carousel .carousel-slide");
   const dots = document.querySelectorAll("#carousel-dots .dot");
+  
+  stopAutoRotation();
+  
   if (slides.length <= 1) return;
 
   const showSlide = (index) => {
@@ -65,9 +68,9 @@ function initHeroCarousel() {
     }, 5000);
   };
 
-  const stopAutoRotation = () => {
+  function stopAutoRotation() {
     if (carouselInterval) clearInterval(carouselInterval);
-  };
+  }
 
   dots.forEach((dot, index) => {
     dot.addEventListener("click", () => {
@@ -104,14 +107,60 @@ export function loadBannersFromFirestore() {
 function renderHeroBanners(banners) {
   const pages = ["home", "audiobooks", "podcasts"];
 
+  // --- OPPBYGGING AV HOVED-HEROKARUSELL PÅ HJEM-SIDEN ---
+  const homeBanners = banners.filter(b => (b.targetPage === "home" || b.page === "home") && (b.type === "carousel" || !b.type));
+  const heroWrapper = document.getElementById("hero-banner-wrapper");
+  const carouselContainer = document.getElementById("hero-banner-carousel");
+  const dotsContainer = document.getElementById("carousel-dots");
+
+  if (heroWrapper && carouselContainer && dotsContainer) {
+    if (homeBanners.length > 0) {
+      let slidesHTML = "";
+      let dotsHTML = "";
+
+      homeBanners.forEach((banner, idx) => {
+        const isActive = idx === 0 ? "active" : "";
+        const badge = banner.badge ? `<span class="slide-badge">${escapeAttr(banner.badge)}</span>` : '';
+        const imgUrl = banner.imageUrl || banner.coverUrl || banner.cover || '';
+
+        slidesHTML += `
+          <div class="carousel-slide ${isActive}" 
+               data-audio="${escapeAttr(banner.audioUrl || '')}" 
+               data-title="${escapeAttr(banner.title || '')}" 
+               data-sub="${escapeAttr(banner.subtitle || '')}" 
+               data-cover="${escapeAttr(imgUrl)}">
+            <img src="${escapeAttr(imgUrl)}" alt="${escapeAttr(banner.title || 'Banner')}">
+            <div class="slide-overlay">
+              ${badge}
+              <h3>${escapeAttr(banner.title || '')}</h3>
+              ${banner.subtitle ? `<p>${escapeAttr(banner.subtitle)}</p>` : ''}
+            </div>
+          </div>
+        `;
+
+        dotsHTML += `<span class="dot ${isActive}" data-index="${idx}"></span>`;
+      });
+
+      carouselContainer.innerHTML = slidesHTML;
+      dotsContainer.innerHTML = dotsHTML;
+      heroWrapper.style.display = "block";
+
+      // Re-init karusell-logikk
+      initHeroCarousel();
+    } else {
+      heroWrapper.style.display = "none";
+    }
+  }
+
+  // --- RENDRE EKSTRA HERO WIDGETS I DYNAMISKE CONTAINERNE ---
   pages.forEach(page => {
-    const pageBanners = banners.filter(b => b.targetPage === page || b.page === page);
+    const pageBanners = banners.filter(b => (b.targetPage === page || b.page === page) && b.type === "widget");
     if (pageBanners.length === 0) return;
 
     const pageContainer = document.getElementById(`${page}-sections`);
     if (!pageContainer) return;
 
-    // Fjern eksisterende genererte bannere
+    // Fjern eksisterende genererte banner-widgets
     pageContainer.querySelectorAll(".hero-banner-widget").forEach(el => el.remove());
 
     pageBanners.forEach(banner => {
@@ -518,13 +567,13 @@ function extractCardItemData(card) {
 
 function setupEventListeners() {
   document.addEventListener("click", async (e) => {
-    // 0. Klikk på Hero Banner (Spill av direkte)
-    const heroCard = e.target.closest(".hero-banner-card, .featured-banner-card");
-    if (heroCard) {
-      const audioUrl = heroCard.dataset.audio;
-      const title = heroCard.dataset.title || "Tale Highlight";
-      const sub = heroCard.dataset.sub || "";
-      const cover = heroCard.dataset.cover || "";
+    // 0. Klikk på Carousel Slide eller Hero Banner Widget
+    const slide = e.target.closest(".carousel-slide, .hero-banner-card, .featured-banner-card");
+    if (slide) {
+      const audioUrl = slide.dataset.audio;
+      const title = slide.dataset.title || "Tale Highlight";
+      const sub = slide.dataset.sub || "";
+      const cover = slide.dataset.cover || "";
 
       if (audioUrl) {
         playAudioTrack(audioUrl, title, sub, cover);
