@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <title>Tale - Admin Panel</title>
+  <link rel="stylesheet" href="css/base.css">
+  <style>
+    .admin-container { max-width: 800px; margin: 40px auto; padding: 20px; background: #121838; color: #fff; border-radius: 8px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #333; background: #070b1e; color: #fff; }
+    .btn-submit { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h2>Opprett Ny Seksjon / Galleri</h2>
+    <form id="add-section-form">
+      <div class="form-group">
+        <label>Seksjonstittel</label>
+        <input type="text" id="sec-title" placeholder="f.eks. Anbefalte Podkaster" required>
+      </div>
+      <div class="form-group">
+        <label>Rekkefølge (Order)</label>
+        <input type="number" id="sec-order" value="1" required>
+      </div>
+      <div class="form-group">
+        <label>Side (Target Page)</label>
+        <select id="sec-page">
+          <option value="home">Hjem</option>
+          <option value="audiobooks">Lydbøker</option>
+          <option value="podcasts">Podkaster</option>
+          <option value="radio">Radio</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Layout</label>
+        <select id="sec-layout">
+          <option value="horizontal-scroll">Horisontal Rull (Gallerier)</option>
+          <option value="radio-list">Radio Liste</option>
+        </select>
+      </div>
+      <button type="submit" class="btn-submit">Lagre Seksjon</button>
+    </form>
+  </div>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
