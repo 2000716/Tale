@@ -7,7 +7,6 @@ import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/
 
 // Karusell-tilstand
 let currentSlideIndex = 0;
-let carouselInterval = null;
 
 // Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
 function playAudioTrack(audioUrl, title, sub, cover) {
@@ -40,17 +39,20 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ==========================================
-// KARUSELL FUNKSJONALITET (HERO BANNER)
+// KARUSELL FUNKSJONALITET (KUN MANUELL BLADNING)
 // ==========================================
 function initHeroCarousel() {
   const slides = document.querySelectorAll("#hero-banner-carousel .carousel-slide");
   const dots = document.querySelectorAll("#carousel-dots .dot");
-  
-  stopAutoRotation();
+  const wrapper = document.getElementById("hero-banner-wrapper");
   
   if (slides.length <= 1) return;
 
   const showSlide = (index) => {
+    // Sørg for at indeksen roterer korrekt innenfor gyldig område
+    if (index < 0) index = slides.length - 1;
+    if (index >= slides.length) index = 0;
+
     slides.forEach((slide, i) => {
       slide.classList.toggle("active", i === index);
     });
@@ -60,32 +62,40 @@ function initHeroCarousel() {
     currentSlideIndex = index;
   };
 
-  const startAutoRotation = () => {
-    stopAutoRotation();
-    carouselInterval = setInterval(() => {
-      const nextIndex = (currentSlideIndex + 1) % slides.length;
-      showSlide(nextIndex);
-    }, 5000);
-  };
-
-  function stopAutoRotation() {
-    if (carouselInterval) clearInterval(carouselInterval);
-  }
-
+  // 1. Bla ved klikk på dottene
   dots.forEach((dot, index) => {
-    dot.addEventListener("click", () => {
+    dot.addEventListener("click", (e) => {
+      e.stopPropagation(); // Hindrer at avspilling trigges ved klikk på dot
       showSlide(index);
-      startAutoRotation();
     });
   });
 
-  const wrapper = document.getElementById("hero-banner-wrapper");
+  // 2. Sveiping med finger / touch-støtte
   if (wrapper) {
-    wrapper.addEventListener("mouseenter", stopAutoRotation);
-    wrapper.addEventListener("mouseleave", startAutoRotation);
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    wrapper.addEventListener("touchstart", (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    wrapper.addEventListener("touchend", (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, { passive: true });
+
+    const handleSwipe = () => {
+      const swipeThreshold = 40; // Minimum px bevegelse for swipe
+      if (touchEndX < touchStartX - swipeThreshold) {
+        showSlide(currentSlideIndex + 1); // Sveip til venstre -> Neste
+      } else if (touchEndX > touchStartX + swipeThreshold) {
+        showSlide(currentSlideIndex - 1); // Sveip til høyre -> Forrige
+      }
+    };
   }
 
-  startAutoRotation();
+  // Sett start-slide
+  showSlide(currentSlideIndex);
 }
 
 // ==========================================
@@ -143,6 +153,39 @@ function renderHeroBanners(banners) {
 
       carouselContainer.innerHTML = slidesHTML;
       dotsContainer.innerHTML = dotsHTML;
+
+      // Legg til piler for manuell bladning hvis det er flere enn 1 slide
+      const existingNav = heroWrapper.querySelector(".carousel-nav");
+      if (existingNav) existingNav.remove();
+
+      if (homeBanners.length > 1) {
+        const navContainer = document.createElement("div");
+        navContainer.className = "carousel-nav";
+        navContainer.innerHTML = `
+          <button class="carousel-btn prev-btn" aria-label="Forrige slide"><i class="fa-solid fa-chevron-left"></i></button>
+          <button class="carousel-btn next-btn" aria-label="Neste slide"><i class="fa-solid fa-chevron-right"></i></button>
+        `;
+        heroWrapper.appendChild(navContainer);
+
+        heroWrapper.querySelector(".prev-btn")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const slides = document.querySelectorAll("#hero-banner-carousel .carousel-slide");
+          const dots = document.querySelectorAll("#carousel-dots .dot");
+          currentSlideIndex = (currentSlideIndex - 1 + slides.length) % slides.length;
+          slides.forEach((s, i) => s.classList.toggle("active", i === currentSlideIndex));
+          dots.forEach((d, i) => d.classList.toggle("active", i === currentSlideIndex));
+        });
+
+        heroWrapper.querySelector(".next-btn")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const slides = document.querySelectorAll("#hero-banner-carousel .carousel-slide");
+          const dots = document.querySelectorAll("#carousel-dots .dot");
+          currentSlideIndex = (currentSlideIndex + 1) % slides.length;
+          slides.forEach((s, i) => s.classList.toggle("active", i === currentSlideIndex));
+          dots.forEach((d, i) => d.classList.toggle("active", i === currentSlideIndex));
+        });
+      }
+
       heroWrapper.style.display = "block";
 
       // Re-init karusell-logikk
@@ -570,6 +613,9 @@ function setupEventListeners() {
     // 0. Klikk på Carousel Slide eller Hero Banner Widget
     const slide = e.target.closest(".carousel-slide, .hero-banner-card, .featured-banner-card");
     if (slide) {
+      // Unngå avspilling om bruker trykker på forrige/neste-piler
+      if (e.target.closest(".carousel-btn")) return;
+
       const audioUrl = slide.dataset.audio;
       const title = slide.dataset.title || "Tale Highlight";
       const sub = slide.dataset.sub || "";
