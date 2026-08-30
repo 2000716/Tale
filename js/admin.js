@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initLiveBannersListener();
   setupSectionForm();
   setupBannerForm();
+  setupBannerApiSearch();
   setupManualForm();
   setupApiSearch();
 });
@@ -277,11 +278,122 @@ function setupBannerForm() {
       });
 
       form.reset();
+      const resultsContainer = document.getElementById("banner-api-results");
+      if (resultsContainer) resultsContainer.innerHTML = "";
       alert("Hero Banner ble publisert!");
     } catch (err) {
       console.error("Feil ved lagring av banner:", err);
       alert("Kunne ikke publisere banner: " + err.message);
     }
+  });
+}
+
+// API Søk direkte for Hero Banner
+function setupBannerApiSearch() {
+  const searchBtn = document.getElementById("banner-api-search-btn");
+  const searchInput = document.getElementById("banner-api-input");
+
+  if (searchBtn) {
+    searchBtn.addEventListener("click", () => executeBannerApiSearch());
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        executeBannerApiSearch();
+      }
+    });
+  }
+}
+
+async function executeBannerApiSearch() {
+  const queryTerm = document.getElementById("banner-api-input").value.trim();
+  const apiType = document.getElementById("banner-api-type").value;
+  const resultsContainer = document.getElementById("banner-api-results");
+
+  if (!queryTerm) {
+    alert("Skriv inn et søkeord først.");
+    return;
+  }
+
+  resultsContainer.innerHTML = `<p class="text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Søker i API...</p>`;
+
+  try {
+    if (apiType === "podcast") {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&media=podcast&country=NO&limit=6`);
+      const data = await res.json();
+      renderBannerApiResults(data.results || [], "podcast");
+    } else {
+      const res = await fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(queryTerm)}?limit=6`);
+      const data = await res.json();
+      renderBannerApiResults(data || [], "radio");
+    }
+  } catch (err) {
+    console.error("Feil under Banner API-søk:", err);
+    resultsContainer.innerHTML = `<p style="color: var(--danger-color);">Feil under søk: ${err.message}</p>`;
+  }
+}
+
+function renderBannerApiResults(items, type) {
+  const container = document.getElementById("banner-api-results");
+  if (items.length === 0) {
+    container.innerHTML = `<p class="text-muted">Ingen treff funnet.</p>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  container.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;";
+
+  items.forEach((item) => {
+    const card = document.createElement("div");
+    card.style.cssText = "background: var(--card-bg, #1e1e1e); padding: 10px; border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--border-color, #333);";
+
+    let title = "", subtitle = "", cover = "", audio = "", desc = "";
+
+    if (type === "podcast") {
+      title = item.trackName || item.collectionName || 'Ukjent Podkast';
+      subtitle = item.artistName || 'Podkast';
+      cover = item.artworkUrl600 || item.artworkUrl100 || '';
+      audio = item.feedUrl || '';
+      desc = `Populær podkast av ${subtitle}. Stream nyeste episoder nå på Tale.`;
+    } else {
+      title = item.name || 'Radiokanal';
+      subtitle = item.country ? `Direkte fra ${item.country}` : 'Direktesending';
+      cover = item.favicon || 'https://via.placeholder.com/150?text=Radio';
+      audio = item.url_resolved || item.url || '';
+      desc = `Hør ${title} direkte på Tale. Krystallklar strømming hele døgnet.`;
+    }
+
+    card.innerHTML = `
+      <div>
+        <img src="${cover}" alt="" style="width: 100%; height: 90px; object-fit: cover; border-radius: 4px; margin-bottom: 6px;" onerror="this.src='https://via.placeholder.com/90'">
+        <strong style="display: block; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(title)}</strong>
+        <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px;">${escapeHtml(subtitle)}</p>
+      </div>
+      <button type="button" class="btn-select-for-banner" style="background: var(--primary-color, #3b82f6); color: #fff; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">
+        <i class="fa-solid fa-check"></i> Velg denne
+      </button>
+    `;
+
+    card.querySelector(".btn-select-for-banner").addEventListener("click", () => {
+      document.getElementById("banner-title").value = title;
+      document.getElementById("banner-subtitle").value = subtitle;
+      document.getElementById("banner-desc").value = desc;
+      document.getElementById("banner-img").value = cover;
+      document.getElementById("banner-audio").value = audio;
+      
+      if (type === "radio") {
+        document.getElementById("banner-page").value = "radio";
+        document.getElementById("banner-badge").value = "DIREKTE RADIO";
+      } else {
+        document.getElementById("banner-badge").value = "POPULÆR PODKAST";
+      }
+
+      alert(`"${title}" ble lagt inn i skjemaet! Gjør eventuelle justeringer og trykk "Publisere Banner".`);
+    });
+
+    container.appendChild(card);
   });
 }
 
