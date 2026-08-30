@@ -157,6 +157,7 @@ body.admin-body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
+  gap: 16px;
 }
 
 .header-title h1 {
@@ -183,6 +184,7 @@ body.admin-body {
   font-size: 0.85rem;
   font-weight: 600;
   transition: background-color 0.2s;
+  white-space: nowrap;
 }
 
 .btn-secondary:hover {
@@ -265,7 +267,6 @@ body.admin-body {
   margin-bottom: 24px;
 }
 
-/* Ekstra justering for to-spalters grid i Tab 3 (Bannere) */
 #tab-banners .dashboard-grid {
   grid-template-columns: 1fr 1fr;
 }
@@ -423,13 +424,40 @@ body.admin-body {
   border-color: var(--primary-color);
 }
 
+/* Search Row Fix (Fiks for søkefelt, API-type og knapper) */
 .search-row {
   display: flex;
   gap: 10px;
+  align-items: center;
+  width: 100%;
 }
 
-.search-row input {
+.search-row input[type="text"] {
   flex: 1;
+}
+
+.search-row select {
+  width: auto;
+  min-width: 150px;
+}
+
+.search-row button {
+  width: auto;
+  white-space: nowrap;
+  padding: 10px 18px;
+  margin-top: 0;
+}
+
+@media (max-width: 640px) {
+  .search-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-row select,
+  .search-row button {
+    width: 100%;
+  }
 }
 
 /* Primary Submit Buttons */
@@ -457,7 +485,7 @@ body.admin-body {
 
 /* Manage Lists & Dynamic Results Grids */
 .manage-list {
-  max-height: 400px;
+  max-height: 420px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -472,4 +500,23 @@ body.admin-body {
 .text-muted {
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
