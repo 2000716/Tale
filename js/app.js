@@ -29,10 +29,73 @@ document.addEventListener("DOMContentLoaded", () => {
   initAuth();
   setupAudioListeners();
   loadContentFromFirestore();
+  loadBannersFromFirestore();
   setupSearchListener();
   setupEventListeners();
 });
 
+// ==========================================
+// 1. LASTE BANNERE (Hero Banners / Storytel-stil)
+// ==========================================
+export function loadBannersFromFirestore() {
+  const q = query(collection(db, "banners"));
+  onSnapshot(q, (snapshot) => {
+    const bannersData = [];
+    snapshot.forEach((docSnap) => {
+      bannersData.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    renderHeroBanners(bannersData);
+  }, (err) => {
+    console.warn("Llasting av bannere feilet:", err);
+  });
+}
+
+function renderHeroBanners(banners) {
+  const pages = ["home", "audiobooks", "podcasts"];
+
+  pages.forEach(page => {
+    const pageBanners = banners.filter(b => b.targetPage === page || b.page === page);
+    if (pageBanners.length === 0) return;
+
+    const pageContainer = document.getElementById(`${page}-sections`);
+    if (!pageContainer) return;
+
+    // Fjern eksisterende genererte bannere
+    pageContainer.querySelectorAll(".hero-banner-widget").forEach(el => el.remove());
+
+    pageBanners.forEach(banner => {
+      const bannerEl = document.createElement("div");
+      bannerEl.className = "hero-banner-widget";
+      const badge = banner.badge ? `<span class="hero-badge">${escapeAttr(banner.badge)}</span>` : '';
+
+      bannerEl.innerHTML = `
+        <div class="hero-banner-card" 
+             data-audio="${escapeAttr(banner.audioUrl || '')}" 
+             data-title="${escapeAttr(banner.title || '')}"
+             data-sub="${escapeAttr(banner.subtitle || '')}"
+             data-cover="${escapeAttr(banner.imageUrl || '')}">
+          <div class="hero-bg" style="background-image: url('${escapeAttr(banner.imageUrl || '')}');"></div>
+          <div class="hero-overlay"></div>
+          <div class="hero-content">
+            ${badge}
+            <h2 class="hero-title">${escapeAttr(banner.title || '')}</h2>
+            <p class="hero-subtitle">${escapeAttr(banner.subtitle || '')}</p>
+            <p class="hero-desc">${escapeAttr(banner.description || '')}</p>
+            <button class="hero-play-btn" type="button">
+              <i class="fa-solid fa-play"></i> Spilling nå
+            </button>
+          </div>
+        </div>
+      `;
+
+      pageContainer.prepend(bannerEl);
+    });
+  });
+}
+
+// ==========================================
+// 2. LASTE SEKSJONER & INNHOLD
+// ==========================================
 export function loadContentFromFirestore() {
   const pages = ["home", "audiobooks", "podcasts", "radio"];
 
@@ -40,12 +103,16 @@ export function loadContentFromFirestore() {
     // 1. Tøm alle containere først
     pages.forEach(p => {
       const container = document.getElementById(`${p}-sections`);
-      if (container) container.innerHTML = "";
+      if (container) {
+        // Ta vare på hero-bannere hvis de finnes
+        const existingBanners = container.querySelectorAll(".hero-banner-widget");
+        container.innerHTML = "";
+        existingBanners.forEach(b => container.appendChild(b));
+      }
     });
 
     // 2. Bygg seksjonene fra Firestore
     sectionsList.forEach((sec) => {
-      // Støtter både targetPages (array), pages (array) og page (streng)
       const rawPages = sec.targetPages || sec.pages || sec.page || "home";
       const pagesArray = Array.isArray(rawPages) ? rawPages : [rawPages];
 
@@ -58,6 +125,7 @@ export function loadContentFromFirestore() {
 
         let itemsHTML = "";
 
+        // RADIO LAYOUT
         if (pageTarget === "radio" || sec.layout === "radio-list" || sec.type === "radio-list") {
           (sec.items || []).forEach((item, index) => {
             const title = item.title || 'Radiokanal';
@@ -92,8 +160,31 @@ export function loadContentFromFirestore() {
             </div>
             <div class="radio-channels-list">${itemsHTML}</div>
           `;
-        } else {
-          const containerClass = sec.layout ? `layout-${sec.layout}` : "horizontal-scroll";
+        } 
+        // FEATURED BANNER LAYOUT INNE I EN SEKSJON
+        else if (sec.layout === "featured-banner") {
+          const item = sec.items?.[0] || {};
+          const title = item.title || sec.title || '';
+          const sub = item.sub || item.author || '';
+          const cover = item.coverUrl || item.cover || '';
+          const audioUrl = item.audioUrl || item.audio || '';
+
+          itemsHTML = `
+            <div class="featured-banner-card" data-audio="${escapeAttr(audioUrl)}" data-title="${escapeAttr(title)}" data-sub="${escapeAttr(sub)}" data-cover="${escapeAttr(cover)}">
+              <img src="${escapeAttr(cover)}" class="featured-cover" alt="${escapeAttr(title)}">
+              <div class="featured-info">
+                <span class="featured-tag">UTVALGT</span>
+                <h3>${escapeAttr(title)}</h3>
+                <p>${escapeAttr(sub)}</p>
+                <button class="btn-play-featured"><i class="fa-solid fa-play"></i> Spill nå</button>
+              </div>
+            </div>
+          `;
+          sectionWrapper.innerHTML = itemsHTML;
+        } 
+        // VANLIG SCROLL / GRID LAYOUT
+        else {
+          const containerClass = sec.layout === 'grid' ? 'grid-layout' : 'horizontal-scroll';
 
           (sec.items || []).forEach((item, index) => {
             const title = item.title || 'Innhold';
@@ -104,7 +195,6 @@ export function loadContentFromFirestore() {
             const type = item.type || (pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
-            // Trygg lagring av kompleks JSON i window-objekt
             const itemKey = `item_data_${cardId.replace(/[^a-zA-Z0-9]/g, '_')}`;
             window[itemKey] = item;
 
@@ -143,7 +233,6 @@ export function loadContentFromFirestore() {
       });
     });
 
-    // 3. Generer radio-banneret helt til slutt
     renderRadioBanner();
   };
 
@@ -188,14 +277,12 @@ async function renderRadioBanner() {
         const topItem = data.items[0];
         if (topItem.title) bannerHeadline = topItem.title;
 
-        // Prioriterer hovedbilde fra media-objekter først, deretter enclosure/thumbnail
         let fetchedImg = topItem.media?.content?.url 
           || topItem.media?.thumbnail?.url 
           || topItem.thumbnail 
           || topItem.enclosure?.link 
           || topItem.enclosure?.thumbnail;
 
-        // Søker i artikkelteksten etter <img>-tag dersom det ikke er eksplisitt definert i metadata
         if (!fetchedImg) {
           const contentToSearch = topItem.content || topItem.description || '';
           const imgMatch = contentToSearch.match(/<img[^>]+src=["']([^"']+)["']/i);
@@ -380,6 +467,20 @@ function extractCardItemData(card) {
 
 function setupEventListeners() {
   document.addEventListener("click", async (e) => {
+    // 0. Klikk på Hero Banner (Spill av direkte)
+    const heroCard = e.target.closest(".hero-banner-card, .featured-banner-card");
+    if (heroCard) {
+      const audioUrl = heroCard.dataset.audio;
+      const title = heroCard.dataset.title || "Tale Highlight";
+      const sub = heroCard.dataset.sub || "";
+      const cover = heroCard.dataset.cover || "";
+
+      if (audioUrl) {
+        playAudioTrack(audioUrl, title, sub, cover);
+      }
+      return;
+    }
+
     // 1. Klikk på direkte-knapp i radiokort
     const radioPlayBtn = e.target.closest(".radio-play-btn");
     if (radioPlayBtn) {
@@ -406,7 +507,7 @@ function setupEventListeners() {
       return;
     }
 
-    // 3. Klikk på nyhets-banneret øverst (Spiller NRK P2)
+    // 3. Klikk på nyhets-banneret øverst
     const radioBanner = e.target.closest(".radio-banner");
     if (radioBanner) {
       const audioUrl = radioBanner.dataset.audio || "https://lyd.nrk.no/icecast/aac/high/s0w7hwn47m/p2";
