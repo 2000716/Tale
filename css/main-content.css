@@ -44,7 +44,7 @@ main, .content-container {
   overflow: hidden;
 }
 
-/* Slides (Direkte bytte uten animation/fade) */
+/* Slides */
 .carousel-slide {
   position: absolute;
   top: 0;
@@ -111,7 +111,7 @@ main, .content-container {
   overflow: hidden;
 }
 
-/* Indikatorprikker uten skaling eller animasjon */
+/* INDIKATORPRIKKER (Beholdt helt uten skaling/animasjon) */
 .carousel-dots {
   position: absolute;
   bottom: 12px;
