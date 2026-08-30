@@ -1,133 +1,161 @@
 /* ==========================================
-   HOVEDSIDE, KORT & LAYOUT
+   1. STORE HOVEDBANNERE (Hero Banners)
+   Brukes øverst på sider eller for ukens anbefaling
    ========================================== */
-
-/* Pass på at innholdet ikke overlapper bunnmeny/minispiller */
-main, .content-container {
-  padding-bottom: calc(140px + env(safe-area-inset-bottom));
-}
-
-.hero-banner {
-  background: linear-gradient(135deg, #0b112c 0%, #1a2550 100%);
-  color: var(--text-light, #ffffff);
-  padding: 1.2rem;
+.hero-banner-large {
+  position: relative;
+  width: 100%;
+  height: 180px;
   border-radius: var(--radius-md, 12px);
+  overflow: hidden;
   margin-bottom: 1.5rem;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
-.badge {
-  background: var(--accent-blue, #AEC2F7);
-  color: #0b112c;
-  font-size: 0.7rem;
-  font-weight: bold;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+.hero-banner-overlay {
+  width: 100%;
+  padding: 1.2rem;
+  background: linear-gradient(to top, rgba(7, 11, 30, 0.95) 0%, rgba(7, 11, 30, 0.4) 70%, transparent 100%);
+  color: #ffffff;
 }
 
-.section-header {
-  margin: 1.2rem 0 0.6rem 0;
-  color: var(--text-dark, #0f172a);
+.hero-banner-overlay h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  color: #ffffff;
 }
 
-.horizontal-scroll,
-.horizontal-scroll-container {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  gap: 16px;
-  padding-bottom: 10px;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
+.hero-banner-overlay p {
+  font-size: 0.85rem;
+  color: var(--accent-blue, #AEC2F7);
+  margin: 0;
 }
 
-.horizontal-scroll::-webkit-scrollbar,
-.horizontal-scroll-container::-webkit-scrollbar {
-  display: none;
-}
 
-.book-card {
-  flex: 0 0 130px !important;
-  width: 130px !important;
+/* ==========================================
+   2. RADIOMODUL / DIREKTE KANALER
+   For radiokanaler som ser litt annerledes ut enn bøker
+   ========================================== */
+.radio-card {
+  flex: 0 0 150px !important;
+  width: 150px !important;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  scroll-snap-align: start;
-  transition: transform 0.2s ease;
-}
-
-.book-card:active {
-  transform: scale(0.96);
-}
-
-.book-cover {
-  width: 130px;
-  height: 130px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(174, 194, 247, 0.1);
   border-radius: var(--radius-md, 12px);
-  overflow: hidden;
-  background-color: #131b3e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  position: relative;
+  padding: 12px;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.book-cover-img {
+.radio-card:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.radio-logo-container {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%; /* Runde logoer er vanlig for radio */
+  overflow: hidden;
+  margin-bottom: 10px;
+  background-color: #131b3e;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.radio-logo-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
-  border-radius: var(--radius-md, 12px);
 }
 
-.generated-cover {
+.radio-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-light, #ffffff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #1e295d 0%, #070b1e 100%);
-  color: var(--accent-blue, #AEC2F7);
+}
+
+.radio-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted, #a0a5c0);
+  margin-top: 2px;
+}
+
+
+/* ==========================================
+   3. GRID-OPPSETT FOR HELSEKSJONER
+   Når brukeren trykker seg inn på "Lydbøker" eller "Podkaster" 
+   og vil se et rutenett istedenfor bare horisontal rulling
+   ========================================== */
+.media-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 16px;
+  margin-bottom: 2rem;
+}
+
+
+/* ==========================================
+   4. FORTSETT Å LYTTE / AVSPILLINGSKORT (Bredere kort)
+   ========================================== */
+.continue-card {
+  flex: 0 0 240px !important;
+  width: 240px !important;
+  background: #12193b;
+  border-radius: var(--radius-md, 12px);
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.8rem;
-  text-align: center;
-  border-radius: var(--radius-md, 12px);
-  border: 1px solid rgba(174, 194, 247, 0.2);
-  box-sizing: border-box;
+  padding: 10px;
+  gap: 12px;
+  cursor: pointer;
+  border: 1px solid rgba(174, 194, 247, 0.1);
 }
 
-.generated-cover span {
-  font-size: 0.8rem;
-  font-weight: 700;
-  line-height: 1.2;
-  word-break: break-word;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.continue-thumb {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
-.book-title {
+.continue-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.continue-title {
   font-size: 0.85rem;
   font-weight: 600;
-  margin-top: 0.5rem;
-  color: var(--text-dark, #0f172a);
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.book-author {
-  font-size: 0.75rem;
-  color: var(--text-muted-dark, #64748b);
-  white-space: nowrap;
+.continue-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  margin-top: 6px;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.account-card {
-  background: #ffffff;
-  padding: 1.5rem;
-  border-radius: var(--radius-md, 12px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  margin-top: 1rem;
-  color: var(--text-dark, #0f172a);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+.continue-progress-fill {
+  height: 100%;
+  background: var(--accent-blue, #AEC2F7);
 }
