@@ -104,7 +104,7 @@ export function loadContentFromFirestore() {
             const type = item.type || (pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
-            // Trygg lagring av kompleks JSON i window-objekt i stedet for tunge HTML-data-attributter
+            // Trygg lagring av kompleks JSON i window-objekt
             const itemKey = `item_data_${cardId.replace(/[^a-zA-Z0-9]/g, '_')}`;
             window[itemKey] = item;
 
@@ -143,7 +143,7 @@ export function loadContentFromFirestore() {
       });
     });
 
-    // 3. Generer radio-banneret helt til slutt (prependes i containeren)
+    // 3. Generer radio-banneret helt til slutt
     renderRadioBanner();
   };
 
@@ -173,7 +173,6 @@ async function renderRadioBanner() {
   const radioContainer = document.getElementById("radio-sections");
   if (!radioContainer) return;
 
-  // Satt direkte til NRK P2 lydstrøm
   const streamUrl = "https://lyd.nrk.no/icecast/aac/high/s0w7hwn47m/p2";
   const defaultBg = "https://res.cloudinary.com/ocv4zhpk/image/upload/v1788038957/NRK_Nyheter_on-dark_RGB_mwbstr.png";
   const nrkLogo = "https://res.cloudinary.com/ocv4zhpk/image/upload/v1788038957/NRK_Nyheter_on-dark_RGB_mwbstr.png";
@@ -182,8 +181,8 @@ async function renderRadioBanner() {
   let bannerHeadline = "NRK P2 Nyheter";
 
   try {
-    // Korrigert til https:// for at RSS-apiet skal returnere toppsaker og bilder riktig
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/norge/toppsaker.rss")}`);
+    // Endret til https://www.nrk.no/toppsaker.rss uten /norge/
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/toppsaker.rss")}`);
     if (res.ok) {
       const data = await res.json();
       if (data.status === 'ok' && data.items?.length > 0) {
@@ -202,7 +201,6 @@ async function renderRadioBanner() {
     console.warn("Kunne ikke hente NRK RSS for banner, bruker standardverdi.", err);
   }
 
-  // Fjern eksisterende banner hvis funksjonen kalles på nytt
   const existingBanner = radioContainer.querySelector(".radio-banner-container");
   if (existingBanner) existingBanner.remove();
 
