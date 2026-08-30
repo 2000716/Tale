@@ -55,7 +55,7 @@ export function renderRadioChannels(channels, playAudioCallback) {
   });
 }
 
-// 3. HENT NRK RSS NYHETER FOR BANNERET
+// 3. HENT NRK RSS NYHETER FOR BANNERET (Henter bilde fra www.nrk.no/nyheter/siste.rss)
 export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
   const banner = document.getElementById('nrk-news-banner');
   const bannerBg = document.getElementById('banner-bg');
@@ -63,29 +63,46 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
 
   if (!banner) return;
 
+  // Standard fallback-bilde hvis feil oppstår eller sak mangler bilde
+  const defaultImage = 'https://res.cloudinary.com/ocv4zhpk/image/upload/v1788038957/NRK_Nyheter_on-dark_RGB_mwbstr.png';
+
   try {
-    // Henter RSS-feed fra NRK Nyheter via rss2json
-    const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.nrk.no/toppsaker.rss');
+    // Henter RSS-feed fra NRK Nyheter Siste via rss2json
+    const rssUrl = encodeURIComponent('https://www.nrk.no/nyheter/siste.rss');
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
     const data = await res.json();
 
-    if (data.status === 'ok' && data.items.length > 0) {
+    if (data.status === 'ok' && data.items && data.items.length > 0) {
       const topStory = data.items[0];
       
-      // Sett overskriften fra nyheten
-      headlineEl.textContent = topStory.title;
+      // Sett overskriften fra den nyeste nyheten
+      if (headlineEl) {
+        headlineEl.textContent = topStory.title || 'NRK Nyheter Direct';
+      }
 
-      // Hent bilde fra RSS-saken dersom tilgjengelig, ellers bruk standard NRK-bilde
+      // Hent bilde fra RSS-saken dersom tilgjengelig:
+      // 1. Sjekk enclosure (hvor NRK RSS vanligvis plasserer bildet)
+      // 2. Sjekk thumbnail
+      // 3. Søk etter <img> tag i description med regex
       let imageUrl = topStory.enclosure?.link || topStory.thumbnail;
+      
       if (!imageUrl && topStory.description) {
-        const imgMatch = topStory.description.match(/src="([^"]+)"/);
+        const imgMatch = topStory.description.match(/src=["']([^"']+)["']/i);
         if (imgMatch) imageUrl = imgMatch[1];
       }
-      
-      bannerBg.style.backgroundImage = `url('${imageUrl || 'https://res.cloudinary.com/ocv4zhpk/image/upload/v1788038957/NRK_Nyheter_on-dark_RGB_mwbstr.png'}')`;
+
+      // Oppdater bakgrunnsbildet på banneret
+      const finalImage = imageUrl || defaultImage;
+      if (bannerBg) {
+        bannerBg.style.backgroundImage = `url('${finalImage}')`;
+      }
+    } else {
+      throw new Error('RSS returnerte ikke gyldige data');
     }
   } catch (err) {
-    console.warn('Kunne ikke laste NRK RSS nyheter:', err);
-    headlineEl.textContent = 'NRK Nyheter Radio';
+    console.warn('Kunne ikke laste NRK RSS nyheter, bruker standardbilde:', err);
+    if (headlineEl) headlineEl.textContent = 'NRK Nyheter Radio';
+    if (bannerBg) bannerBg.style.backgroundImage = `url('${defaultImage}')`;
   }
 
   // Klikk på banneret starter NRK Nyheter Radio direkte
