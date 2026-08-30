@@ -102,13 +102,14 @@ export function loadContentFromFirestore() {
             const type = item.type || (pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
-            const seasonsJSON = item.seasons ? JSON.stringify(item.seasons) : '';
-            const episodesJSON = item.episodes ? JSON.stringify(item.episodes) : '';
-            const chaptersJSON = item.chapters ? JSON.stringify(item.chapters) : '';
+            // Trygg lagring av kompleks JSON i window-objekt i stedet for tunge HTML-data-attributter
+            const itemKey = `item_data_${cardId.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            window[itemKey] = item;
 
             itemsHTML += `
               <div class="book-card" 
                    id="${cardId}"
+                   data-item-key="${itemKey}"
                    data-id="${escapeAttr(item.id || cardId)}"
                    data-title="${escapeAttr(title)}" 
                    data-sub="${escapeAttr(sub)}" 
@@ -116,10 +117,7 @@ export function loadContentFromFirestore() {
                    data-cover="${escapeAttr(manualCover)}"
                    data-rss="${escapeAttr(rssUrl)}"
                    data-audio="${escapeAttr(audioUrl)}"
-                   data-type="${escapeAttr(type)}"
-                   data-seasons='${escapeAttr(seasonsJSON)}'
-                   data-episodes='${escapeAttr(episodesJSON)}'
-                   data-chapters='${escapeAttr(chaptersJSON)}'>
+                   data-type="${escapeAttr(type)}">
                 <div class="book-cover" id="cover-${cardId}">
                   ${buildCoverMarkup(manualCover, title)}
                 </div>
@@ -175,26 +173,31 @@ async function renderRadioBanner() {
   const nrkLogo = "https://res.cloudinary.com/ocv4zhpk/image/upload/v1788038957/NRK_Nyheter_on-dark_RGB_mwbstr.png";
 
   let bannerImage = defaultBg;
-  let bannerHeadline = "Laster siste nyheter fra NRK...";
+  let bannerHeadline = "NRK Nyheter Radio";
 
   try {
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/toppsaker.rss")}`);
-    const data = await res.json();
-    if (data.status === 'ok' && data.items?.length > 0) {
-      const topItem = data.items[0];
-      if (topItem.title) bannerHeadline = topItem.title;
-      
-      let fetchedImg = topItem.thumbnail || topItem.enclosure?.link || topItem.enclosure?.thumbnail;
-      if (!fetchedImg && topItem.description) {
-        const imgMatch = topItem.description.match(/src="([^"]+)"/);
-        if (imgMatch) fetchedImg = imgMatch[1];
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'ok' && data.items?.length > 0) {
+        const topItem = data.items[0];
+        if (topItem.title) bannerHeadline = topItem.title;
+
+        let fetchedImg = topItem.thumbnail || topItem.enclosure?.link || topItem.enclosure?.thumbnail;
+        if (!fetchedImg && topItem.description) {
+          const imgMatch = topItem.description.match(/src="([^"]+)"/);
+          if (imgMatch) fetchedImg = imgMatch[1];
+        }
+        if (fetchedImg) bannerImage = fetchedImg;
       }
-      if (fetchedImg) bannerImage = fetchedImg;
     }
   } catch (err) {
-    console.warn("Kunne ikke hente NRK RSS for banner, bruker standardbilde.", err);
-    bannerHeadline = "NRK Nyheter Radio";
+    console.warn("Kunne ikke hente NRK RSS for banner, bruker standardverdi.", err);
   }
+
+  // Fjern eksisterende banner hvis funksjonen kalles på nytt
+  const existingBanner = radioContainer.querySelector(".radio-banner-container");
+  if (existingBanner) existingBanner.remove();
 
   const bannerWrapper = document.createElement("div");
   bannerWrapper.className = "radio-banner-container";
@@ -222,6 +225,7 @@ async function renderRadioBanner() {
 async function fetchRSSImageData(rssUrl, cardId, title) {
   try {
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+    if (!res.ok) return;
     const data = await res.json();
     if (data.status === 'ok') {
       const imageUrl = data.feed?.image || data.items?.[0]?.thumbnail || data.items?.[0]?.enclosure?.thumbnail || "";
@@ -279,7 +283,6 @@ async function executeAppSearch(term) {
       podcasts = data.results || [];
     }
 
-    // Ekstra filtrering for å forsikre at ingen radiokanaler slipper igjennom i søk
     const filteredPodcasts = podcasts.filter(item => {
       const title = (item.trackName || item.collectionName || '').toLowerCase();
       const artist = (item.artistName || '').toLowerCase();
@@ -335,10 +338,11 @@ export function removeSearchResultsView() {
 }
 
 function extractCardItemData(card) {
-  const parseJSON = (str) => {
-    if (!str) return null;
-    try { return JSON.parse(str); } catch (e) { return null; }
-  };
+  // Sjekk om det finnes et lagret datatall på window
+  const itemKey = card.dataset.itemKey;
+  if (itemKey && window[itemKey]) {
+    return window[itemKey];
+  }
 
   return {
     id: card.dataset.id || card.id,
@@ -355,10 +359,7 @@ function extractCardItemData(card) {
     rssUrl: card.dataset.rss || '',
     audioUrl: card.dataset.audio || '',
     streamUrl: card.dataset.audio || '',
-    type: card.dataset.type || 'podcast',
-    seasons: parseJSON(card.dataset.seasons),
-    episodes: parseJSON(card.dataset.episodes),
-    chapters: parseJSON(card.dataset.chapters)
+    type: card.dataset.type || 'podcast'
   };
 }
 
@@ -371,7 +372,7 @@ function setupEventListeners() {
       const audioUrl = radioPlayBtn.dataset.audio;
       const title = radioPlayBtn.dataset.title || "Direkte Radio";
       const cover = radioPlayBtn.dataset.cover || "";
-      
+
       if (audioUrl) {
         playAudioTrack(audioUrl, title, "NRK Radio", cover);
       }
