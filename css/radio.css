@@ -1,9 +1,9 @@
-/* Nyhetsbanner helt øverst (Strukket i bredden) */
+/* Nyhetsbanner helt øverst (Strukket i bredden og økt i høyden) */
 .radio-banner {
   position: relative;
   width: 100%;
   max-width: 100%;
-  height: 180px;
+  height: 280px; /* Endret fra 180px til 280px for at den skal bli høyere */
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
@@ -25,11 +25,11 @@
   transition: background-image 0.4s ease;
 }
 
-/* Gradering (fade) inne i banneret som bruker Tales egne farger */
+/* Gradering (fade) inne i banneret - Gjort sterkere i bunnen for bedre lesbarhet */
 .banner-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(174, 194, 247, 0.4) 0%, rgba(13, 27, 42, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(13, 27, 42, 0.2) 0%, rgba(13, 27, 42, 0.95) 100%);
 }
 
 /* NRK Nyheter Logo øverst til venstre (Uten skygge) */
@@ -46,38 +46,38 @@
 /* Tekst i bunn av banneret */
 .banner-overlay-bottom {
   position: absolute;
-  bottom: 14px;
-  left: 14px;
-  right: 14px;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
   z-index: 2;
-  color: #000000; /* Svart tekst */
+  color: #ffffff; /* Endret til hvit tekst */
 }
 
 .banner-tag {
   display: inline-block;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 1px;
   color: #AEC2F7; /* Tales lyseblå */
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .banner-overlay-bottom h3 {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  margin: 0 0 4px 0;
+  margin: 0 0 6px 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #000000; /* Svart tekst */
+  color: #ffffff; /* Endret til hvit tekst */
 }
 
 .banner-overlay-bottom p {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   margin: 0;
-  color: #000000; /* Svart tekst */
-  opacity: 0.9;
+  color: #ffffff; /* Endret til hvit tekst */
+  opacity: 0.95;
 }
 
 /* Avlange radio-seksjoner nedover */
@@ -114,7 +114,7 @@
 .radio-card-info h4 {
   margin: 0 0 4px 0;
   font-size: 1rem;
-  color: #000000; /* Svart tekst */
+  color: #000000; /* Svart tekst for kanal-listen under */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -123,7 +123,7 @@
 .radio-card-info p {
   margin: 0;
   font-size: 0.82rem;
-  color: #000000; /* Svart tekst */
+  color: #000000; /* Svart tekst for kanal-listen under */
   opacity: 0.75;
 }
 
