@@ -5,6 +5,10 @@ import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode } from "./player.js";
 import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Karusell-tilstand
+let currentSlideIndex = 0;
+let carouselInterval = null;
+
 // Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
 function playAudioTrack(audioUrl, title, sub, cover) {
   playSpecificEpisode({
@@ -32,7 +36,54 @@ document.addEventListener("DOMContentLoaded", () => {
   loadBannersFromFirestore();
   setupSearchListener();
   setupEventListeners();
+  initHeroCarousel();
 });
+
+// ==========================================
+// KARUSELL FUNKSJONALITET (HERO BANNER)
+// ==========================================
+function initHeroCarousel() {
+  const slides = document.querySelectorAll("#hero-banner-carousel .carousel-slide");
+  const dots = document.querySelectorAll("#carousel-dots .dot");
+  if (slides.length <= 1) return;
+
+  const showSlide = (index) => {
+    slides.forEach((slide, i) => {
+      slide.classList.toggle("active", i === index);
+    });
+    dots.forEach((dot, i) => {
+      dot.classList.toggle("active", i === index);
+    });
+    currentSlideIndex = index;
+  };
+
+  const startAutoRotation = () => {
+    stopAutoRotation();
+    carouselInterval = setInterval(() => {
+      const nextIndex = (currentSlideIndex + 1) % slides.length;
+      showSlide(nextIndex);
+    }, 5000);
+  };
+
+  const stopAutoRotation = () => {
+    if (carouselInterval) clearInterval(carouselInterval);
+  };
+
+  dots.forEach((dot, index) => {
+    dot.addEventListener("click", () => {
+      showSlide(index);
+      startAutoRotation();
+    });
+  });
+
+  const wrapper = document.getElementById("hero-banner-wrapper");
+  if (wrapper) {
+    wrapper.addEventListener("mouseenter", stopAutoRotation);
+    wrapper.addEventListener("mouseleave", startAutoRotation);
+  }
+
+  startAutoRotation();
+}
 
 // ==========================================
 // 1. LASTE BANNERE (Hero Banners / Storytel-stil)
@@ -46,7 +97,7 @@ export function loadBannersFromFirestore() {
     });
     renderHeroBanners(bannersData);
   }, (err) => {
-    console.warn("Llasting av bannere feilet:", err);
+    console.warn("Lasting av bannere feilet:", err);
   });
 }
 
