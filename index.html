@@ -2,7 +2,6 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <!-- Forhindrer feilaktig zoom på mobil -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#070b1e" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -13,7 +12,6 @@
 
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787779910/Code_Generated_Image_1_egznrr.png" />
-  <!-- FontAwesome for ikoner -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   
   <link rel="stylesheet" href="css/variables.css" />
@@ -28,10 +26,8 @@
 </head>
 <body>
   
-  <!-- Skjult lyd-element for selve avspillingen -->
   <audio id="global-audio" preload="metadata"></audio>
 
-  <!-- 1. LANDINGSSIDE -->
   <div id="landing-view" class="view active fade-transition">
     <div class="landing-hero">
       <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787779910/Code_Generated_Image_1_egznrr.png" alt="Tale Logo" class="landing-logo">
@@ -44,7 +40,6 @@
     </div>
   </div>
 
-  <!-- 2. INNLOGGING / REGISTRERING -->
   <div id="auth-view" class="view fade-transition">
     <button id="auth-back-btn" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Tilbake</button>
     <div class="auth-card scale-in">
@@ -52,7 +47,6 @@
       <h2 id="auth-title">Logg inn</h2>
       
       <form id="auth-form">
-        <!-- Navnefelter ved Registrering -->
         <div id="name-fields-group" class="field-group-animated hidden">
           <div class="input-row">
             <div class="input-wrapper">
@@ -66,7 +60,6 @@
           </div>
         </div>
 
-        <!-- E-post og passord -->
         <div class="input-wrapper">
           <i class="fa-regular fa-envelope input-icon"></i>
           <input type="email" id="auth-email" placeholder="E-post" required autocomplete="email">
@@ -91,10 +84,8 @@
     </div>
   </div>
 
-  <!-- 3. HOVEDAPP -->
   <div id="app-view" class="view fade-transition">
     
-    <!-- Toppstripe med integrert søkelinje -->
     <header class="top-bar">
       <div class="top-bar-main">
         <button id="nav-home-logo-btn" class="logo-btn" aria-label="Gå til Hjem">
@@ -118,9 +109,32 @@
       <div class="top-bar-curve"></div>
     </header>
 
-    <!-- Innholdsområde -->
     <main>
       <section id="home" class="page active">
+        <div id="hero-banner-wrapper" class="hero-banner-wrapper">
+          <div id="hero-banner-carousel" class="hero-carousel">
+            <div class="carousel-slide active">
+              <img src="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=800&q=80" alt="Utvalgt Podkast">
+              <div class="slide-overlay">
+                <span class="slide-badge">Anbefalt Podkast</span>
+                <h3>Ny podcast-episode ute nå</h3>
+              </div>
+            </div>
+            <div class="carousel-slide">
+              <img src="https://images.unsplash.com/photo-1478737270239-2f02b77fc618?auto=format&fit=crop&w=800&q=80" alt="Siste nyheter">
+              <div class="slide-overlay">
+                <span class="slide-badge">Populær</span>
+                <h3>Utforsk ukens mest populære podkaster</h3>
+              </div>
+            </div>
+          </div>
+
+          <div id="carousel-dots" class="carousel-dots">
+            <span class="dot active" data-index="0"></span>
+            <span class="dot" data-index="1"></span>
+          </div>
+        </div>
+
         <div id="continue-listening-section" class="continue-section" style="display: none;">
           <h3>Fortsett å lytte</h3>
           <div id="continue-listening-container" class="horizontal-scroll-container"></div>
@@ -139,13 +153,11 @@
         <div id="podcasts-sections" class="dynamic-container"></div>
       </section>
 
-      <!-- RADIO-SEKSJON MED DYNAMISK BANNER OG KANALER -->
       <section id="radio" class="page">
         <h2>Direkte Radio</h2>
         <div id="radio-sections" class="dynamic-container"></div>
       </section>
 
-      <!-- KONTOSIDE UTEN PREMIUM-SKILT -->
       <section id="account" class="page">
         <div class="account-header">
           <div class="account-avatar-large" id="account-avatar-large">M</div>
@@ -154,7 +166,6 @@
         </div>
 
         <div class="account-grid">
-          <!-- Personopplysninger -->
           <div class="account-card card-animated">
             <h3><i class="fa-regular fa-user"></i> Personinformasjon</h3>
             <form id="account-details-form">
@@ -170,7 +181,6 @@
             </form>
           </div>
 
-          <!-- Innstillinger & Aktivitet -->
           <div class="account-card card-animated">
             <h3><i class="fa-solid fa-sliders"></i> Innstillinger & Aktivitet</h3>
             <ul class="account-menu-list">
@@ -202,7 +212,6 @@
       </section>
     </main>
 
-    <!-- INFORMASJONSSIDE OVERLAY -->
     <div id="details-page" class="modal">
       <button id="details-close-btn" class="close-btn" aria-label="Lukk"><i class="fa-solid fa-xmark"></i></button>
       
@@ -252,16 +261,13 @@
               <span id="episode-count-text" class="meta-small"></span>
             </div>
 
-            <!-- SESONGVELGER -->
             <div id="season-select-wrapper" class="season-select-wrapper" style="display: none;">
               <select id="season-select" class="season-dropdown"></select>
             </div>
           </div>
 
-          <!-- LISTEN MED EPISODER -->
           <div id="episode-list"></div>
 
-          <!-- KNAPP FOR Å ÅPNE / LASTE FLERE EPISODER -->
           <button id="load-more-episodes-btn" class="btn-secondary" style="display: none; width: 100%; margin-top: 1rem;">
             Vis flere episoder
           </button>
@@ -274,7 +280,6 @@
       </div>
     </div>
     
-    <!-- FULLSKJERM SPILLER -->
     <div id="fullscreen-player" class="modal">
       <div class="drag-handle"></div>
       <div class="player-full-content">
@@ -311,7 +316,6 @@
       </div>
     </div>
 
-    <!-- Modal for Sleep Timer Scroll-hjul -->
     <div id="sleep-modal" class="sleep-modal">
       <div class="sleep-modal-content">
         <div class="sleep-modal-header">
@@ -336,7 +340,6 @@
       </div>
     </div>
 
-    <!-- Halvside-panel for 3-prikker menyen -->
     <div id="info-sheet-overlay" class="sheet-overlay">
       <div class="bottom-sheet">
         <div class="sheet-handle"></div>
@@ -356,7 +359,6 @@
       </div>
     </div>
 
-    <!-- MINI-SPILLERSTRIPE -->
     <div class="player hidden" id="audio-player-bar">
       <div class="player-left" id="open-full-player">
         <div id="mini-cover-container"></div>
@@ -370,7 +372,6 @@
       </div>
     </div>
 
-    <!-- BUNNMENY -->
     <nav class="bottom-bar">
       <button class="nav-btn active" data-target="audiobooks">
         <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787433160/sound-waves_h7acze.png" alt="Lydbøker" class="nav-icon-png" />
