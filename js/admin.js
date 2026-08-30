@@ -17,6 +17,7 @@ let activeSections = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   initLiveSectionsListener();
+  initLiveBannersListener();
   setupSectionForm();
   setupBannerForm();
   setupManualForm();
@@ -28,21 +29,20 @@ document.addEventListener("DOMContentLoaded", () => {
 // ==========================================
 function initLiveSectionsListener() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
-  
+    
   onSnapshot(q, (snapshot) => {
     activeSections = [];
     const manageList = document.getElementById("sections-manage-list");
     const sectionCountEl = document.getElementById("stat-sections-count");
     const activeUsersEl = document.getElementById("stat-active-users");
     const hoursEl = document.getElementById("stat-hours");
-    
+      
     if (manageList) manageList.innerHTML = "";
 
     if (snapshot.empty) {
       if (manageList) manageList.innerHTML = `<p class="text-muted">Ingen seksjoner opprettet ennå.</p>`;
       if (sectionCountEl) sectionCountEl.innerText = "0";
-      
-      // Dynamiske fallback-verdier for dashboard hvis tomt
+        
       if (activeUsersEl) activeUsersEl.innerText = "1 240";
       if (hoursEl) hoursEl.innerText = "4 500 t";
 
@@ -50,10 +50,8 @@ function initLiveSectionsListener() {
       return;
     }
 
-    // Oppdater antall aktive seksjoner i dashboard-kortet
     if (sectionCountEl) sectionCountEl.innerText = snapshot.size;
 
-    // Dynamisk beregning av lyttertall basert på hvor mye innhold som er lagt til i seksjonene
     let totalItemsAcrossSections = 0;
 
     snapshot.forEach((docSnap) => {
@@ -67,7 +65,10 @@ function initLiveSectionsListener() {
         const itemEl = document.createElement("div");
         itemEl.className = "manage-item";
         itemEl.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border-radius: 6px; margin-bottom: 8px;";
-        
+          
+        // Sjekk om det er den låste systemseksjonen
+        const isSystemLocked = docSnap.id === 'system-continue-listening';
+
         itemEl.innerHTML = `
           <div>
             <strong>${escapeHtml(secData.title || 'Uten navn')}</strong>
@@ -78,16 +79,27 @@ function initLiveSectionsListener() {
               Rekkefølge: <strong>${secData.order || 0}</strong>
             </div>
           </div>
-          <button class="btn-danger btn-delete-sec" data-id="${docSnap.id}" style="background: var(--danger-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-            <i class="fa-solid fa-trash"></i> Slett
-          </button>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <button onclick="moveSectionOrder('${docSnap.id}', 'up')" title="Flytt opp" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-up"></i></button>
+              <button onclick="moveSectionOrder('${docSnap.id}', 'down')" title="Flytt ned" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-down"></i></button>
+            </div>
+            ${!isSystemLocked ? `
+              <button class="btn-danger btn-delete-sec" data-id="${docSnap.id}" style="background: var(--danger-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                <i class="fa-solid fa-trash"></i> Slett
+              </button>
+            ` : `
+              <span style="font-size: 0.75rem; color: var(--text-muted); padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                <i class="fa-solid fa-lock"></i> Låst
+              </span>
+            `}
+          </div>
         `;
 
         manageList.appendChild(itemEl);
       }
     });
 
-    // Oppdater dashboard live basert på databaseaktivitet
     if (activeUsersEl) {
       const dynamicListeners = 1200 + (snapshot.size * 85) + (totalItemsAcrossSections * 15);
       activeUsersEl.innerText = dynamicListeners.toLocaleString("nb-NO");
@@ -98,7 +110,6 @@ function initLiveSectionsListener() {
       hoursEl.innerText = dynamicHours.toLocaleString("nb-NO") + " t";
     }
 
-    // Oppdater alle dropdown-menyer der man velger seksjon
     populateSectionDropdowns(activeSections);
     setupDeleteButtons();
   }, (err) => {
@@ -169,7 +180,7 @@ function setupSectionForm() {
 }
 
 // ==========================================
-// 3. OPPRETT HERO BANNER
+// 3. OPPRETT & ADMINISTRER HERO BANNER
 // ==========================================
 function setupBannerForm() {
   const form = document.getElementById("add-banner-form");
@@ -205,6 +216,61 @@ function setupBannerForm() {
       console.error("Feil ved lagring av banner:", err);
       alert("Kunne ikke publisere banner: " + err.message);
     }
+  });
+}
+
+function initLiveBannersListener() {
+  const bannersQuery = query(collection(db, "banners"), orderBy("createdAt", "desc"));
+  
+  onSnapshot(bannersQuery, (snapshot) => {
+    const bannersList = document.getElementById("banners-manage-list");
+    if (!bannersList) return;
+
+    bannersList.innerHTML = "";
+
+    if (snapshot.empty) {
+      bannersList.innerHTML = `<p class="text-muted">Ingen aktive bannere.</p>`;
+      return;
+    }
+
+    snapshot.forEach((docSnap) => {
+      const bannerData = docSnap.data();
+      const bannerEl = document.createElement("div");
+      bannerEl.className = "manage-item";
+      bannerEl.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border-radius: 6px; margin-bottom: 8px;";
+      
+      bannerEl.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <img src="${escapeHtml(bannerData.imageUrl)}" alt="" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/40'">
+          <div>
+            <strong>${escapeHtml(bannerData.title || 'Uten tittel')}</strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+              Side: <code>${escapeHtml(bannerData.page || 'home')}</code> | Badge: ${escapeHtml(bannerData.badge || 'Ingen')}
+            </div>
+          </div>
+        </div>
+        <button class="btn-danger btn-delete-banner" data-id="${docSnap.id}" style="background: var(--danger-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+          <i class="fa-solid fa-trash"></i> Slett
+        </button>
+      `;
+
+      bannersList.appendChild(bannerEl);
+    });
+
+    document.querySelectorAll(".btn-delete-banner").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const bannerId = e.currentTarget.dataset.id;
+        if (confirm("Vil du slette dette banneret?")) {
+          try {
+            await deleteDoc(doc(db, "banners", bannerId));
+          } catch (err) {
+            alert("Feil ved sletting av banner: " + err.message);
+          }
+        }
+      });
+    });
+  }, (err) => {
+    console.error("Feil ved henting av bannere:", err);
   });
 }
 
@@ -321,7 +387,7 @@ function renderPodcastResults(items) {
   items.forEach((item, index) => {
     const card = document.createElement("div");
     card.style.cssText = "background: var(--input-bg); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;";
-    
+      
     const title = item.trackName || item.collectionName || 'Ukjent';
     const sub = item.artistName || 'Podkast';
     const cover = item.artworkUrl600 || item.artworkUrl100 || '';
@@ -424,19 +490,8 @@ async function importItemToSelectedSection(itemObj) {
   }
 }
 
-// Hjelpefunksjon for å unngå XSS
-function escapeHtml(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
 // ==========================================
-// 6. FLYTTING AV SEKSJONER (OPP / NED)
+// 6. GLOBAL FUNKSJON FOR FLYTTING AV SEKSJONER
 // ==========================================
 window.moveSectionOrder = async function(sectionId, direction) {
   const index = activeSections.findIndex(s => s.id === sectionId);
@@ -448,7 +503,6 @@ window.moveSectionOrder = async function(sectionId, direction) {
   const currentSec = activeSections[index];
   const targetSec = activeSections[targetIndex];
 
-  // Bytt om order-verdiene i Firestore
   try {
     const batchUpdates = [
       updateDoc(doc(db, "sections", currentSec.id), { order: targetSec.order ?? targetIndex }),
@@ -461,65 +515,13 @@ window.moveSectionOrder = async function(sectionId, direction) {
   }
 };
 
-// ==========================================
-// 7. BANNER ADMINISTRASJON & SANNTIDSLYTTER
-// ==========================================
-document.addEventListener("DOMContentLoaded", () => {
-  initLiveBannersListener();
-});
-
-function initLiveBannersListener() {
-  const bannersQuery = query(collection(db, "banners"), orderBy("createdAt", "desc"));
-  
-  onSnapshot(bannersQuery, (snapshot) => {
-    const bannersList = document.getElementById("banners-manage-list");
-    if (!bannersList) return;
-
-    bannersList.innerHTML = "";
-
-    if (snapshot.empty) {
-      bannersList.innerHTML = `<p class="text-muted">Ingen aktive bannere.</p>`;
-      return;
-    }
-
-    snapshot.forEach((docSnap) => {
-      const bannerData = docSnap.data();
-      const bannerEl = document.createElement("div");
-      bannerEl.className = "manage-item";
-      bannerEl.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border-radius: 6px; margin-bottom: 8px;";
-      
-      bannerEl.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <img src="${escapeHtml(bannerData.imageUrl)}" alt="" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
-          <div>
-            <strong>${escapeHtml(bannerData.title || 'Uten tittel')}</strong>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">
-              Side: <code>${escapeHtml(bannerData.page || 'home')}</code> | Badge: ${escapeHtml(bannerData.badge || 'Ingen')}
-            </div>
-          </div>
-        </div>
-        <button class="btn-danger btn-delete-banner" data-id="${docSnap.id}" style="background: var(--danger-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-          <i class="fa-solid fa-trash"></i> Slett
-        </button>
-      `;
-
-      bannersList.appendChild(bannerEl);
-    });
-
-    // Aktiver sletteknapper for bannere
-    document.querySelectorAll(".btn-delete-banner").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        const bannerId = e.currentTarget.dataset.id;
-        if (confirm("Vil du slette dette banneret?")) {
-          try {
-            await deleteDoc(doc(db, "banners", bannerId));
-          } catch (err) {
-            alert("Feil ved sletting av banner: " + err.message);
-          }
-        }
-      });
-    });
-  }, (err) => {
-    console.error("Feil ved henting av bannere:", err);
-  });
+// Hjelpefunksjon for å unngå XSS
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
