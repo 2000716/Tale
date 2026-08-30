@@ -181,7 +181,6 @@ async function renderRadioBanner() {
   let bannerHeadline = "NRK P2 Nyheter";
 
   try {
-    // Endret til https://www.nrk.no/toppsaker.rss uten /norge/
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/toppsaker.rss")}`);
     if (res.ok) {
       const data = await res.json();
@@ -189,11 +188,22 @@ async function renderRadioBanner() {
         const topItem = data.items[0];
         if (topItem.title) bannerHeadline = topItem.title;
 
-        let fetchedImg = topItem.thumbnail || topItem.enclosure?.link || topItem.enclosure?.thumbnail;
-        if (!fetchedImg && topItem.description) {
-          const imgMatch = topItem.description.match(/src="([^"]+)"/);
-          if (imgMatch) fetchedImg = imgMatch[1];
+        // Prioriterer hovedbilde fra media-objekter først, deretter enclosure/thumbnail
+        let fetchedImg = topItem.media?.content?.url 
+          || topItem.media?.thumbnail?.url 
+          || topItem.thumbnail 
+          || topItem.enclosure?.link 
+          || topItem.enclosure?.thumbnail;
+
+        // Søker i artikkelteksten etter <img>-tag dersom det ikke er eksplisitt definert i metadata
+        if (!fetchedImg) {
+          const contentToSearch = topItem.content || topItem.description || '';
+          const imgMatch = contentToSearch.match(/<img[^>]+src=["']([^"']+)["']/i);
+          if (imgMatch && imgMatch[1]) {
+            fetchedImg = imgMatch[1];
+          }
         }
+
         if (fetchedImg) bannerImage = fetchedImg;
       }
     }
