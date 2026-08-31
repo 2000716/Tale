@@ -3,7 +3,7 @@ import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode } from "./player.js";
-import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Karusell-tilstand
 let currentSlideIndex = 0;
@@ -101,17 +101,32 @@ function initHeroCarousel() {
 // ==========================================
 // 1. LASTE BANNERE (Hero Banners / Storytel-stil)
 // ==========================================
-export function loadBannersFromFirestore() {
-  const q = query(collection(db, "banners"));
-  onSnapshot(q, (snapshot) => {
+export async function loadBannersFromFirestore() {
+  // 1. Rendrer fra cache først for å hindre blinking ved oppstart
+  const cachedBanners = localStorage.getItem("app_banners_cache");
+  if (cachedBanners) {
+    try {
+      renderHeroBanners(JSON.parse(cachedBanners));
+    } catch (e) {
+      console.warn("Kunne ikke lese banner-cache:", e);
+    }
+  }
+
+  // 2. Hent data én gang (getDocs) for å spare Firebase-kvote
+  try {
+    const q = query(collection(db, "banners"));
+    const snapshot = await getDocs(q);
     const bannersData = [];
+    
     snapshot.forEach((docSnap) => {
       bannersData.push({ id: docSnap.id, ...docSnap.data() });
     });
+
+    localStorage.setItem("app_banners_cache", JSON.stringify(bannersData));
     renderHeroBanners(bannersData);
-  }, (err) => {
+  } catch (err) {
     console.warn("Lasting av bannere feilet:", err);
-  });
+  }
 }
 
 function renderHeroBanners(banners) {
@@ -239,7 +254,7 @@ function renderHeroBanners(banners) {
 // ==========================================
 // 2. LASTE SEKSJONER & INNHOLD
 // ==========================================
-export function loadContentFromFirestore() {
+export async function loadContentFromFirestore() {
   const pages = ["home", "audiobooks", "podcasts", "radio"];
 
   const renderSectionsData = (sectionsList) => {
@@ -254,7 +269,7 @@ export function loadContentFromFirestore() {
       }
     });
 
-    // 2. Bygg seksjonene fra Firestore
+    // 2. Bygg seksjonene fra datalisten
     sectionsList.forEach((sec) => {
       const rawPages = sec.targetPages || sec.pages || sec.page || "home";
       const pagesArray = Array.isArray(rawPages) ? rawPages : [rawPages];
@@ -379,6 +394,7 @@ export function loadContentFromFirestore() {
     renderRadioBanner();
   };
 
+  // 1. Les fra cache umiddelbart (forhindrer blinking på skjermen)
   const cachedSections = localStorage.getItem("app_sections_cache");
   if (cachedSections) {
     try {
@@ -388,17 +404,21 @@ export function loadContentFromFirestore() {
     }
   }
 
-  const q = query(collection(db, "sections"), orderBy("order", "asc"));
-  onSnapshot(q, (snapshot) => {
+  // 2. Hent oppdaterte data fra Firestore (kun 1 lesing per oppstart via getDocs)
+  try {
+    const q = query(collection(db, "sections"), orderBy("order", "asc"));
+    const snapshot = await getDocs(q);
     const sectionsData = [];
+    
     snapshot.forEach((docSnap) => {
       sectionsData.push({ id: docSnap.id, ...docSnap.data() });
     });
+
     localStorage.setItem("app_sections_cache", JSON.stringify(sectionsData));
     renderSectionsData(sectionsData);
-  }, (err) => {
-    console.error("Firestore onSnapshot feilet:", err);
-  });
+  } catch (err) {
+    console.error("Henting fra Firestore feilet:", err);
+  }
 }
 
 async function renderRadioBanner() {
