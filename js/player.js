@@ -175,6 +175,15 @@ export function updateMediaSession(item) {
         const skipTime = details.seekOffset || 15;
         globalAudio.currentTime = Math.min(globalAudio.currentTime + skipTime, globalAudio.duration || 0);
       });
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        if (details.fastSeek && ('fastSeek' in globalAudio)) {
+          globalAudio.fastSeek(details.seekTime);
+          return;
+        }
+        if (details.seekTime !== undefined) {
+          globalAudio.currentTime = details.seekTime;
+        }
+      });
     } catch (e) {
       console.warn("MediaSession feilet:", e);
     }
@@ -369,12 +378,39 @@ export function setupAudioListeners() {
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(globalAudio.currentTime);
       if (totalTimeSpan) totalTimeSpan.innerText = formatTime(globalAudio.duration);
 
+      // Oppdaterer MediaSession fremdriftslinje på OS/låseskjerm
+      if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: globalAudio.duration,
+            playbackRate: globalAudio.playbackRate,
+            position: globalAudio.currentTime
+          });
+        } catch (e) {
+          // Ignorer om varighet ikke er tilgjengelig ennå
+        }
+      }
+
       if (!saveTimer && state.selectedItem?.title) {
         saveTimer = setTimeout(() => {
           saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
           saveTimer = null;
         }, 10000);
       }
+    }
+  };
+
+  globalAudio.onerror = () => {
+    console.warn("Lydfeil oppsto, forsøker å koble til på nytt...");
+    const currentPos = globalAudio.currentTime;
+    const currentSrc = globalAudio.src;
+
+    if (currentSrc && navigator.onLine) {
+      setTimeout(() => {
+        globalAudio.src = currentSrc;
+        globalAudio.currentTime = currentPos;
+        globalAudio.play().catch(err => console.error("Gjenoppretting feilet:", err));
+      }, 2000);
     }
   };
 
