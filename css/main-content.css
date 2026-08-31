@@ -298,3 +298,22 @@ main, .content-container {
   color: var(--text-dark, #0f172a);
   box-shadow: none;
 }
+
+/* ==========================================
+   JUSTERING AV AVSTAND (Radio, Hovedside, Podkast)
+   ========================================== */
+
+/* Øker avstanden over og under overskrifter i galleriseksjoner */
+.section-header {
+  margin-top: 2.2rem;   /* Økt fra 1.5rem for mer luft over tittelen */
+  margin-bottom: 1.2rem; /* Økt fra 0.8rem for mer luft ned til galleriet */
+}
+
+/* Legger til ekstra luft under selve gallerier/karuseller */
+.horizontal-scroll,
+.horizontal-scroll-container,
+.hero-banner-wrapper,
+.hero-banner,
+.hero-banner-img {
+  margin-bottom: 2rem !important; /* Økt avstand til neste seksjon */
+}
