@@ -2,7 +2,7 @@ import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
-import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode } from "./player.js";
+import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime } from "./player.js";
 import { collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Karusell-tilstand
@@ -590,7 +590,7 @@ async function executeAppSearch(term) {
       htmlContent = `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${gridHTML}</div>`;
     }
 
-    resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container">${htmlContent}</div>`;
+    resultsContainer.innerHTML = `2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container">${htmlContent}</div>`;
   } catch (err) {
     console.error("Feil under søk:", err);
     resultsContainer.innerHTML = `<h2>Søk</h2><p style="padding:20px; color:red;">Kunne ikke utføre søk akkurat nå.</p>`;
@@ -763,14 +763,17 @@ function setupEventListeners() {
       togglePlay();
       return;
     }
+    
+    // Oppdatert til å bruke skipTime(-15) og skipTime(15) for synkronisering med DB og MediaSession
     if (e.target.closest("#skip-back-btn")) {
-      if (globalAudio.src) globalAudio.currentTime = Math.max(0, globalAudio.currentTime - 15);
+      skipTime(-15);
       return;
     }
     if (e.target.closest("#skip-forward-btn")) {
-      if (globalAudio.src && globalAudio.duration) globalAudio.currentTime = Math.min(globalAudio.duration, globalAudio.currentTime + 15);
+      skipTime(15);
       return;
     }
+
     if (e.target.closest("#open-full-player")) {
       const fullPlayer = document.getElementById("fullscreen-player");
       if (fullPlayer) {
