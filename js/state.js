@@ -4,7 +4,7 @@ export const state = {
   isUserSeeking: false,
   currentUser: null,
   userHistory: {},
-  selectedItem: {},
+  selectedItem: null, // Endret fra {} til null for enklere sjekker
   searchTimeout: null,
   isSignUp: false
 };
