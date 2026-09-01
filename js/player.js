@@ -68,7 +68,8 @@ export function skipTime(seconds) {
   globalAudio.currentTime = Math.max(0, Math.min(newTime, globalAudio.duration));
   
   if (state.selectedItem?.title && !state.selectedItem.isRadio) {
-    saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
+    const key = state.selectedItem.id || state.selectedItem.title;
+    saveProgressToFirestore(key, state.selectedItem);
   }
 }
 
@@ -86,14 +87,14 @@ export function setupExtraPlayerControls() {
   const optAboutBtn = document.getElementById("opt-about-btn");
   const optShareBtn = document.getElementById("opt-share-btn");
 
-  // Kobler opp 15-sekunder knapper i grensesnittet om de finnes
   const rewindBtn = document.getElementById("rewind-15-btn");
   const forwardBtn = document.getElementById("forward-15-btn");
   if (rewindBtn) rewindBtn.onclick = () => skipTime(-15);
   if (forwardBtn) forwardBtn.onclick = () => skipTime(15);
 
-  // Vis den lagrede hastigheten ved oppstart
+  // Vis den lagrede hastigheten ved oppstart og sett på element
   const currentSpeed = speeds[currentSpeedIndex];
+  globalAudio.playbackRate = currentSpeed;
   if (speedLabel) speedLabel.innerText = `${currentSpeed.toFixed(1)}x`;
   if (speedBtn) speedBtn.classList.toggle("active", currentSpeed !== 1.0);
 
@@ -227,6 +228,7 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   }
 
   state.selectedItem = {
+    id: epData.id || epData.title,
     title: epData.title || "Ukjent tittel",
     sub: epData.sub || epData.author || "",
     audioUrl: epData.audioUrl,
@@ -239,7 +241,6 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   globalAudio.src = state.selectedItem.audioUrl;
 
   globalAudio.onloadedmetadata = () => {
-    // Bruker den senest valgte avspillingshastigheten
     globalAudio.playbackRate = speeds[currentSpeedIndex];
 
     if (startPosition > 0) {
@@ -257,7 +258,6 @@ export function playSpecificEpisode(epData, startPosition = 0) {
 
   updateMediaSession(state.selectedItem);
 
-  // Oppdater Mini-spiller
   const miniTitle = document.getElementById("mini-player-title");
   const miniSub = document.getElementById("mini-player-sub");
   if (miniTitle) miniTitle.innerText = state.selectedItem.title;
@@ -269,7 +269,6 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   }
   document.getElementById("audio-player-bar")?.classList.remove("hidden");
 
-  // Oppdater Fullscreen-spiller
   const fullTitle = document.getElementById("full-title");
   const fullSub = document.getElementById("full-sub");
   if (fullTitle) fullTitle.innerText = state.selectedItem.title;
@@ -310,6 +309,7 @@ export function closeFullscreenPlayer() {
   updateBottomNavVisibility();
 }
 
+// EKSPORTERT FOR Å BRUKES I DRIFT ELLER ANNET UI
 export function togglePlay() {
   if (!globalAudio.src) return;
   if (globalAudio.paused) {
@@ -321,7 +321,8 @@ export function togglePlay() {
     updatePlayIcons(false);
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "paused";
     if (state.selectedItem?.title) {
-      saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
+      const key = state.selectedItem.id || state.selectedItem.title;
+      saveProgressToFirestore(key, state.selectedItem);
     }
   }
 }
@@ -420,7 +421,8 @@ export function setupAudioListeners() {
       // Lagrer automatisk hvert 10. sekund (kun dersom det ikke er radio)
       if (!saveTimer && state.selectedItem?.title && !state.selectedItem.isRadio) {
         saveTimer = setTimeout(() => {
-          saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
+          const key = state.selectedItem.id || state.selectedItem.title;
+          saveProgressToFirestore(key, state.selectedItem);
           saveTimer = null;
         }, 10000);
       }
@@ -441,7 +443,6 @@ export function setupAudioListeners() {
     }
   };
 
-  // NÅR SPOR/BOK ER FERDIGSPILT
   globalAudio.onended = async () => {
     updatePlayIcons(false);
     clearSleepTimer();
@@ -450,20 +451,17 @@ export function setupAudioListeners() {
     if (currentTimeSpan) currentTimeSpan.innerText = "0:00";
 
     if (state.selectedItem?.title) {
-      const finishedTitle = state.selectedItem.title;
+      const finishedKey = state.selectedItem.id || state.selectedItem.title;
 
       try {
-        // Fjern sporet fra historikken
-        await removeFromFirestoreHistory(finishedTitle);
+        await removeFromFirestoreHistory(finishedKey);
       } catch (err) {
         console.error("Kunne ikke fjerne fullført spor fra historikk:", err);
       }
 
-      // Lukker bare fullskjermspilleren og minispilleren - INGEN NAVIGASJON
       closeFullscreenPlayer();
       document.getElementById("audio-player-bar")?.classList.add("hidden");
 
-      // Nullstill lyd kildene
       globalAudio.src = "";
       state.selectedItem = null;
     }
@@ -482,7 +480,8 @@ export function setupAudioListeners() {
       if (globalAudio.duration) {
         globalAudio.currentTime = (progressBar.value / 100) * globalAudio.duration;
         if (state.selectedItem?.title && !state.selectedItem.isRadio) {
-          saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
+          const key = state.selectedItem.id || state.selectedItem.title;
+          saveProgressToFirestore(key, state.selectedItem);
         }
       }
       state.isUserSeeking = false;
