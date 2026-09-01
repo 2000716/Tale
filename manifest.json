@@ -3,8 +3,9 @@
   "short_name": "Tale",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "orientation": "portrait",
+  "background_color": "#070b1e",
+  "theme_color": "#070b1e",
   "icons": [
     {
       "src": "https://res.cloudinary.com/ocv4zhpk/image/upload/v1787426549/tale.png",
