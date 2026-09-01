@@ -414,7 +414,7 @@ export function setupAudioListeners() {
     }
   };
 
-  // NÅR SPOCK/BOKEN ER FERDIGSPILT
+  // NÅR SPOR/BOK ER FERDIGSPILT
   globalAudio.onended = async () => {
     updatePlayIcons(false);
     clearSleepTimer();
@@ -424,7 +424,6 @@ export function setupAudioListeners() {
 
     if (state.selectedItem?.title) {
       const finishedTitle = state.selectedItem.title;
-      const itemToOpen = { ...state.selectedItem };
 
       try {
         // Fjern sporet fra historikken og UI
@@ -433,15 +432,13 @@ export function setupAudioListeners() {
         console.error("Kunne ikke fjerne fullført spor fra historikk:", err);
       }
 
-      // Nullstill og skjul spillere
-      document.getElementById("audio-player-bar")?.classList.add("hidden");
+      // Lukk fullskjermspiller og skjult mini-spiller
       closeFullscreenPlayer();
+      document.getElementById("audio-player-bar")?.classList.add("hidden");
+
+      // Nullstill lyd kildene
       globalAudio.src = "";
       state.selectedItem = null;
-
-      // Åpne detaljsiden (knappen vil vise "Spill av" siden historikken ble slettet)
-      openDetailsPage(itemToOpen);
-      updateDetailPlayButtonState();
     }
   };
 
