@@ -41,18 +41,26 @@ export async function loadUserHistory() {
 }
 
 export async function saveProgressToFirestore(itemId, data) {
-  if (!state.currentUser || !itemId) return;
+  if (!state.currentUser || !itemId || !data) return;
+
+  // SJEKK: Hvis dette er direkte radio, skal det IKKE lagres i "Fortsett å lytte"
+  if (data.isRadio || data.type === "radio" || data.isLive) {
+    return;
+  }
+
   try {
     const cleanId = itemId.replace(/[^a-zA-Z0-9-_]/g, '_');
     const payload = {
       ...data,
-      currentTime: globalAudio.currentTime,
+      currentTime: globalAudio.currentTime || 0,
       duration: globalAudio.duration || 0,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
 
+    if (!state.userHistory) state.userHistory = {};
     state.userHistory[cleanId] = payload;
     localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
+    
     renderContinueListening();
     updateDetailPlayButtonState();
 
@@ -68,8 +76,11 @@ export async function removeFromFirestoreHistory(itemId) {
   try {
     const cleanId = itemId.replace(/[^a-zA-Z0-9-_]/g, '_');
     
-    delete state.userHistory[cleanId];
-    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
+    if (state.userHistory && state.userHistory[cleanId]) {
+      delete state.userHistory[cleanId];
+      localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
+    }
+    
     renderContinueListening();
     updateDetailPlayButtonState();
 
@@ -85,15 +96,25 @@ export function renderContinueListening() {
   const container = document.getElementById("continue-listening-container");
   if (!section || !container) return;
 
-  const items = Object.entries(state.userHistory);
+  if (!state.userHistory) state.userHistory = {};
+
+  // Filtrer ut eventuelle radio-elementer som måtte ligge i historikken
+  const items = Object.entries(state.userHistory).filter(([_, item]) => {
+    return !item.isRadio && item.type !== "radio" && !item.isLive;
+  });
+
   if (items.length === 0) {
     section.style.display = "none";
     return;
   }
 
   items.sort((a, b) => {
-    const aTime = a[1].updatedAt?.seconds || (a[1].updatedAt ? new Date(a[1].updatedAt).getTime() / 1000 : 0);
-    const bTime = b[1].updatedAt?.seconds || (b[1].updatedAt ? new Date(b[1].updatedAt).getTime() / 1000 : 0);
+    const aTime = a[1].updatedAt?.seconds 
+      ? a[1].updatedAt.seconds 
+      : (a[1].updatedAt ? new Date(a[1].updatedAt).getTime() / 1000 : 0);
+    const bTime = b[1].updatedAt?.seconds 
+      ? b[1].updatedAt.seconds 
+      : (b[1].updatedAt ? new Date(b[1].updatedAt).getTime() / 1000 : 0);
     return bTime - aTime;
   });
 
@@ -121,7 +142,7 @@ export function updateDetailPlayButtonState() {
   if (!startBtn || !state.selectedItem || !state.selectedItem.title) return;
 
   const cleanId = state.selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_');
-  if (state.userHistory[cleanId] && state.userHistory[cleanId].currentTime > 5) {
+  if (state.userHistory && state.userHistory[cleanId] && state.userHistory[cleanId].currentTime > 5) {
     startBtn.innerHTML = `<i class="fa-solid fa-play"></i> Fortsett (${Math.floor(state.userHistory[cleanId].currentTime / 60)} min)`;
   } else {
     startBtn.innerHTML = `<i class="fa-solid fa-play"></i> Spill av`;
