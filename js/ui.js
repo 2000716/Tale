@@ -25,7 +25,11 @@ export function updateUrlHash(pageOrView) {
   } else {
     location.hash = `#${pageOrView}`;
   }
-  localStorage.setItem("lastActivePage", pageOrView);
+
+  // PASS PÅ: Ikke lagre modal/fullskjerm-spilleren som siste aktive side for oppstart
+  if (pageOrView !== "fullscreen-player" && !pageOrView.includes("modal")) {
+    localStorage.setItem("lastActivePage", pageOrView);
+  }
 }
 
 export function switchPage(pageId) {
@@ -77,3 +81,23 @@ window.toggleReadMore = function() {
   box.classList.toggle('expanded');
   btn.textContent = box.classList.contains('expanded') ? 'Se mindre' : 'Se mer';
 };
+
+// Automatisk oppfølging av mobil/nettleser sin tilbake-knapp
+window.addEventListener("popstate", () => {
+  const fullPlayer = document.getElementById("fullscreen-player");
+  const detailsPage = document.getElementById("details-page");
+
+  // Hvis brukeren trykker tilbake og hashen IKKE lenger er #fullscreen-player, skjul storspilleren
+  if (fullPlayer && fullPlayer.classList.contains("active") && window.location.hash !== "#fullscreen-player") {
+    fullPlayer.classList.remove("active");
+    fullPlayer.classList.remove("is-dragging");
+    fullPlayer.style.removeProperty("--y-offset");
+  }
+
+  // Hvis brukeren trykker tilbake fra detaljsiden
+  if (detailsPage && detailsPage.classList.contains("active") && window.location.hash !== "#details-page") {
+    detailsPage.classList.remove("active");
+  }
+
+  updateBottomNavVisibility();
+});
