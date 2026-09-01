@@ -9,12 +9,13 @@ import { collection, query, orderBy, getDocs } from "https://www.gstatic.com/fir
 let currentSlideIndex = 0;
 
 // Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
-function playAudioTrack(audioUrl, title, sub, cover) {
+function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0) {
   playSpecificEpisode({
     audioUrl: audioUrl,
     title: title,
     sub: sub,
-    cover: cover
+    cover: cover,
+    currentTime: currentTime
   });
 }
 
@@ -49,7 +50,6 @@ function initHeroCarousel() {
   if (slides.length <= 1) return;
 
   const showSlide = (index) => {
-    // Sørg for at indeksen roterer korrekt innenfor gyldig område
     if (index < 0) index = slides.length - 1;
     if (index >= slides.length) index = 0;
 
@@ -62,15 +62,13 @@ function initHeroCarousel() {
     currentSlideIndex = index;
   };
 
-  // 1. Bla ved klikk på dottene
   dots.forEach((dot, index) => {
     dot.addEventListener("click", (e) => {
-      e.stopPropagation(); // Hindrer at avspilling trigges ved klikk på dot
+      e.stopPropagation();
       showSlide(index);
     });
   });
 
-  // 2. Sveiping med finger / touch-støtte
   if (wrapper) {
     let touchStartX = 0;
     let touchEndX = 0;
@@ -85,16 +83,15 @@ function initHeroCarousel() {
     }, { passive: true });
 
     const handleSwipe = () => {
-      const swipeThreshold = 40; // Minimum px bevegelse for swipe
+      const swipeThreshold = 40;
       if (touchEndX < touchStartX - swipeThreshold) {
-        showSlide(currentSlideIndex + 1); // Sveip til venstre -> Neste
+        showSlide(currentSlideIndex + 1);
       } else if (touchEndX > touchStartX + swipeThreshold) {
-        showSlide(currentSlideIndex - 1); // Sveip til høyre -> Forrige
+        showSlide(currentSlideIndex - 1);
       }
     };
   }
 
-  // Sett start-slide
   showSlide(currentSlideIndex);
 }
 
@@ -102,7 +99,6 @@ function initHeroCarousel() {
 // 1. LASTE BANNERE (Hero Banners / Storytel-stil)
 // ==========================================
 export async function loadBannersFromFirestore() {
-  // 1. Rendrer fra cache først for å hindre blinking ved oppstart
   const cachedBanners = localStorage.getItem("app_banners_cache");
   if (cachedBanners) {
     try {
@@ -112,7 +108,6 @@ export async function loadBannersFromFirestore() {
     }
   }
 
-  // 2. Hent data én gang (getDocs) for å spare Firebase-kvote
   try {
     const q = query(collection(db, "banners"));
     const snapshot = await getDocs(q);
@@ -132,7 +127,6 @@ export async function loadBannersFromFirestore() {
 function renderHeroBanners(banners) {
   const pages = ["home", "audiobooks", "podcasts"];
 
-  // --- OPPBYGGING AV HOVED-HEROKARUSELL PÅ HJEM-SIDEN ---
   const homeBanners = banners.filter(b => (b.targetPage === "home" || b.page === "home") && (b.type === "carousel" || !b.type));
   const heroWrapper = document.getElementById("hero-banner-wrapper");
   const carouselContainer = document.getElementById("hero-banner-carousel");
@@ -169,7 +163,6 @@ function renderHeroBanners(banners) {
       carouselContainer.innerHTML = slidesHTML;
       dotsContainer.innerHTML = dotsHTML;
 
-      // Legg til piler for manuell bladning hvis det er flere enn 1 slide
       const existingNav = heroWrapper.querySelector(".carousel-nav");
       if (existingNav) existingNav.remove();
 
@@ -202,15 +195,12 @@ function renderHeroBanners(banners) {
       }
 
       heroWrapper.style.display = "block";
-
-      // Re-init karusell-logikk
       initHeroCarousel();
     } else {
       heroWrapper.style.display = "none";
     }
   }
 
-  // --- RENDRE EKSTRA HERO WIDGETS I DYNAMISKE CONTAINERNE ---
   pages.forEach(page => {
     const pageBanners = banners.filter(b => (b.targetPage === page || b.page === page) && b.type === "widget");
     if (pageBanners.length === 0) return;
@@ -218,7 +208,6 @@ function renderHeroBanners(banners) {
     const pageContainer = document.getElementById(`${page}-sections`);
     if (!pageContainer) return;
 
-    // Fjern eksisterende genererte banner-widgets
     pageContainer.querySelectorAll(".hero-banner-widget").forEach(el => el.remove());
 
     pageBanners.forEach(banner => {
@@ -240,7 +229,7 @@ function renderHeroBanners(banners) {
             <p class="hero-subtitle">${escapeAttr(banner.subtitle || '')}</p>
             <p class="hero-desc">${escapeAttr(banner.description || '')}</p>
             <button class="hero-play-btn" type="button">
-              <i class="fa-solid fa-play"></i> Spilling nå
+              <i class="fa-solid fa-play"></i> Spill nå
             </button>
           </div>
         </div>
@@ -258,18 +247,15 @@ export async function loadContentFromFirestore() {
   const pages = ["home", "audiobooks", "podcasts", "radio"];
 
   const renderSectionsData = (sectionsList) => {
-    // 1. Tøm alle containere først
     pages.forEach(p => {
       const container = document.getElementById(`${p}-sections`);
       if (container) {
-        // Ta vare på hero-bannere hvis de finnes
         const existingBanners = container.querySelectorAll(".hero-banner-widget");
         container.innerHTML = "";
         existingBanners.forEach(b => container.appendChild(b));
       }
     });
 
-    // 2. Bygg seksjonene fra datalisten
     sectionsList.forEach((sec) => {
       const rawPages = sec.targetPages || sec.pages || sec.page || "home";
       const pagesArray = Array.isArray(rawPages) ? rawPages : [rawPages];
@@ -283,7 +269,6 @@ export async function loadContentFromFirestore() {
 
         let itemsHTML = "";
 
-        // RADIO LAYOUT
         if (pageTarget === "radio" || sec.layout === "radio-list" || sec.type === "radio-list") {
           (sec.items || []).forEach((item, index) => {
             const title = item.title || 'Radiokanal';
@@ -319,7 +304,6 @@ export async function loadContentFromFirestore() {
             <div class="radio-channels-list">${itemsHTML}</div>
           `;
         } 
-        // FEATURED BANNER LAYOUT INNE I EN SEKSJON
         else if (sec.layout === "featured-banner") {
           const item = sec.items?.[0] || {};
           const title = item.title || sec.title || '';
@@ -340,7 +324,6 @@ export async function loadContentFromFirestore() {
           `;
           sectionWrapper.innerHTML = itemsHTML;
         } 
-        // VANLIG SCROLL / GRID LAYOUT
         else {
           const containerClass = sec.layout === 'grid' ? 'grid-layout' : 'horizontal-scroll';
 
@@ -394,7 +377,6 @@ export async function loadContentFromFirestore() {
     renderRadioBanner();
   };
 
-  // 1. Les fra cache umiddelbart (forhindrer blinking på skjermen)
   const cachedSections = localStorage.getItem("app_sections_cache");
   if (cachedSections) {
     try {
@@ -404,7 +386,6 @@ export async function loadContentFromFirestore() {
     }
   }
 
-  // 2. Hent oppdaterte data fra Firestore (kun 1 lesing per oppstart via getDocs)
   try {
     const q = query(collection(db, "sections"), orderBy("order", "asc"));
     const snapshot = await getDocs(q);
@@ -590,7 +571,7 @@ async function executeAppSearch(term) {
       htmlContent = `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${gridHTML}</div>`;
     }
 
-    resultsContainer.innerHTML = `2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container">${htmlContent}</div>`;
+    resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container">${htmlContent}</div>`;
   } catch (err) {
     console.error("Feil under søk:", err);
     resultsContainer.innerHTML = `<h2>Søk</h2><p style="padding:20px; color:red;">Kunne ikke utføre søk akkurat nå.</p>`;
@@ -628,12 +609,14 @@ function extractCardItemData(card) {
   };
 }
 
+// ==========================================
+// EVENTS / LYSNERE (INGEN TVUNGEN SKIFTE TIL INFOSIDE)
+// ==========================================
 function setupEventListeners() {
   document.addEventListener("click", async (e) => {
-    // 0. Klikk på Carousel Slide eller Hero Banner Widget
+    // 0. Karuseller og Hero Banners -> Direktesilling
     const slide = e.target.closest(".carousel-slide, .hero-banner-card, .featured-banner-card");
     if (slide) {
-      // Unngå avspilling om bruker trykker på forrige/neste-piler
       if (e.target.closest(".carousel-btn")) return;
 
       const audioUrl = slide.dataset.audio;
@@ -647,53 +630,64 @@ function setupEventListeners() {
       return;
     }
 
-    // 1. Klikk på direkte-knapp i radiokort
-    const radioPlayBtn = e.target.closest(".radio-play-btn");
-    if (radioPlayBtn) {
-      e.stopPropagation();
-      const audioUrl = radioPlayBtn.dataset.audio;
-      const title = radioPlayBtn.dataset.title || "Direkte Radio";
-      const cover = radioPlayBtn.dataset.cover || "";
+    // 1. Radiokanaler (Knapp eller Kort) -> Direktespilling
+    const radioBtnOrCard = e.target.closest(".radio-play-btn, .radio-card-horizontal, .radio-banner");
+    if (radioBtnOrCard) {
+      if (e.target.closest(".radio-play-btn")) e.stopPropagation();
 
-      if (audioUrl) {
-        playAudioTrack(audioUrl, title, "NRK Radio", cover);
-      }
-      return;
-    }
+      const audioUrl = radioBtnOrCard.dataset.audio;
+      const title = radioBtnOrCard.dataset.title || "Direkte Radio";
+      const sub = radioBtnOrCard.dataset.sub || "NRK Radio";
+      const cover = radioBtnOrCard.dataset.cover || "";
 
-    // 2. Klikk på selve avlange radiokortet
-    const radioCard = e.target.closest(".radio-card-horizontal");
-    if (radioCard) {
-      const audioUrl = radioCard.dataset.audio;
-      const title = radioCard.dataset.title || "Direkte Radio";
-      const cover = radioCard.dataset.cover || "";
-      if (audioUrl) {
-        playAudioTrack(audioUrl, title, "NRK Radio", cover);
-      }
-      return;
-    }
-
-    // 3. Klikk på nyhets-banneret øverst
-    const radioBanner = e.target.closest(".radio-banner");
-    if (radioBanner) {
-      const audioUrl = radioBanner.dataset.audio || "https://lyd.nrk.no/icecast/aac/high/s0w7hwn47m/p2";
-      const title = radioBanner.dataset.title || "NRK P2";
-      const sub = radioBanner.dataset.sub || "Nyheter og samfunn";
-      const cover = radioBanner.dataset.cover || "";
       if (audioUrl) {
         playAudioTrack(audioUrl, title, sub, cover);
       }
       return;
     }
 
-    // 4. Klikk på vanlige bok/podkast-kort
-    const card = e.target.closest(".book-card, .continue-card");
-    if (card) {
-      const item = extractCardItemData(card);
-      openDetailsView(item);
+    // 2. "Fortsett å lytte" eller andre lyttegallerier
+    const continueCard = e.target.closest(".continue-card");
+    if (continueCard) {
+      const item = extractCardItemData(continueCard);
+      
+      // Spill av umiddelbart der du er hvis audioUrl finnes
+      if (item && item.audioUrl) {
+        playAudioTrack(
+          item.audioUrl,
+          item.title,
+          item.sub || item.author || item.publisher || '',
+          item.coverUrl || item.cover || '',
+          item.progress || 0
+        );
+      } else if (item && (item.rssUrl || item.id)) {
+        // Kun hvis lydfil-adresse mangler må vi hente oversikt
+        openDetailsView(item);
+      }
       return;
     }
 
+    // 3. Generelle kort (Bok/Podkast-kort) uansett hvilken side du står på
+    const card = e.target.closest(".book-card");
+    if (card) {
+      const item = extractCardItemData(card);
+
+      // Hvis kortet har en direkte lyd-URL, spilles den av DIREKTE uten sidebytte
+      if (item && item.audioUrl) {
+        playAudioTrack(
+          item.audioUrl,
+          item.title,
+          item.sub || item.author || item.publisher || '',
+          item.coverUrl || item.cover || ''
+        );
+      } else {
+        // Om det er en podkast uten valgt episode/RSS, åpner vi infosiden for å velge episode
+        openDetailsView(item);
+      }
+      return;
+    }
+
+    // Navigasjon og andre knapper
     const loginBtn = e.target.closest("#go-to-login-btn");
     if (loginBtn) {
       setAuthMode(false);
@@ -764,7 +758,6 @@ function setupEventListeners() {
       return;
     }
     
-    // Oppdatert til å bruke skipTime(-15) og skipTime(15) for synkronisering med DB og MediaSession
     if (e.target.closest("#skip-back-btn")) {
       skipTime(-15);
       return;
