@@ -1,6 +1,6 @@
 import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
-import { buildCoverMarkup } from "./ui.js";
+import { buildCoverMarkup, formatTime } from "./ui.js";
 import { playSpecificEpisode } from "./player.js";
 import { 
   collection, 
@@ -9,6 +9,13 @@ import {
   setDoc, 
   deleteDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Hjelpefunksjon for å hente en konsistent nøkkel for Firestore/Cache
+function getItemKey(itemOrId) {
+  if (!itemOrId) return "";
+  const rawId = typeof itemOrId === "string" ? itemOrId : (itemOrId.id || itemOrId.title);
+  return rawId ? rawId.replace(/[^a-zA-Z0-9-_]/g, '_') : "";
+}
 
 export async function loadUserHistory() {
   if (!state.currentUser) return;
@@ -51,16 +58,19 @@ export async function saveProgressToFirestore(itemId, data) {
   const currentTime = globalAudio.currentTime || 0;
   const duration = globalAudio.duration || 0;
 
+  const cleanId = getItemKey(itemId);
+  if (!cleanId) return;
+
   // UX-SJEKK 2: Hvis sporet er nesten ferdig (under 10 sek igjen eller > 95%), slett det i stedet for å lagre
   if (duration > 0 && (duration - currentTime < 10 || (currentTime / duration) > 0.95)) {
-    await removeFromFirestoreHistory(itemId);
+    await removeFromFirestoreHistory(cleanId);
     return;
   }
 
   try {
-    const cleanId = itemId.replace(/[^a-zA-Z0-9-_]/g, '_');
     const payload = {
       ...data,
+      id: data.id || itemId,
       currentTime: currentTime,
       duration: duration,
       updatedAt: new Date().toISOString()
@@ -83,7 +93,8 @@ export async function saveProgressToFirestore(itemId, data) {
 export async function removeFromFirestoreHistory(itemId) {
   if (!state.currentUser || !itemId) return;
   try {
-    const cleanId = itemId.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const cleanId = getItemKey(itemId);
+    if (!cleanId) return;
     
     if (state.userHistory && state.userHistory[cleanId]) {
       delete state.userHistory[cleanId];
@@ -109,7 +120,7 @@ export function renderContinueListening() {
 
   // Filtrer ut eventuelle radio-elementer
   const items = Object.entries(state.userHistory).filter(([_, item]) => {
-    return !item.isRadio && item.type !== "radio" && !item.isLive;
+    return item && !item.isRadio && item.type !== "radio" && !item.isLive;
   });
 
   if (items.length === 0) {
@@ -139,7 +150,7 @@ export function renderContinueListening() {
       <div class="book-author">${item.sub || ''}</div>
     `;
     card.onclick = () => {
-      state.selectedItem = { ...item, id: id };
+      state.selectedItem = { ...item, id: item.id || id };
       playSpecificEpisode(state.selectedItem, item.currentTime || 0);
     };
     container.appendChild(card);
@@ -148,13 +159,15 @@ export function renderContinueListening() {
 
 export function updateDetailPlayButtonState() {
   const startBtn = document.getElementById("start-play-btn");
-  if (!startBtn || !state.selectedItem || !state.selectedItem.title) return;
+  if (!startBtn || !state.selectedItem) return;
 
-  const cleanId = state.selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_');
+  const cleanId = getItemKey(state.selectedItem);
   
   // Sjekk om det finnes lagret fremdrift for elementet
-  if (state.userHistory && state.userHistory[cleanId] && state.userHistory[cleanId].currentTime > 5) {
-    startBtn.innerHTML = `<i class="fa-solid fa-play"></i> Fortsett (${Math.floor(state.userHistory[cleanId].currentTime / 60)} min)`;
+  if (cleanId && state.userHistory && state.userHistory[cleanId] && state.userHistory[cleanId].currentTime > 5) {
+    const savedTime = state.userHistory[cleanId].currentTime;
+    const formatted = formatTime ? formatTime(savedTime) : `${Math.floor(savedTime / 60)}m`;
+    startBtn.innerHTML = `<i class="fa-solid fa-play"></i> Fortsett (${formatted})`;
   } else {
     startBtn.innerHTML = `<i class="fa-solid fa-play"></i> Spill av`;
   }
