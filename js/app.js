@@ -37,7 +37,33 @@ document.addEventListener("DOMContentLoaded", () => {
   setupSearchListener();
   setupEventListeners();
   initHeroCarousel();
+  setupTouchGuards(); // Sikrer at pinch-zoom og dobbelttrykk-zoom er deaktivert
 });
+
+// ==========================================
+// TOUCH & ZOOM GUARDS (Forhindrer iOS/Android Zoom)
+// ==========================================
+function setupTouchGuards() {
+  // Hindre pinch-to-zoom (to fingre)
+  document.addEventListener("touchmove", (e) => {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  // Hindre dobbelttrykk for å zoome
+  let lastTouchEnd = 0;
+  document.addEventListener("touchend", (e) => {
+    // Ikke blokker interaksjon med knapper/inputs
+    if (e.target.closest("button, input, textarea, a")) return;
+
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, false);
+}
 
 // ==========================================
 // KARUSELL FUNKSJONALITET (KUN MANUELL BLADNING)
@@ -610,11 +636,11 @@ function extractCardItemData(card) {
 }
 
 // ==========================================
-// EVENTS / LYSNERE (INGEN TVUNGEN SKIFTE TIL INFOSIDE)
+// EVENTS / LYSNERE
 // ==========================================
 function setupEventListeners() {
   document.addEventListener("click", async (e) => {
-    // 0. Karuseller og Hero Banners -> Direktesilling
+    // 0. Karuseller og Hero Banners -> Direktespilling
     const slide = e.target.closest(".carousel-slide, .hero-banner-card, .featured-banner-card");
     if (slide) {
       if (e.target.closest(".carousel-btn")) return;
@@ -630,7 +656,7 @@ function setupEventListeners() {
       return;
     }
 
-    // 1. Radiokanaler (Knapp eller Kort) -> Direktespilling
+    // 1. Radiokanaler -> Direktespilling
     const radioBtnOrCard = e.target.closest(".radio-play-btn, .radio-card-horizontal, .radio-banner");
     if (radioBtnOrCard) {
       if (e.target.closest(".radio-play-btn")) e.stopPropagation();
@@ -646,12 +672,11 @@ function setupEventListeners() {
       return;
     }
 
-    // 2. "Fortsett å lytte" eller andre lyttegallerier
+    // 2. Fortsett å lytte
     const continueCard = e.target.closest(".continue-card");
     if (continueCard) {
       const item = extractCardItemData(continueCard);
       
-      // Spill av umiddelbart der du er hvis audioUrl finnes
       if (item && item.audioUrl) {
         playAudioTrack(
           item.audioUrl,
@@ -661,18 +686,16 @@ function setupEventListeners() {
           item.progress || 0
         );
       } else if (item && (item.rssUrl || item.id)) {
-        // Kun hvis lydfil-adresse mangler må vi hente oversikt
         openDetailsView(item);
       }
       return;
     }
 
-    // 3. Generelle kort (Bok/Podkast-kort) uansett hvilken side du står på
+    // 3. Bok/Podkast-kort
     const card = e.target.closest(".book-card");
     if (card) {
       const item = extractCardItemData(card);
 
-      // Hvis kortet har en direkte lyd-URL, spilles den av DIREKTE uten sidebytte
       if (item && item.audioUrl) {
         playAudioTrack(
           item.audioUrl,
@@ -681,13 +704,12 @@ function setupEventListeners() {
           item.coverUrl || item.cover || ''
         );
       } else {
-        // Om det er en podkast uten valgt episode/RSS, åpner vi infosiden for å velge episode
         openDetailsView(item);
       }
       return;
     }
 
-    // Navigasjon og andre knapper
+    // Navigasjon
     const loginBtn = e.target.closest("#go-to-login-btn");
     if (loginBtn) {
       setAuthMode(false);
