@@ -390,7 +390,7 @@ export function setupAudioListeners() {
         }
       }
 
-      // Lagrer automatisk hvert 10. sekund dersom det IKKE er radio
+      // Lagrer automatisk hvert 10. sekund (kun dersom det ikke er radio)
       if (!saveTimer && state.selectedItem?.title && !state.selectedItem.isRadio) {
         saveTimer = setTimeout(() => {
           saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
@@ -414,7 +414,7 @@ export function setupAudioListeners() {
     }
   };
 
-  // NÅR SPOCK/BOKEN ER FERDIGSLITT
+  // NÅR SPOCK/BOKEN ER FERDIGSPILT
   globalAudio.onended = async () => {
     updatePlayIcons(false);
     clearSleepTimer();
@@ -427,18 +427,21 @@ export function setupAudioListeners() {
       const itemToOpen = { ...state.selectedItem };
 
       try {
-        // Fjern det fullførte sporet umiddelbart fra Firestore og grensesnittet
+        // Fjern sporet fra historikken og UI
         await removeFromFirestoreHistory(finishedTitle);
       } catch (err) {
         console.error("Kunne ikke fjerne fullført spor fra historikk:", err);
       }
 
+      // Nullstill og skjul spillere
       document.getElementById("audio-player-bar")?.classList.add("hidden");
       closeFullscreenPlayer();
       globalAudio.src = "";
       state.selectedItem = null;
 
+      // Åpne detaljsiden (knappen vil vise "Spill av" siden historikken ble slettet)
       openDetailsPage(itemToOpen);
+      updateDetailPlayButtonState();
     }
   };
 
