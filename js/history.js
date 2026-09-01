@@ -43,8 +43,17 @@ export async function loadUserHistory() {
 export async function saveProgressToFirestore(itemId, data) {
   if (!state.currentUser || !itemId || !data) return;
 
-  // SJEKK: Hvis dette er direkte radio, skal det IKKE lagres i "Fortsett å lytte"
+  // UX-SJEKK 1: Radio skal ALDRI lagres i "Fortsett å lytte"
   if (data.isRadio || data.type === "radio" || data.isLive) {
+    return;
+  }
+
+  const currentTime = globalAudio.currentTime || 0;
+  const duration = globalAudio.duration || 0;
+
+  // UX-SJEKK 2: Hvis sporet er nesten ferdig (under 10 sek igjen eller > 95%), slett det i stedet for å lagre
+  if (duration > 0 && (duration - currentTime < 10 || (currentTime / duration) > 0.95)) {
+    await removeFromFirestoreHistory(itemId);
     return;
   }
 
@@ -52,8 +61,8 @@ export async function saveProgressToFirestore(itemId, data) {
     const cleanId = itemId.replace(/[^a-zA-Z0-9-_]/g, '_');
     const payload = {
       ...data,
-      currentTime: globalAudio.currentTime || 0,
-      duration: globalAudio.duration || 0,
+      currentTime: currentTime,
+      duration: duration,
       updatedAt: new Date().toISOString()
     };
 
@@ -98,7 +107,7 @@ export function renderContinueListening() {
 
   if (!state.userHistory) state.userHistory = {};
 
-  // Filtrer ut eventuelle radio-elementer som måtte ligge i historikken
+  // Filtrer ut eventuelle radio-elementer
   const items = Object.entries(state.userHistory).filter(([_, item]) => {
     return !item.isRadio && item.type !== "radio" && !item.isLive;
   });
@@ -142,6 +151,8 @@ export function updateDetailPlayButtonState() {
   if (!startBtn || !state.selectedItem || !state.selectedItem.title) return;
 
   const cleanId = state.selectedItem.title.replace(/[^a-zA-Z0-9-_]/g, '_');
+  
+  // Sjekk om det finnes lagret fremdrift for elementet
   if (state.userHistory && state.userHistory[cleanId] && state.userHistory[cleanId].currentTime > 5) {
     startBtn.innerHTML = `<i class="fa-solid fa-play"></i> Fortsett (${Math.floor(state.userHistory[cleanId].currentTime / 60)} min)`;
   } else {
