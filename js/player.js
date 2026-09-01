@@ -4,7 +4,10 @@ import { saveProgressToFirestore, removeFromFirestoreHistory, updateDetailPlayBu
 import { openDetailsPage } from "./details.js";
 
 const speeds = [1.0, 1.25, 1.5, 1.75, 2.0, 0.8];
-let currentSpeedIndex = 0;
+
+// Henter og husker valgt avspillingshastighet på tvers av sesjoner
+let savedSpeed = parseFloat(localStorage.getItem("tale_playback_rate") || "1.0");
+let currentSpeedIndex = speeds.indexOf(savedSpeed) !== -1 ? speeds.indexOf(savedSpeed) : 0;
 
 let sleepTimeout = null;
 let sleepInterval = null;
@@ -24,7 +27,7 @@ function updateSleepDisplay() {
   sleepLabel.innerText = `${remainingMins}m`;
 }
 
-function clearSleepTimer() {
+export function clearSleepTimer() {
   if (sleepTimeout) clearTimeout(sleepTimeout);
   if (sleepInterval) clearInterval(sleepInterval);
   sleepTimeout = null;
@@ -58,6 +61,17 @@ function setSleepTimer(minutes) {
   sleepInterval = setInterval(updateSleepDisplay, 1000);
 }
 
+// Global spoling for både UI-knapper og låseskjerm
+export function skipTime(seconds) {
+  if (!globalAudio.duration) return;
+  const newTime = globalAudio.currentTime + seconds;
+  globalAudio.currentTime = Math.max(0, Math.min(newTime, globalAudio.duration));
+  
+  if (state.selectedItem?.title && !state.selectedItem.isRadio) {
+    saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
+  }
+}
+
 export function setupExtraPlayerControls() {
   const speedBtn = document.getElementById("speed-btn");
   const speedLabel = document.getElementById("speed-label");
@@ -72,11 +86,25 @@ export function setupExtraPlayerControls() {
   const optAboutBtn = document.getElementById("opt-about-btn");
   const optShareBtn = document.getElementById("opt-share-btn");
 
+  // Kobler opp 15-sekunder knapper i grensesnittet om de finnes
+  const rewindBtn = document.getElementById("rewind-15-btn");
+  const forwardBtn = document.getElementById("forward-15-btn");
+  if (rewindBtn) rewindBtn.onclick = () => skipTime(-15);
+  if (forwardBtn) forwardBtn.onclick = () => skipTime(15);
+
+  // Vis den lagrede hastigheten ved oppstart
+  const currentSpeed = speeds[currentSpeedIndex];
+  if (speedLabel) speedLabel.innerText = `${currentSpeed.toFixed(1)}x`;
+  if (speedBtn) speedBtn.classList.toggle("active", currentSpeed !== 1.0);
+
   if (speedBtn) {
     speedBtn.onclick = () => {
       currentSpeedIndex = (currentSpeedIndex + 1) % speeds.length;
       const newSpeed = speeds[currentSpeedIndex];
+      
       globalAudio.playbackRate = newSpeed;
+      localStorage.setItem("tale_playback_rate", newSpeed.toString());
+      
       if (speedLabel) speedLabel.innerText = `${newSpeed.toFixed(1)}x`;
       speedBtn.classList.toggle("active", newSpeed !== 1.0);
     };
@@ -168,12 +196,10 @@ export function updateMediaSession(item) {
         navigator.mediaSession.playbackState = "paused";
       });
       navigator.mediaSession.setActionHandler('seekbackward', (details) => {
-        const skipTime = details.seekOffset || 15;
-        globalAudio.currentTime = Math.max(globalAudio.currentTime - skipTime, 0);
+        skipTime(-(details.seekOffset || 15));
       });
       navigator.mediaSession.setActionHandler('seekforward', (details) => {
-        const skipTime = details.seekOffset || 15;
-        globalAudio.currentTime = Math.min(globalAudio.currentTime + skipTime, globalAudio.duration || 0);
+        skipTime(details.seekOffset || 15);
       });
       navigator.mediaSession.setActionHandler('seekto', (details) => {
         if (details.fastSeek && ('fastSeek' in globalAudio)) {
@@ -213,6 +239,7 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   globalAudio.src = state.selectedItem.audioUrl;
 
   globalAudio.onloadedmetadata = () => {
+    // Bruker den senest valgte avspillingshastigheten
     globalAudio.playbackRate = speeds[currentSpeedIndex];
 
     if (startPosition > 0) {
@@ -426,13 +453,13 @@ export function setupAudioListeners() {
       const finishedTitle = state.selectedItem.title;
 
       try {
-        // Fjern sporet fra historikken og UI
+        // Fjern sporet fra historikken
         await removeFromFirestoreHistory(finishedTitle);
       } catch (err) {
         console.error("Kunne ikke fjerne fullført spor fra historikk:", err);
       }
 
-      // Lukk fullskjermspiller og skjult mini-spiller
+      // Lukker bare fullskjermspilleren og minispilleren - INGEN NAVIGASJON
       closeFullscreenPlayer();
       document.getElementById("audio-player-bar")?.classList.add("hidden");
 
