@@ -204,7 +204,9 @@ export function playSpecificEpisode(epData, startPosition = 0) {
     title: epData.title || "Ukjent tittel",
     sub: epData.sub || epData.author || "",
     audioUrl: epData.audioUrl,
-    cover: epData.cover || epData.coverUrl || ""
+    cover: epData.cover || epData.coverUrl || "",
+    isRadio: epData.isRadio || epData.type === "radio" || false,
+    type: epData.type || (epData.isRadio ? "radio" : "podcast")
   };
 
   const totalTimeSpan = document.getElementById("total-time");
@@ -274,12 +276,10 @@ export function closeFullscreenPlayer() {
   fullPlayer.classList.remove('active');
   fullPlayer.style.removeProperty('--y-offset');
 
-  // Tilbakestill Hash dersom vi kom fra storspilleren
   if (window.location.hash === "#fullscreen-player") {
     history.replaceState(null, "", window.location.pathname + window.location.search);
   }
 
-  // Tving re-synkronisering av meny/mini-spiller
   updateBottomNavVisibility();
 }
 
@@ -378,7 +378,6 @@ export function setupAudioListeners() {
       if (currentTimeSpan) currentTimeSpan.innerText = formatTime(globalAudio.currentTime);
       if (totalTimeSpan) totalTimeSpan.innerText = formatTime(globalAudio.duration);
 
-      // Oppdaterer MediaSession fremdriftslinje på OS/låseskjerm
       if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
         try {
           navigator.mediaSession.setPositionState({
@@ -391,7 +390,8 @@ export function setupAudioListeners() {
         }
       }
 
-      if (!saveTimer && state.selectedItem?.title) {
+      // Lagrer automatisk hvert 10. sekund dersom det IKKE er radio
+      if (!saveTimer && state.selectedItem?.title && !state.selectedItem.isRadio) {
         saveTimer = setTimeout(() => {
           saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
           saveTimer = null;
@@ -414,6 +414,7 @@ export function setupAudioListeners() {
     }
   };
 
+  // NÅR SPOCK/BOKEN ER FERDIGSLITT
   globalAudio.onended = async () => {
     updatePlayIcons(false);
     clearSleepTimer();
@@ -422,15 +423,21 @@ export function setupAudioListeners() {
     if (currentTimeSpan) currentTimeSpan.innerText = "0:00";
 
     if (state.selectedItem?.title) {
+      const finishedTitle = state.selectedItem.title;
       const itemToOpen = { ...state.selectedItem };
+
       try {
-        await removeFromFirestoreHistory(state.selectedItem.title);
+        // Fjern det fullførte sporet umiddelbart fra Firestore og grensesnittet
+        await removeFromFirestoreHistory(finishedTitle);
       } catch (err) {
-        console.error("Kunne ikke fjerne fra Firestore:", err);
+        console.error("Kunne ikke fjerne fullført spor fra historikk:", err);
       }
+
       document.getElementById("audio-player-bar")?.classList.add("hidden");
       closeFullscreenPlayer();
       globalAudio.src = "";
+      state.selectedItem = null;
+
       openDetailsPage(itemToOpen);
     }
   };
@@ -447,7 +454,7 @@ export function setupAudioListeners() {
     progressBar.onchange = () => {
       if (globalAudio.duration) {
         globalAudio.currentTime = (progressBar.value / 100) * globalAudio.duration;
-        if (state.selectedItem?.title) {
+        if (state.selectedItem?.title && !state.selectedItem.isRadio) {
           saveProgressToFirestore(state.selectedItem.title, state.selectedItem);
         }
       }
