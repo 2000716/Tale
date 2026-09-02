@@ -49,25 +49,24 @@ document.addEventListener("DOMContentLoaded", () => {
 // TOUCH & ZOOM GUARDS (Forhindrer iOS/Android Zoom)
 // ==========================================
 function setupTouchGuards() {
-  // Hindre pinch-to-zoom (to fingre)
+  // Bare blokker pinch-zoom når det faktisk er to fingre, og ikke i formfelt eller knapper.
   document.addEventListener("touchmove", (e) => {
-    if (e.touches.length > 1) {
+    if (e.touches.length > 1 && !e.target.closest("button, input, textarea, a, select, label")) {
       e.preventDefault();
     }
   }, { passive: false });
 
-  // Hindre dobbelttrykk for å zoome
+  // Milder dobbelttrykk/zoom-blokkering for å unngå overfølsom touch-opplevelse.
   let lastTouchEnd = 0;
   document.addEventListener("touchend", (e) => {
-    // Ikke blokker interaksjon med knapper/inputs
-    if (e.target.closest("button, input, textarea, a")) return;
+    if (e.target.closest("button, input, textarea, a, select")) return;
 
     const now = Date.now();
-    if (now - lastTouchEnd <= 300) {
+    if (now - lastTouchEnd <= 180) {
       e.preventDefault();
     }
     lastTouchEnd = now;
-  }, false);
+  }, { passive: false });
 }
 
 // ==========================================
@@ -114,7 +113,7 @@ function initHeroCarousel() {
     }, { passive: true });
 
     const handleSwipe = () => {
-      const swipeThreshold = 40;
+      const swipeThreshold = 80;
       if (touchEndX < touchStartX - swipeThreshold) {
         showSlide(currentSlideIndex + 1);
       } else if (touchEndX > touchStartX + swipeThreshold) {
