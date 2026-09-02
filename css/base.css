@@ -30,7 +30,7 @@ body {
 }
 
 main {
-  background: var(--bg-content);
+  background: #ffffff;
 }
 
 /* Tillat tekstmarkering og hindre iOS auto-zoom i inndatafelt */

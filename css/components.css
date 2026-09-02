@@ -171,6 +171,19 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
+main .page,
+main .dynamic-section,
+main .dynamic-container,
+main > section,
+#home-sections,
+#audiobooks-sections,
+#podcasts-sections,
+#radio-sections,
+#search-results-page {
+  background: #ffffff;
+  color: #111827;
+}
+
 .search-input-wrapper input:hover {
   border-color: rgba(174, 194, 247, 0.3);
 }

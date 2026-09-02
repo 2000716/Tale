@@ -206,9 +206,16 @@ main, .content-container {
    ========================================== */
 .section-header {
   margin: 1.5rem 0 0.8rem 0;
-  color: var(--text-dark, #0f172a);
+  color: #111827;
   font-size: 1.1rem;
   font-weight: 700;
+}
+
+.page.active,
+.dynamic-container,
+.dynamic-section {
+  background: #ffffff;
+  color: #111827;
 }
 
 .horizontal-scroll,
