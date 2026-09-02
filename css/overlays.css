@@ -9,7 +9,7 @@
   align-items: center;
   padding: 2.5rem 1.5rem;
   text-align: center;
-  background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
+  background: linear-gradient(180deg, #07111f 0%, #0b122d 100%);
   color: var(--text-light, #ffffff);
   height: 100vh;
   position: fixed;

@@ -221,9 +221,9 @@ main, .content-container {
   gap: 16px;
   padding-bottom: 10px;
   -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
-  touch-action: pan-x;
+  touch-action: pan-x pinch-zoom;
 }
 
 .horizontal-scroll::-webkit-scrollbar,

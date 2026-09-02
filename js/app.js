@@ -46,26 +46,15 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ==========================================
-// TOUCH & ZOOM GUARDS (Forhindrer iOS/Android Zoom)
+// TOUCH & ZOOM GUARDS (Kun pinch-zoom blokkeres; normal tap og swipe skal føles som native apps)
 // ==========================================
 function setupTouchGuards() {
-  // Bare blokker pinch-zoom når det faktisk er to fingre, og ikke i formfelt eller knapper.
   document.addEventListener("touchmove", (e) => {
-    if (e.touches.length > 1 && !e.target.closest("button, input, textarea, a, select, label")) {
+    const isInteractiveElement = e.target.closest("button, input, textarea, a, select, label, [contenteditable='true']");
+
+    if (e.touches.length > 1 && !isInteractiveElement) {
       e.preventDefault();
     }
-  }, { passive: false });
-
-  // Milder dobbelttrykk/zoom-blokkering for å unngå overfølsom touch-opplevelse.
-  let lastTouchEnd = 0;
-  document.addEventListener("touchend", (e) => {
-    if (e.target.closest("button, input, textarea, a, select")) return;
-
-    const now = Date.now();
-    if (now - lastTouchEnd <= 180) {
-      e.preventDefault();
-    }
-    lastTouchEnd = now;
   }, { passive: false });
 }
 
@@ -116,7 +105,7 @@ function initHeroCarousel() {
     }, { passive: true });
 
     const handleSwipe = () => {
-      const swipeThreshold = 80;
+      const swipeThreshold = 58;
       if (touchEndX < touchStartX - swipeThreshold) {
         showSlide(currentSlideIndex + 1);
       } else if (touchEndX > touchStartX + swipeThreshold) {

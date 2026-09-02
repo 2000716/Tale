@@ -1,22 +1,22 @@
 :root {
-  --bg-dark: #070b1e;          /* Mørkeblå for innlogging/forside/spiller */
-  --bar-bg: #0b112c;           /* Mørk topp- og bunnmeny / mini-spiller */
-  --card-bg: #131b3e;          /* Mørkeblå kort for innlogging */
-  --bar-border: #1e293b;
+  --bg-dark: #07111f;          /* Mørk blå bakgrunn for hele appen */
+  --bar-bg: #0b122d;           /* Mørk topp- og bunnmeny / mini-spiller */
+  --card-bg: #111b33;          /* Mørkeblå kort for innlogging */
+  --bar-border: #1b2945;
   
   --accent-blue: #AEC2F7;      /* Spillerfarge, ikoner, knapper og tidslinje */
   --accent-hover: #8da9f2;
   
   --text-light: #ffffff;
-  --text-muted: #94a3b8;
+  --text-muted: #9aa8c7;
   --danger-red: #ef4444;
   --error-red: #dc2626;
 
   /* Lys/varmhvit innholdsdel */
-  --bg-content: #fbf9f5;        
-  --card-content: #ffffff;      
-  --text-dark: #1e1b18;          
-  --text-muted-dark: #635b52;  
+  --bg-content: #07111f;       
+  --card-content: #0f1b35;      
+  --text-dark: #edf3ff;          
+  --text-muted-dark: #b6c4e0;  
 
   /* Bilde- og layout-variabler */
   --radius-sm: 8px;
