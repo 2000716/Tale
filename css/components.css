@@ -87,9 +87,7 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: linear-gradient(180deg, rgba(11, 17, 44, 0.98) 0%, rgba(11, 17, 44, 0.96) 100%);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--bar-bg);
   padding: calc(0.8rem + env(safe-area-inset-top)) 1.2rem 0.4rem 1.2rem;
   display: flex;
   flex-direction: column;
@@ -98,7 +96,7 @@
   border-bottom-left-radius: 18px;
   border-bottom-right-radius: 18px;
   border-bottom: 1px solid var(--bar-border);
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.18);
+  box-shadow: none;
   margin-top: 0;
 }
 
@@ -197,13 +195,13 @@
   max-width: 480px;
   height: calc(72px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
-  background: linear-gradient(180deg, rgba(8, 16, 30, 0.98) 0%, rgba(11, 17, 44, 0.98) 100%);
+  background: var(--bar-bg);
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: 1200;
-  border-top: 1px solid rgba(186, 204, 255, 0.12);
-  box-shadow: 0 -10px 30px rgba(2, 6, 23, 0.22);
+  border-top: 1px solid var(--bar-border);
+  box-shadow: none;
 }
 
 .bottom-bar .nav-btn {

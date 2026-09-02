@@ -1,24 +1,23 @@
 :root {
-  --bg-dark: #07111f;          /* Mørk blå bakgrunn for hele appen */
-  --bar-bg: #0b122d;           /* Mørk topp- og bunnmeny / mini-spiller */
-  --card-bg: #111b33;          /* Mørkeblå kort for innlogging */
-  --bar-border: #1b2945;
+  --bg-dark: #0b112c;          /* Hovedfarge: samme som fullskjerm-spilleren */
+  --bar-bg: #0b112c;           /* Fast, solid farge i topp/bunn */
+  --card-bg: #0b112c;          /* Samme farge på paneler og kort */
+  --bar-border: #121d3d;
   
-  --accent-blue: #AEC2F7;      /* Spillerfarge, ikoner, knapper og tidslinje */
+  --accent-blue: #AEC2F7;
   --accent-hover: #8da9f2;
   
   --text-light: #ffffff;
-  --text-muted: #9aa8c7;
+  --text-muted: #aab7d1;
   --danger-red: #ef4444;
   --error-red: #dc2626;
 
-  /* Lys/varmhvit innholdsdel */
-  --bg-content: #07111f;       
-  --card-content: #0f1b35;      
-  --text-dark: #edf3ff;          
-  --text-muted-dark: #b6c4e0;  
+  /* Hovedbakgrunner og sider */
+  --bg-content: #0b112c;
+  --card-content: #0b112c;
+  --text-dark: #edf3ff;
+  --text-muted-dark: #c1cde8;
 
-  /* Bilde- og layout-variabler */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
