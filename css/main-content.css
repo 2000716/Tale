@@ -117,19 +117,20 @@ main, .content-container {
 /* INDIKATORPRIKKER (Beholdt helt uten skaling/animasjon) */
 .carousel-dots {
   position: absolute;
-  bottom: 14px;
   left: 50%;
+  bottom: 16px;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   z-index: 10;
-  padding: 6px 12px;
-  background: rgba(8, 11, 24, 0.26);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 12px;
   border-radius: 999px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(8, 11, 24, 0.32);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .carousel-dots .dot {
@@ -146,29 +147,13 @@ main, .content-container {
 .carousel-dots .dot:hover,
 .carousel-dots .dot:focus-visible {
   background-color: rgba(255, 255, 255, 0.8);
-  transform: scale(1.1);
 }
 
 .carousel-dots .dot.active {
   background-color: #ffffff;
-  width: 22px;
+  width: 18px;
   border-radius: 999px;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
-}
-
-.carousel-status {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
-  z-index: 11;
-  background: rgba(8, 11, 24, 0.55);
-  color: #ffffff;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 999px;
-  letter-spacing: 0.04em;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
 }
 
 /* ==========================================
