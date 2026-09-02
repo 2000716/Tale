@@ -2,21 +2,23 @@
 .btn-primary {
   width: 100%;
   padding: 0.9rem;
-  background-color: var(--accent-blue);
-  color: #0b112c;
+  background: linear-gradient(135deg, #dfe9ff 0%, #aec2f7 40%, #a6bdf7 100%);
+  color: #0d1329;
   border: none;
-  font-weight: bold;
-  border-radius: var(--radius-sm);
+  font-weight: 800;
+  border-radius: 12px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: transform 0.18s ease, box-shadow 0.2s ease, filter 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  box-shadow: 0 10px 18px rgba(174, 194, 247, 0.22);
 }
 
 .btn-primary:hover {
-  background-color: var(--accent-hover);
+  filter: brightness(1.02);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
@@ -82,8 +84,7 @@
 
 /* Toppbar med tydelig bue, men kuttet tomrom i bunnen */
 .top-bar {
-  background-color: var(--bar-bg);
-  /* Kuttet padding-bottom til 0.4rem så stripen slutter tett inntil søkefeltet */
+  background: linear-gradient(180deg, rgba(11, 17, 44, 0.98) 0%, rgba(11, 17, 44, 0.96) 100%);
   padding: calc(0.8rem + env(safe-area-inset-top)) 1.2rem 0.4rem 1.2rem;
   display: flex;
   flex-direction: column;
@@ -92,11 +93,10 @@
   top: 0;
   z-index: 100;
   color: var(--text-light);
-  
-  /* Beholder den uttalte, fine buen i hjørnene */
   border-bottom-left-radius: 18px;
   border-bottom-right-radius: 18px;
   border-bottom: 1px solid var(--bar-border);
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.18);
 }
 
 .top-bar-main {
@@ -115,12 +115,14 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  border: 1px solid var(--accent-blue);
-  padding: 0.3rem 0.6rem;
-  border-radius: 20px;
+  border: 1px solid rgba(174, 194, 247, 0.5);
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
   cursor: pointer;
   color: var(--accent-blue);
   font-size: 0.8rem;
+  background: rgba(174, 194, 247, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
 .profile-avatar {
@@ -156,15 +158,20 @@
 
 .search-input-wrapper input {
   width: 100%;
-  padding: 0.65rem 1rem 0.65rem 2.4rem;
-  background-color: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.7rem 1rem 0.7rem 2.4rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   color: #ffffff;
   font-size: 0.9rem;
   outline: none;
   transition: all 0.2s ease;
   box-sizing: border-box;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.search-input-wrapper input:hover {
+  border-color: rgba(174, 194, 247, 0.3);
 }
 
 .search-input-wrapper input:focus {
@@ -187,12 +194,13 @@
   max-width: 480px;
   height: calc(72px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
-  background-color: var(--bar-bg);
+  background: linear-gradient(180deg, rgba(11, 17, 44, 0.98) 0%, rgba(11, 17, 44, 0.96) 100%);
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: 1200;
   border-top: 1px solid var(--bar-border);
+  box-shadow: 0 -10px 30px rgba(2, 6, 23, 0.18);
 }
 
 .bottom-bar .nav-btn {

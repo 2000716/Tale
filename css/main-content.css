@@ -32,13 +32,15 @@ main, .content-container {
   margin: 0.5rem auto 1.5rem auto;
   overflow: hidden;
   border-radius: var(--radius-lg, 16px);
-  box-shadow: none;
+  box-shadow: 0 18px 40px rgba(7, 11, 30, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0b122d;
 }
 
 .hero-carousel {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1; /* Gjør banneret helt firkantet */
+  aspect-ratio: 1 / 1;
   background-color: #070b1e;
   border-radius: var(--radius-lg, 16px);
   overflow: hidden;
@@ -70,6 +72,7 @@ main, .content-container {
   object-fit: cover;
   display: block;
   border-radius: var(--radius-lg, 16px);
+  filter: saturate(1.08) contrast(1.03);
 }
 
 /* Tekstoverlay på karusellbilde */
@@ -79,7 +82,7 @@ main, .content-container {
   left: 0;
   right: 0;
   padding: 2rem 1.2rem 2.2rem 1.2rem;
-  background: linear-gradient(to top, rgba(7, 11, 30, 0.95) 0%, rgba(7, 11, 30, 0.6) 60%, transparent 100%);
+  background: linear-gradient(to top, rgba(7, 11, 30, 0.97) 0%, rgba(7, 11, 30, 0.82) 32%, rgba(7, 11, 30, 0.42) 70%, transparent 100%);
   color: #ffffff;
   border-bottom-left-radius: var(--radius-lg, 16px);
   border-bottom-right-radius: var(--radius-lg, 16px);
@@ -238,6 +241,12 @@ main, .content-container {
   display: flex;
   flex-direction: column;
   scroll-snap-align: start;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+  padding-bottom: 0.15rem;
+}
+
+.book-card:hover {
+  transform: translateY(-2px);
 }
 
 .book-cover {
@@ -246,8 +255,19 @@ main, .content-container {
   border-radius: var(--radius-lg, 16px);
   overflow: hidden;
   background-color: #131b3e;
-  box-shadow: none;
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12);
   position: relative;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.book-title {
+  margin-top: 0.6rem;
+  letter-spacing: -0.01em;
+}
+
+.book-author {
+  margin-top: 0.15rem;
+  color: #5b6478;
 }
 
 .continue-cover-wrap {
