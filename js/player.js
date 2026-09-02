@@ -61,6 +61,18 @@ function setSleepTimer(minutes) {
   sleepInterval = setInterval(updateSleepDisplay, 1000);
 }
 
+export function isPlayableAudioUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  const cleaned = url.trim();
+  if (!cleaned || cleaned === 'undefined' || cleaned === 'null') return false;
+
+  const looksLikeStream = /^(https?:\/\/|\/|blob:|data:)/i.test(cleaned);
+  const looksLikeFile = /\.(mp3|aac|wav|ogg|m4a|mp4|m3u8)(\?.*)?$/i.test(cleaned);
+  const looksLikeStreamEndpoint = /(?:stream|audio|listen|radio|podcast|play|mp3|aac|m4a|ogg|wav)/i.test(cleaned);
+
+  return looksLikeStream && (looksLikeFile || looksLikeStreamEndpoint);
+}
+
 // Global spoling for både UI-knapper og låseskjerm
 export function skipTime(seconds) {
   if (!globalAudio.duration) return;
@@ -227,7 +239,7 @@ export function openDetailsView(item) {
 }
 
 export function playSpecificEpisode(epData, startPosition = 0) {
-  if (!epData || !epData.audioUrl) {
+  if (!epData || !epData.audioUrl || !isPlayableAudioUrl(epData.audioUrl)) {
     alert("Ingen gyldig lydkilde funnet for dette elementet.");
     return;
   }
@@ -243,7 +255,9 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   };
 
   const totalTimeSpan = document.getElementById("total-time");
+  globalAudio.pause();
   globalAudio.src = state.selectedItem.audioUrl;
+  globalAudio.load();
 
   globalAudio.onloadedmetadata = () => {
     globalAudio.playbackRate = speeds[currentSpeedIndex];
@@ -446,17 +460,42 @@ export function setupAudioListeners() {
   };
 
   globalAudio.onerror = () => {
-    console.warn("Lydfeil oppsto, forsøker å koble til på nytt...");
-    const currentPos = globalAudio.currentTime;
-    const currentSrc = globalAudio.src;
+    const currentSrc = globalAudio.currentSrc || globalAudio.src;
+    const isLiveStream = !!(state.selectedItem?.isRadio || state.selectedItem?.type === "radio" || state.selectedItem?.isLive);
+    const mediaError = globalAudio.error;
 
-    if (currentSrc && navigator.onLine) {
-      setTimeout(() => {
+    console.warn("Lydfeil oppsto:", mediaError ? mediaError.code : "ukjent", currentSrc);
+
+    if (isLiveStream) {
+      updatePlayIcons(false);
+      return;
+    }
+
+    if (!currentSrc || !navigator.onLine) {
+      updatePlayIcons(false);
+      return;
+    }
+
+    if (globalAudio.dataset.retryCount && Number(globalAudio.dataset.retryCount) >= 1) {
+      console.warn("Stopper gjentatte forsøk på ugyldig lydkilde.");
+      updatePlayIcons(false);
+      return;
+    }
+
+    globalAudio.dataset.retryCount = String((Number(globalAudio.dataset.retryCount || 0)) + 1);
+    const currentPos = Number.isFinite(globalAudio.currentTime) ? globalAudio.currentTime : 0;
+
+    setTimeout(() => {
+      try {
         globalAudio.src = currentSrc;
         globalAudio.currentTime = currentPos;
-        globalAudio.play().catch(err => console.error("Gjenoppretting feilet:", err));
-      }, 2000);
-    }
+        globalAudio.load();
+        globalAudio.play().catch(() => updatePlayIcons(false));
+      } catch (err) {
+        console.warn("Gjenoppretting feilet:", err);
+        updatePlayIcons(false);
+      }
+    }, 1500);
   };
 
   globalAudio.onended = async () => {
@@ -465,6 +504,14 @@ export function setupAudioListeners() {
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "none";
     if (progressBar) progressBar.value = 0;
     if (currentTimeSpan) currentTimeSpan.innerText = "0:00";
+
+    const isLiveStream = !!(state.selectedItem?.isRadio || state.selectedItem?.type === "radio" || state.selectedItem?.isLive);
+    if (isLiveStream) {
+      if (document.getElementById("audio-player-bar")) {
+        document.getElementById("audio-player-bar").classList.remove("hidden");
+      }
+      return;
+    }
 
     if (state.selectedItem?.title) {
       const finishedKey = state.selectedItem.id || state.selectedItem.title;

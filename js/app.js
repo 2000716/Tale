@@ -2,7 +2,7 @@ import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
-import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime } from "./player.js";
+import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl } from "./player.js";
 import { collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Karusell-tilstand
@@ -10,6 +10,11 @@ let currentSlideIndex = 0;
 
 // Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
 function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0) {
+  if (!isPlayableAudioUrl(audioUrl)) {
+    console.warn("Ignorerer ugyldig audio-URL:", audioUrl);
+    return;
+  }
+
   playSpecificEpisode({
     audioUrl: audioUrl,
     title: title,
@@ -300,7 +305,8 @@ export async function loadContentFromFirestore() {
             const title = item.title || 'Radiokanal';
             const sub = item.sub || item.description || 'Direktesending';
             const manualCover = item.coverUrl || item.cover || item.image || '';
-            const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
+            const rawAudioUrl = item.audioUrl || item.audio || item.streamUrl || '';
+            const audioUrl = isPlayableAudioUrl(rawAudioUrl) ? rawAudioUrl : '';
             const cardId = `radio-card-${sec.id || index}-${index}`;
 
             itemsHTML += `
@@ -358,7 +364,8 @@ export async function loadContentFromFirestore() {
             const sub = item.sub || item.author || item.publisher || '';
             const rssUrl = item.rssUrl || item.rss || '';
             const manualCover = item.coverUrl || item.cover || item.image || '';
-            const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
+            const rawAudioUrl = item.audioUrl || item.audio || item.streamUrl || '';
+            const audioUrl = isPlayableAudioUrl(rawAudioUrl) ? rawAudioUrl : '';
             const type = item.type || (pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
