@@ -85,10 +85,18 @@ function initHeroCarousel() {
 
     slides.forEach((slide, i) => {
       slide.classList.toggle("active", i === index);
+      slide.style.transition = "transform 0.38s ease, opacity 0.38s ease";
     });
     dots.forEach((dot, i) => {
       dot.classList.toggle("active", i === index);
+      dot.setAttribute("aria-label", `Vis banner ${i + 1} av ${slides.length}`);
     });
+
+    const statusEl = document.getElementById("carousel-status-text");
+    if (statusEl) {
+      statusEl.textContent = `${index + 1} / ${slides.length}`;
+    }
+
     currentSlideIndex = index;
   };
 
@@ -187,11 +195,16 @@ function renderHeroBanners(banners) {
           </div>
         `;
 
-        dotsHTML += `<span class="dot ${isActive}" data-index="${idx}"></span>`;
+          dotsHTML += `<span class="dot ${isActive}" data-index="${idx}" aria-label="Vis banner ${idx + 1} av ${homeBanners.length}"></span>`;
       });
 
       carouselContainer.innerHTML = slidesHTML;
       dotsContainer.innerHTML = dotsHTML;
+
+      const statusEl = document.createElement("div");
+      statusEl.className = "carousel-status";
+      statusEl.innerHTML = `<span id="carousel-status-text">1 / ${homeBanners.length}</span>`;
+      heroWrapper.appendChild(statusEl);
 
       const existingNav = heroWrapper.querySelector(".carousel-nav");
       if (existingNav) existingNav.remove();
@@ -210,8 +223,17 @@ function renderHeroBanners(banners) {
           const slides = document.querySelectorAll("#hero-banner-carousel .carousel-slide");
           const dots = document.querySelectorAll("#carousel-dots .dot");
           currentSlideIndex = (currentSlideIndex - 1 + slides.length) % slides.length;
-          slides.forEach((s, i) => s.classList.toggle("active", i === currentSlideIndex));
-          dots.forEach((d, i) => d.classList.toggle("active", i === currentSlideIndex));
+          slides.forEach((s, i) => {
+            s.classList.toggle("active", i === currentSlideIndex);
+            s.style.transition = "transform 0.38s ease, opacity 0.38s ease";
+          });
+          dots.forEach((d, i) => {
+            d.classList.toggle("active", i === currentSlideIndex);
+            d.setAttribute("aria-label", `Vis banner ${i + 1} av ${slides.length}`);
+          });
+
+          const statusEl = document.getElementById("carousel-status-text");
+          if (statusEl) statusEl.textContent = `${currentSlideIndex + 1} / ${slides.length}`;
         });
 
         heroWrapper.querySelector(".next-btn")?.addEventListener("click", (e) => {
@@ -219,8 +241,17 @@ function renderHeroBanners(banners) {
           const slides = document.querySelectorAll("#hero-banner-carousel .carousel-slide");
           const dots = document.querySelectorAll("#carousel-dots .dot");
           currentSlideIndex = (currentSlideIndex + 1) % slides.length;
-          slides.forEach((s, i) => s.classList.toggle("active", i === currentSlideIndex));
-          dots.forEach((d, i) => d.classList.toggle("active", i === currentSlideIndex));
+          slides.forEach((s, i) => {
+            s.classList.toggle("active", i === currentSlideIndex);
+            s.style.transition = "transform 0.38s ease, opacity 0.38s ease";
+          });
+          dots.forEach((d, i) => {
+            d.classList.toggle("active", i === currentSlideIndex);
+            d.setAttribute("aria-label", `Vis banner ${i + 1} av ${slides.length}`);
+          });
+
+          const statusEl = document.getElementById("carousel-status-text");
+          if (statusEl) statusEl.textContent = `${currentSlideIndex + 1} / ${slides.length}`;
         });
       }
 

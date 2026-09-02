@@ -53,12 +53,15 @@ main, .content-container {
   height: 100%;
   opacity: 0;
   visibility: hidden;
+  transform: translateX(18px) scale(0.985);
+  transition: transform 0.38s ease, opacity 0.38s ease;
   cursor: pointer;
 }
 
 .carousel-slide.active {
   opacity: 1;
   visibility: visible;
+  transform: translateX(0) scale(1);
 }
 
 .carousel-slide img {
@@ -114,13 +117,19 @@ main, .content-container {
 /* INDIKATORPRIKKER (Beholdt helt uten skaling/animasjon) */
 .carousel-dots {
   position: absolute;
-  bottom: 12px;
+  bottom: 14px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
   z-index: 10;
+  padding: 6px 12px;
+  background: rgba(8, 11, 24, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .carousel-dots .dot {
@@ -128,19 +137,38 @@ main, .content-container {
   height: 8px;
   padding: 0;
   border: none;
-  background-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.42);
   border-radius: 50%;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .carousel-dots .dot:hover,
 .carousel-dots .dot:focus-visible {
   background-color: rgba(255, 255, 255, 0.8);
+  transform: scale(1.1);
 }
 
 .carousel-dots .dot.active {
   background-color: #ffffff;
-  box-shadow: none;
+  width: 22px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+.carousel-status {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 11;
+  background: rgba(8, 11, 24, 0.55);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ==========================================
