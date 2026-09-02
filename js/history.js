@@ -1,7 +1,7 @@
 import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { buildCoverMarkup, formatTime } from "./ui.js";
-import { playSpecificEpisode } from "./player.js";
+import { playSpecificEpisode, openDetailsView } from "./player.js";
 import { 
   collection, 
   getDocs, 
@@ -111,6 +111,47 @@ export async function removeFromFirestoreHistory(itemId) {
   }
 }
 
+function openContinueActionSheet(item, itemId) {
+  const overlay = document.getElementById("info-sheet-overlay");
+  const title = document.getElementById("sheet-item-title");
+  const body = overlay?.querySelector(".sheet-body");
+  if (!overlay || !title || !body) return;
+
+  title.textContent = item.title || "Innhold";
+
+  const buttons = [
+    {
+      label: "Se informasjon",
+      icon: "fa-circle-info",
+      action: () => {
+        overlay.classList.remove("active");
+        openDetailsView(item);
+      }
+    },
+    {
+      label: "Slett",
+      icon: "fa-trash",
+      action: async () => {
+        overlay.classList.remove("active");
+        await removeFromFirestoreHistory(itemId || item.id || item.title);
+      }
+    }
+  ];
+
+  body.innerHTML = buttons.map((btn) => `
+    <button type="button" class="sheet-option continue-action-option">
+      <i class="fa-solid ${btn.icon}"></i>
+      <span>${btn.label}</span>
+    </button>
+  `).join("");
+
+  body.querySelectorAll(".continue-action-option").forEach((button, index) => {
+    button.addEventListener("click", () => buttons[index].action());
+  });
+
+  overlay.classList.add("active");
+}
+
 export function renderContinueListening() {
   const section = document.getElementById("continue-listening-section");
   const container = document.getElementById("continue-listening-container");
@@ -143,16 +184,41 @@ export function renderContinueListening() {
 
   items.forEach(([id, item]) => {
     const card = document.createElement("div");
-    card.className = "book-card";
-    card.innerHTML = `
-      <div class="book-cover">${buildCoverMarkup(item.cover, item.title)}</div>
-      <div class="book-title">${item.title}</div>
-      <div class="book-author">${item.sub || ''}</div>
-    `;
+    card.className = "book-card continue-card";
+
+    const coverWrap = document.createElement("div");
+    coverWrap.className = "book-cover continue-cover-wrap";
+    coverWrap.innerHTML = buildCoverMarkup(item.cover, item.title);
+
+    const moreBtn = document.createElement("button");
+    moreBtn.type = "button";
+    moreBtn.className = "continue-more-btn";
+    moreBtn.setAttribute("aria-label", `Meny for ${item.title}`);
+    moreBtn.innerHTML = '<i class="fa-solid fa-ellipsis-vertical"></i>';
+    moreBtn.onclick = (event) => {
+      event.stopPropagation();
+      openContinueActionSheet(item, id);
+    };
+
+    coverWrap.appendChild(moreBtn);
+
+    const title = document.createElement("div");
+    title.className = "book-title";
+    title.textContent = item.title;
+
+    const author = document.createElement("div");
+    author.className = "book-author";
+    author.textContent = item.sub || "";
+
+    card.appendChild(coverWrap);
+    card.appendChild(title);
+    card.appendChild(author);
+
     card.onclick = () => {
       state.selectedItem = { ...item, id: item.id || id };
       playSpecificEpisode(state.selectedItem, item.currentTime || 0);
     };
+
     container.appendChild(card);
   });
 }

@@ -13,6 +13,14 @@ export function updateBottomNavVisibility() {
   }
 }
 
+export function rememberPlayerReturnPage() {
+  const activePage = document.querySelector(".page.active")?.id || localStorage.getItem("lastActivePage") || "home";
+  if (activePage && !["fullscreen-player", "details-page"].includes(activePage)) {
+    localStorage.setItem("lastPlayerReturnPage", activePage);
+  }
+  return activePage;
+}
+
 export function showView(viewId) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById(viewId)?.classList.add("active");

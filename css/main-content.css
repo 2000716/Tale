@@ -236,6 +236,41 @@ main, .content-container {
   position: relative;
 }
 
+.continue-cover-wrap {
+  position: relative;
+}
+
+.continue-more-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(7, 11, 30, 0.65);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.continue-more-btn i {
+  font-size: 0.9rem;
+}
+
+.continue-card .book-title,
+.continue-card .book-author {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .book-cover-img {
   width: 100%;
   height: 100%;

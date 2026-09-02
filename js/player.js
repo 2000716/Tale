@@ -1,5 +1,5 @@
 import { state, globalAudio } from "./state.js";
-import { buildCoverMarkup, updateUrlHash, updateBottomNavVisibility, formatTime, updatePlayIcons } from "./ui.js";
+import { buildCoverMarkup, updateUrlHash, updateBottomNavVisibility, formatTime, updatePlayIcons, switchPage, rememberPlayerReturnPage } from "./ui.js";
 import { saveProgressToFirestore, removeFromFirestoreHistory, updateDetailPlayButtonState } from "./history.js";
 import { openDetailsPage } from "./details.js";
 
@@ -151,7 +151,7 @@ export function setupExtraPlayerControls() {
   if (optAboutBtn) {
     optAboutBtn.onclick = () => {
       if (infoSheetOverlay) infoSheetOverlay.classList.remove("active");
-      closeFullscreenPlayer();
+      closeFullscreenPlayer({ restorePreviousPage: false });
       if (state.selectedItem) openDetailsPage(state.selectedItem);
     };
   }
@@ -178,14 +178,19 @@ export function updateMediaSession(item) {
   if ('mediaSession' in navigator) {
     const coverUrl = item.cover || item.coverUrl || 'https://via.placeholder.com/512';
 
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: item.title || 'Innhold',
-      artist: item.sub || item.author || '',
-      album: 'Tale',
-      artwork: [{ src: coverUrl, sizes: '512x512', type: 'image/png' }]
-    });
-
     try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: item.title || 'Innhold',
+        artist: item.sub || item.author || '',
+        album: item.type === 'podcast' ? 'Podcast' : (item.type === 'audiobook' ? 'Lydbok' : 'Tale'),
+        artwork: [
+          { src: coverUrl, sizes: '96x96', type: 'image/png' },
+          { src: coverUrl, sizes: '128x128', type: 'image/png' },
+          { src: coverUrl, sizes: '192x192', type: 'image/png' },
+          { src: coverUrl, sizes: '512x512', type: 'image/png' }
+        ]
+      });
+
       navigator.mediaSession.setActionHandler('play', () => {
         globalAudio.play();
         updatePlayIcons(true);
@@ -286,6 +291,8 @@ export function playSpecificEpisode(epData, startPosition = 0) {
 export function openFullscreenPlayer() {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer) return;
+
+  rememberPlayerReturnPage();
   fullPlayer.style.setProperty('--y-offset', '0px');
   fullPlayer.classList.remove('is-dragging');
   fullPlayer.classList.add('active');
@@ -294,7 +301,7 @@ export function openFullscreenPlayer() {
   updateBottomNavVisibility();
 }
 
-export function closeFullscreenPlayer() {
+export function closeFullscreenPlayer({ restorePreviousPage = true } = {}) {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer) return;
   
@@ -304,6 +311,15 @@ export function closeFullscreenPlayer() {
 
   if (window.location.hash === "#fullscreen-player") {
     history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+
+  if (restorePreviousPage) {
+    const returnPage = localStorage.getItem("lastPlayerReturnPage") || localStorage.getItem("lastActivePage") || "home";
+    if (returnPage && returnPage !== "fullscreen-player" && returnPage !== "details-page") {
+      switchPage(returnPage);
+    } else {
+      switchPage("home");
+    }
   }
 
   updateBottomNavVisibility();
