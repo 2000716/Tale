@@ -10,7 +10,7 @@
   max-width: 480px;
   height: 100vh;
   height: 100dvh;
-  background-color: var(--bg-content, #ffffff);
+  background-color: var(--bg-content, #faf8f3);
   color: var(--text-dark, #18181b);
   z-index: 1500;
   overflow-y: auto;
@@ -337,7 +337,7 @@
 }
 
 .season-dropdown option {
-  background-color: #ffffff;
+  background-color: var(--card-content, #fffdf9);
   color: #18181b;
 }
 

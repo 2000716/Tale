@@ -252,7 +252,7 @@ main, .content-container {
 .page.active,
 .dynamic-container,
 .dynamic-section {
-  background: #ffffff;
+  background: var(--bg-content, #faf8f3);
   color: #111827;
 }
 
@@ -265,7 +265,7 @@ main, .content-container {
 #home .dynamic-container,
 #home .dynamic-section,
 #home .continue-section {
-  background: #ffffff;
+  background: var(--bg-content, #faf8f3);
   color: #000000;
 }
 
@@ -281,7 +281,7 @@ main, .content-container {
 
 #home main,
 #home-sections {
-  background: #ffffff;
+  background: var(--bg-content, #faf8f3);
 }
 
 #home .dynamic-section {
@@ -496,7 +496,7 @@ main, .content-container {
    KONTO / EKSTRA KORT
    ========================================== */
 .account-card {
-  background: #ffffff;
+  background: var(--card-content, #fffdf9);
   padding: 1.5rem;
   border-radius: var(--radius-md, 12px);
   border: 1px solid rgba(0, 0, 0, 0.08);

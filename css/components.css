@@ -180,7 +180,7 @@ main > section,
 #podcasts-sections,
 #radio-sections,
 #search-results-page {
-  background: #ffffff;
+  background: var(--bg-content, #faf8f3);
   color: #111827;
 }
 
@@ -398,7 +398,7 @@ main > section,
   display: flex;
   flex-direction: column;
   width: 100%;
-  background: #ffffff;
+  background: var(--card-content, #fffdf9);
   border-radius: 12px;
   padding: 1rem;
   border: 1px solid #e5e7eb;
