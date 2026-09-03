@@ -13,10 +13,10 @@
   --error-red: #dc2626;
 
   /* Hovedbakgrunner og sider */
-  --bg-content: #0b112c;
-  --card-content: #0b112c;
-  --text-dark: #edf3ff;
-  --text-muted-dark: #c1cde8;
+  --bg-content: #ffffff;
+  --card-content: #ffffff;
+  --text-dark: #000000;
+  --text-muted-dark: #64748b;
 
   --radius-sm: 8px;
   --radius-md: 12px;

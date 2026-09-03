@@ -398,10 +398,10 @@ main > section,
   display: flex;
   flex-direction: column;
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
+  background: #ffffff;
   border-radius: 12px;
   padding: 1rem;
-  border: 1px solid var(--bar-border, rgba(255, 255, 255, 0.1));
+  border: 1px solid #e5e7eb;
   box-sizing: border-box;
 }
 

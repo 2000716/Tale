@@ -218,6 +218,29 @@ main, .content-container {
   color: #111827;
 }
 
+.section-title {
+  color: var(--text-dark, #000000);
+}
+
+/* Hjem har fortsatt Tales mørkebla uttrykk; innholdssidene er hvite. */
+#home.page.active,
+#home .dynamic-container,
+#home .dynamic-section,
+#home .continue-section {
+  background: var(--bg-dark, #0b112c);
+  color: var(--text-light, #ffffff);
+}
+
+#home .section-header,
+#home .section-title,
+#home .book-title {
+  color: var(--text-light, #ffffff);
+}
+
+#home .book-author {
+  color: var(--text-muted, #aab7d1);
+}
+
 .horizontal-scroll,
 .horizontal-scroll-container {
   display: flex !important;
