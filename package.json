@@ -1,0 +1,22 @@
+{
+  "name": "tale-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tale - lydboker, podkaster og radio",
+  "type": "module",
+  "scripts": {
+    "prepare:web": "node scripts/sync-web.mjs",
+    "sync": "npm run prepare:web && cap sync",
+    "android": "cap open android",
+    "ios": "cap open ios",
+    "web": "npx serve ."
+  },
+  "dependencies": {
+    "@capacitor/core": "latest",
+    "@capacitor/ios": "latest",
+    "@capacitor/android": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "latest"
+  }
+}

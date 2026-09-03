@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#070b1e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  
+  <title>Tale</title>
+  <meta name="description" content="Lytt til taler, undervisning og podkaster på Tale." />
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787779910/Code_Generated_Image_1_egznrr.png" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/details.css" />
+  <link rel="stylesheet" href="css/navigation.css">
+  <link rel="stylesheet" href="css/main-content.css">
+  <link rel="stylesheet" href="css/overlays.css">
+  <link rel="stylesheet" href="css/player.css" />
+  <link rel="stylesheet" href="css/radio.css" />
+</head>
+<body>
+  
+  <audio id="global-audio" preload="metadata"></audio>
+
+  <div id="landing-view" class="view active fade-transition">
+    <div class="landing-hero">
+      <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787779910/Code_Generated_Image_1_egznrr.png" alt="Tale Logo" class="landing-logo">
+      <h1>Ubegrenset lytting på Tale</h1>
+      <p>Tusenvis av lydbøker, podkaster og radio – samlet på én plass.</p>
+      <div class="landing-actions">
+        <button id="go-to-login-btn" class="btn-primary">Logg inn</button>
+        <button id="go-to-register-btn" class="btn-secondary">Opprett ny konto</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="auth-view" class="view fade-transition">
+    <button id="auth-back-btn" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Tilbake</button>
+    <div class="auth-card scale-in">
+      <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787779910/Code_Generated_Image_1_egznrr.png" alt="Tale Logo" class="auth-logo">
+      <h2 id="auth-title">Logg inn</h2>
+      
+      <form id="auth-form">
+        <div id="name-fields-group" class="field-group-animated hidden">
+          <div class="input-row">
+            <div class="input-wrapper">
+              <i class="fa-regular fa-user input-icon"></i>
+              <input type="text" id="auth-firstname" placeholder="Fornavn">
+            </div>
+            <div class="input-wrapper">
+              <i class="fa-regular fa-user input-icon"></i>
+              <input type="text" id="auth-lastname" placeholder="Etternavn">
+            </div>
+          </div>
+        </div>
+
+        <div class="input-wrapper">
+          <i class="fa-regular fa-envelope input-icon"></i>
+          <input type="email" id="auth-email" placeholder="E-post" required autocomplete="email">
+        </div>
+
+        <div class="input-wrapper">
+          <i class="fa-solid fa-lock input-icon"></i>
+          <input type="password" id="auth-password" placeholder="Passord" required autocomplete="current-password">
+          <button type="button" id="toggle-password-visibility" class="toggle-password-btn" aria-label="Vis passord">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="btn-primary btn-bounce">Logg inn</button>
+      </form>
+
+      <p id="auth-error" class="error-msg"></p>
+      
+      <div class="auth-footer">
+        <button id="toggle-auth-mode" class="btn-link">Har du ikke konto? Registrer deg</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-view" class="view fade-transition">
+    
+    <header class="top-bar">
+      <div class="top-bar-main">
+        <button id="nav-home-logo-btn" class="logo-btn" aria-label="Gå til Hjem">
+          <div class="logo-container">
+            <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787779910/Code_Generated_Image_1_egznrr.png" alt="Tale Logo" class="logo-img">
+          </div>
+        </button>
+        <div class="profile-btn" id="nav-account-btn">
+          <span class="profile-avatar" id="user-avatar">M</span>
+          <span class="profile-name" id="topbar-user-name">Min Konto</span>
+        </div>
+      </div>
+
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="global-search-input" placeholder="Søk etter podkaster, bøker, episoder..." autocomplete="off">
+        </div>
+      </div>
+
+      <div class="top-bar-curve"></div>
+    </header>
+
+    <main>
+      <section id="home" class="page active">
+        <div id="hero-banner-wrapper" class="hero-banner-wrapper" style="display: none;">
+          <div id="hero-banner-carousel" class="hero-carousel"></div>
+          <div id="carousel-dots" class="carousel-dots"></div>
+        </div>
+
+        <div id="continue-listening-section" class="continue-section" style="display: none;">
+          <h3>Fortsett å lytte</h3>
+          <div id="continue-listening-container" class="horizontal-scroll-container"></div>
+        </div>
+
+        <div id="home-sections" class="dynamic-container"></div>
+      </section>
+
+      <section id="audiobooks" class="page">
+        <h2>Lydbøker</h2>
+        <div id="audiobooks-sections" class="dynamic-container"></div>
+      </section>
+
+      <section id="podcasts" class="page">
+        <h2>Podkaster</h2>
+        <div id="podcasts-sections" class="dynamic-container"></div>
+      </section>
+
+      <section id="radio" class="page">
+        <h2>Direkte Radio</h2>
+        <div id="radio-sections" class="dynamic-container"></div>
+      </section>
+
+      <section id="account" class="page">
+        <div class="account-header">
+          <div class="account-avatar-large" id="account-avatar-large">M</div>
+          <h2 id="account-user-fullname">Bruker</h2>
+          <p id="account-email-display" class="account-email">bruker@tale.no</p>
+        </div>
+
+        <div class="account-grid">
+          <div class="account-card card-animated">
+            <h3><i class="fa-regular fa-user"></i> Personinformasjon</h3>
+            <form id="account-details-form">
+              <div class="form-group">
+                <label for="account-firstname-input">Fornavn</label>
+                <input type="text" id="account-firstname-input" placeholder="Ditt fornavn">
+              </div>
+              <div class="form-group">
+                <label for="account-lastname-input">Etternavn</label>
+                <input type="text" id="account-lastname-input" placeholder="Ditt etternavn">
+              </div>
+              <button type="submit" class="btn-secondary btn-small">Lagre endringer</button>
+            </form>
+          </div>
+
+          <div class="account-card card-animated">
+            <h3><i class="fa-solid fa-sliders"></i> Innstillinger & Aktivitet</h3>
+            <ul class="account-menu-list">
+              <li>
+                <button class="menu-item-btn">
+                  <span><i class="fa-regular fa-heart"></i> Mine favoritter</span>
+                  <i class="fa-solid fa-chevron-right icon-arrow"></i>
+                </button>
+              </li>
+              <li>
+                <button class="menu-item-btn">
+                  <span><i class="fa-solid fa-arrow-down-to-line"></i> Nedlastet innhold</span>
+                  <i class="fa-solid fa-chevron-right icon-arrow"></i>
+                </button>
+              </li>
+              <li>
+                <button class="menu-item-btn">
+                  <span><i class="fa-solid fa-bell"></i> Varslinger</span>
+                  <i class="fa-solid fa-chevron-right icon-arrow"></i>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="account-actions">
+          <button id="logout-btn" class="btn-danger"><i class="fa-solid fa-right-from-bracket"></i> Logg ut</button>
+        </div>
+      </section>
+    </main>
+
+    <div id="details-page" class="modal">
+      <button id="details-close-btn" class="close-btn" aria-label="Lukk"><i class="fa-solid fa-xmark"></i></button>
+      
+      <div class="details-content">
+        <div class="details-hero">
+          <div id="details-cover-container" class="details-cover-container"></div>
+          
+          <div class="details-header-info">
+            <div class="details-badges">
+              <span id="details-badge-type" class="badge-tag">Podkast</span>
+            </div>
+            <h2 id="details-title">Tittel</h2>
+            <p id="details-sub" class="details-sub">Kategori / Utgiver</p>
+          </div>
+        </div>
+
+        <div class="details-action-bar">
+          <button id="start-play-btn" class="btn-primary">
+            <i class="fa-solid fa-play"></i> <span>Spill av</span>
+          </button>
+          
+          <div class="secondary-actions">
+            <button id="details-like-btn" class="btn-action-icon" title="Favoritt">
+              <i class="fa-regular fa-heart"></i>
+            </button>
+            <button id="details-download-btn" class="btn-action-icon" title="Last ned for offline lytting">
+              <i class="fa-solid fa-arrow-down-to-line"></i>
+            </button>
+            <button id="details-share-btn" class="btn-action-icon" title="Del">
+              <i class="fa-solid fa-share-nodes"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="details-body">
+          <div class="details-desc-box" id="descBox">
+            <h3>Om innholdet</h3>
+            <p id="details-desc" class="details-desc">Beskrivelse laster inn...</p>
+            <button class="details-read-more-btn" id="readMoreBtn">Se mer</button>
+          </div>
+        </div>
+
+        <div class="episode-list-container">
+          <div class="section-title-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+              <h3 id="details-badge-episodes">0 episoder</h3>
+              <span id="episode-count-text" class="meta-small"></span>
+            </div>
+
+            <div id="season-select-wrapper" class="season-select-wrapper" style="display: none;">
+              <select id="season-select" class="season-dropdown"></select>
+            </div>
+          </div>
+
+          <div id="episode-list"></div>
+
+          <button id="load-more-episodes-btn" class="btn-secondary" style="display: none; width: 100%; margin-top: 1rem;">
+            Vis flere episoder
+          </button>
+        </div>
+
+        <div class="recommendations-container">
+          <h3>Anbefalinger</h3>
+          <div id="recommendations-list" class="horizontal-scroll"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="fullscreen-player" class="modal">
+      <div class="drag-handle"></div>
+      <div class="player-full-content">
+        <div id="full-cover-container"></div>
+        <h2 id="full-title">Tittel</h2>
+        <p id="full-sub">Undertittel</p>
+
+        <div class="progress-container">
+          <span id="current-time">0:00</span>
+          <input type="range" id="progress-bar" value="0" min="0" max="100">
+          <span id="total-time">0:00</span>
+        </div>
+
+        <div class="full-controls">
+          <button id="skip-back-btn" class="skip-btn" title="-15 sekunder"><i class="fa-solid fa-rotate-left"></i> 15s</button>
+          <button id="full-play-btn" class="main-play-btn"><i class="fa-solid fa-play"></i></button>
+          <button id="skip-forward-btn" class="skip-btn" title="+15 sekunder">15s <i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+
+        <div class="extra-controls">
+          <button id="speed-btn" class="extra-btn text-only-btn" title="Avspillingshastighet">
+            <span id="speed-label">1.0x</span>
+          </button>
+
+          <button id="sleep-btn" class="extra-btn" title="Søvntimer">
+            <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787608573/copy_of_night_lijrw7.png" alt="Søvntimer" class="nav-icon-png" />
+            <span id="sleep-label">Av</span>
+          </button>
+
+          <button id="more-options-btn" class="extra-btn" title="Mer informasjon">
+            <i class="fa-solid fa-ellipsis"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="sleep-modal" class="sleep-modal">
+      <div class="sleep-modal-content">
+        <div class="sleep-modal-header">
+          <span>Velg søvntimer</span>
+          <button id="close-sleep-modal" class="close-modal-btn">&times;</button>
+        </div>
+        <div class="wheel-container">
+          <div class="wheel-highlight"></div>
+          <div id="sleep-wheel" class="wheel-scroll">
+            <div class="wheel-item selected" data-value="0">Av</div>
+            <div class="wheel-item" data-value="5">5 min</div>
+            <div class="wheel-item" data-value="10">10 min</div>
+            <div class="wheel-item" data-value="15">15 min</div>
+            <div class="wheel-item" data-value="30">30 min</div>
+            <div class="wheel-item" data-value="45">45 min</div>
+            <div class="wheel-item" data-value="60">1 time</div>
+            <div class="wheel-item" data-value="90">1.5 time</div>
+            <div class="wheel-item" data-value="120">2 timer</div>
+          </div>
+        </div>
+        <button id="confirm-sleep-btn" class="confirm-sleep-btn">Sett timer</button>
+      </div>
+    </div>
+
+    <div id="info-sheet-overlay" class="sheet-overlay">
+      <div class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h3 id="sheet-item-title">Innholdsvalg</h3>
+        </div>
+        <div class="sheet-body">
+          <button id="opt-about-btn" class="sheet-option">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Om denne boken / sporet</span>
+          </button>
+          <button id="opt-share-btn" class="sheet-option">
+            <i class="fa-solid fa-share-nodes"></i>
+            <span>Del dette sporet</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="player hidden" id="audio-player-bar">
+      <div class="player-left" id="open-full-player">
+        <div id="mini-cover-container"></div>
+        <div class="player-info">
+          <span id="mini-player-title" class="player-title">Ingen spilles</span>
+          <span id="mini-player-sub" class="player-sub">Velg tittel</span>
+        </div>
+      </div>
+      <div class="player-controls">
+        <button id="mini-play-btn" class="icon-play-btn"><i class="fa-solid fa-play"></i></button>
+      </div>
+    </div>
+
+    <nav class="bottom-bar">
+      <button class="nav-btn active" data-target="audiobooks">
+        <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787433160/sound-waves_h7acze.png" alt="Lydbøker" class="nav-icon-png" />
+        <span class="nav-text">Lydbøker</span>
+      </button>
+
+      <button class="nav-btn" data-target="podcasts">
+        <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787433160/microphone_lygzod.png" alt="Podkaster" class="nav-icon-png" />
+        <span class="nav-text">Podkaster</span>
+      </button>
+
+      <button class="nav-btn" data-target="radio">
+        <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1787433160/antenna_j01lem.png" alt="Radio" class="nav-icon-png" />
+        <span class="nav-text">Radio</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
