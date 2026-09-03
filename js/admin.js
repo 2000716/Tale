@@ -140,11 +140,14 @@ function initLiveSectionsListener() {
                 Side: <code>${escapeHtml(secData.targetPages || secData.page || 'home')}</code> | 
                 Layout: <code>${escapeHtml(secData.layout || 'horizontal-scroll')}</code> | 
                 Innhold: <strong>${itemsCount} elementer</strong> | 
-                Rekkefølge: <strong>${secData.order || 0}</strong>
+                Rekkefølge: <strong>${secData.order || 0}</strong> | 
+                Maks: <strong>${secData.maxItems || 'Alle'}</strong> | 
+                ${secData.visible === false ? '<strong style="color: var(--warning-color);">Skjult</strong>' : '<strong style="color: var(--success-color);">Publisert</strong>'}
               </div>
             </div>
             <div style="display: flex; gap: 6px; align-items: center;">
               <button onclick="editSectionTitle('${docSnap.id}', '${escapeHtml(secData.title)}')" title="Rediger tittel" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-pen"></i> Rediger</button>
+              <button onclick="toggleSectionVisibility('${docSnap.id}', ${secData.visible !== false})" title="Vis eller skjul seksjon" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-eye${secData.visible === false ? '-slash' : ''}"></i></button>
               <div style="display: flex; flex-direction: column; gap: 2px;">
                 <button onclick="moveSectionOrder('${docSnap.id}', 'up')" title="Flytt opp" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-up"></i></button>
                 <button onclick="moveSectionOrder('${docSnap.id}', 'down')" title="Flytt ned" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-down"></i></button>
@@ -222,14 +225,20 @@ function setupSectionForm() {
     e.preventDefault();
 
     const title = document.getElementById("sec-title").value.trim();
+    const subtitle = document.getElementById("sec-subtitle").value.trim();
     const order = parseInt(document.getElementById("sec-order").value) || 1;
+    const maxItems = Math.max(0, parseInt(document.getElementById("sec-max-items").value) || 0);
     const page = document.getElementById("sec-page").value;
     const layout = document.getElementById("sec-layout").value;
+    const visible = document.getElementById("sec-visible").checked;
 
     try {
       await addDoc(collection(db, "sections"), {
         title: title,
+        subtitle,
         order: order,
+        maxItems,
+        visible,
         page: page,
         targetPages: [page],
         layout: layout,
@@ -704,6 +713,17 @@ window.editSectionTitle = async function(sectionId, currentTitle) {
   } catch (err) {
     console.error("Feil ved oppdatering av tittel:", err);
     alert("Kunne ikke endre tittel: " + err.message);
+  }
+};
+
+window.toggleSectionVisibility = async function(sectionId, isVisible) {
+  try {
+    await updateDoc(doc(db, "sections", sectionId), {
+      visible: !isVisible
+    });
+  } catch (err) {
+    console.error("Feil ved endring av synlighet:", err);
+    alert("Kunne ikke endre synlighet: " + err.message);
   }
 };
 

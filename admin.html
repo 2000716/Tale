@@ -168,8 +168,19 @@
               </div>
 
               <div class="form-group">
-                <label for="sec-order">Rekkefølge / Sortering (Order)</label>
-                <input type="number" id="sec-order" value="1" required />
+                <label for="sec-subtitle">Undertittel (valgfritt)</label>
+                <input type="text" id="sec-subtitle" placeholder="For eksempel: Utvalgt for deg" />
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="sec-order">Rekkefølge / Sortering</label>
+                  <input type="number" id="sec-order" value="1" required />
+                </div>
+                <div class="form-group">
+                  <label for="sec-max-items">Maks antall kort (0 = alle)</label>
+                  <input type="number" id="sec-max-items" value="0" min="0" required />
+                </div>
               </div>
 
               <div class="form-group">
@@ -191,6 +202,11 @@
                   <option value="featured-banner">Featured Highlight Banner</option>
                 </select>
               </div>
+
+              <label class="checkbox-row">
+                <input type="checkbox" id="sec-visible" checked />
+                <span>Publiser seksjonen i appen</span>
+              </label>
 
               <button type="submit" class="btn-submit">
                 <i class="fa-solid fa-plus"></i> Lagre og Publisere Seksjon

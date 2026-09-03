@@ -251,6 +251,8 @@ export async function loadContentFromFirestore() {
     });
 
     sectionsList.forEach((sec) => {
+      if (sec.visible === false) return;
+
       const rawPages = sec.targetPages || sec.pages || sec.page || "home";
       const pagesArray = Array.isArray(rawPages) ? rawPages : [rawPages];
 
@@ -264,7 +266,8 @@ export async function loadContentFromFirestore() {
         let itemsHTML = "";
 
         if (pageTarget === "radio" || sec.layout === "radio-list" || sec.type === "radio-list") {
-          (sec.items || []).forEach((item, index) => {
+          const maxItems = Number(sec.maxItems) > 0 ? Number(sec.maxItems) : (sec.items || []).length;
+          (sec.items || []).slice(0, maxItems).forEach((item, index) => {
             const title = item.title || 'Radiokanal';
             const sub = item.sub || item.description || 'Direktesending';
             const manualCover = item.coverUrl || item.cover || item.image || '';
@@ -321,8 +324,10 @@ export async function loadContentFromFirestore() {
         } 
         else {
           const containerClass = sec.layout === 'grid' ? 'grid-layout' : 'horizontal-scroll';
+          const sectionItems = sec.items || [];
+          const maxItems = Number(sec.maxItems) > 0 ? Number(sec.maxItems) : sectionItems.length;
 
-          (sec.items || []).forEach((item, index) => {
+          sectionItems.forEach((item, index) => {
             const title = item.title || 'Innhold';
             const sub = item.sub || item.author || item.publisher || '';
             const rssUrl = item.rssUrl || item.rss || '';
@@ -336,7 +341,7 @@ export async function loadContentFromFirestore() {
             window[itemKey] = item;
 
             itemsHTML += `
-              <div class="book-card" 
+              <div class="book-card${index >= maxItems ? ' section-item-overflow' : ''}" 
                    id="${cardId}"
                    data-item-key="${itemKey}"
                    data-id="${escapeAttr(item.id || cardId)}"
@@ -361,9 +366,27 @@ export async function loadContentFromFirestore() {
           });
 
           sectionWrapper.innerHTML = `
-            <div class="section-header"><h3>${escapeAttr(sec.title || '')}</h3></div>
+            <div class="section-header">
+              <div>
+                <h3>${escapeAttr(sec.title || '')}</h3>
+                ${sec.subtitle ? `<p>${escapeAttr(sec.subtitle)}</p>` : ''}
+              </div>
+              ${sectionItems.length > maxItems ? '<button class="section-more-btn" type="button" aria-expanded="false">Se alle</button>' : ''}
+            </div>
             <div class="${containerClass}">${itemsHTML}</div>
           `;
+
+          const moreButton = sectionWrapper.querySelector('.section-more-btn');
+          if (moreButton) {
+            moreButton.addEventListener('click', () => {
+              const expanded = moreButton.getAttribute('aria-expanded') === 'true';
+              sectionWrapper.querySelectorAll('.section-item-overflow').forEach(item => {
+                item.hidden = expanded;
+              });
+              moreButton.setAttribute('aria-expanded', String(!expanded));
+              moreButton.textContent = expanded ? 'Se alle' : 'Vis mindre';
+            });
+          }
         }
 
         targetContainer.appendChild(sectionWrapper);
