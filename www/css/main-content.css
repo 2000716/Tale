@@ -22,6 +22,79 @@ main, .content-container {
   box-sizing: border-box;
 }
 
+/* Katalogflater: rolig, redaksjonell struktur med tydelig hierarki. */
+.page-intro {
+  padding: 1.25rem 0 0.35rem;
+}
+
+.page-intro h1 {
+  margin: 0.25rem 0 0.35rem;
+  color: #0f172a;
+  font-size: 2rem;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.page-intro p {
+  color: #64748b;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.page-kicker {
+  color: #2563eb;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.catalog-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 1rem 0 0.25rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid #e7e5df;
+  border-bottom: 1px solid #e7e5df;
+}
+
+.catalog-count {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.catalog-sort {
+  min-width: 7.8rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #d8d5cc;
+  border-radius: 7px;
+  background: #fffdf9;
+  color: #0f172a;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.dynamic-container:empty::after {
+  display: block;
+  padding: 2rem 0;
+  color: #94a3b8;
+  content: "Ingen innhold tilgjengelig ennå";
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.dynamic-section {
+  animation: catalogReveal 0.42s ease both;
+}
+
+@keyframes catalogReveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ==========================================
    FIRKANTET HERO BANNER / KARUSELL (PODKAST)
    ========================================== */
@@ -381,6 +454,52 @@ main, .content-container {
   scroll-snap-align: start;
   transition: transform 0.18s ease, opacity 0.18s ease;
   padding-bottom: 0.15rem;
+}
+
+.book-card:focus-visible,
+.radio-card-horizontal:focus-visible,
+.section-more-btn:focus-visible,
+.catalog-sort:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.3);
+  outline-offset: 3px;
+}
+
+.radio-intro .page-kicker {
+  color: #059669;
+}
+
+#radio .dynamic-section {
+  margin-bottom: 1.7rem;
+}
+
+#radio .section-header,
+#podcasts .section-header,
+#audiobooks .section-header {
+  margin-top: 1.7rem;
+}
+
+@media (min-width: 481px) {
+  .view,
+  main, .content-container {
+    max-width: 720px;
+  }
+
+  main {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  .home-intro {
+    padding-top: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dynamic-section,
+  .book-card {
+    animation: none;
+    transition: none;
+  }
 }
 
 .book-card:hover {

@@ -241,6 +241,30 @@ function renderHeroBanners(banners) {
 export async function loadContentFromFirestore() {
   const pages = ["home", "audiobooks", "podcasts", "radio"];
 
+  const updateCatalogCount = (page, count) => {
+    const countEl = document.querySelector(`[data-catalog-toolbar="${page}"] [data-catalog-count]`);
+    if (countEl) countEl.textContent = `${count} ${page === "radio" ? "kanaler" : "titler"}`;
+  };
+
+  const setupCatalogToolbar = (page, container) => {
+    const toolbar = document.querySelector(`[data-catalog-toolbar="${page}"]`);
+    const sortSelect = toolbar?.querySelector(".catalog-sort");
+    if (!sortSelect || sortSelect.dataset.bound === "true") return;
+    sortSelect.dataset.bound = "true";
+    sortSelect.addEventListener("change", () => {
+      const sections = [...container.querySelectorAll(".dynamic-section")];
+      sections.forEach(section => {
+        const cards = [...section.querySelectorAll(".book-card, .radio-card-horizontal")];
+        cards.sort((left, right) => {
+          if (sortSelect.value === "title") {
+            return (left.dataset.title || "").localeCompare(right.dataset.title || "", "nb");
+          }
+          return Number(left.dataset.position || 0) - Number(right.dataset.position || 0);
+        }).forEach(card => card.parentElement.appendChild(card));
+      });
+    });
+  };
+
   const renderSectionsData = (sectionsList) => {
     pages.forEach(p => {
       const container = document.getElementById(`${p}-sections`);
@@ -248,18 +272,22 @@ export async function loadContentFromFirestore() {
         const existingBanners = container.querySelectorAll(".hero-banner-widget");
         container.innerHTML = "";
         existingBanners.forEach(b => container.appendChild(b));
+        setupCatalogToolbar(p, container);
       }
     });
 
-    sectionsList.forEach((sec) => {
-      if (sec.visible === false) return;
+    const visibleSections = sectionsList.filter(sec => sec.visible !== false);
+    const pageItemCounts = Object.fromEntries(pages.map(page => [page, 0]));
 
+    visibleSections.forEach((sec) => {
       const rawPages = sec.targetPages || sec.pages || sec.page || "home";
       const pagesArray = Array.isArray(rawPages) ? rawPages : [rawPages];
 
       pagesArray.forEach(pageTarget => {
         const targetContainer = document.getElementById(`${pageTarget}-sections`);
         if (!targetContainer) return;
+
+        pageItemCounts[pageTarget] = (pageItemCounts[pageTarget] || 0) + (sec.items || []).length;
 
         const sectionWrapper = document.createElement("div");
         sectionWrapper.className = "dynamic-section";
@@ -280,6 +308,7 @@ export async function loadContentFromFirestore() {
               <div class="radio-card-horizontal" 
                    id="${cardId}"
                    data-id="${escapeAttr(item.id || cardId)}"
+                   data-position="${index}"
                    data-title="${escapeAttr(title)}" 
                    data-sub="${escapeAttr(sub)}" 
                    data-cover="${escapeAttr(manualCover)}"
@@ -357,6 +386,7 @@ export async function loadContentFromFirestore() {
                    id="${cardId}"
                    data-item-key="${itemKey}"
                    data-id="${escapeAttr(item.id || cardId)}"
+                   data-position="${index}"
                    data-title="${escapeAttr(title)}" 
                    data-sub="${escapeAttr(sub)}" 
                    data-desc="${escapeAttr(item.desc || item.description || '')}" 
@@ -404,6 +434,8 @@ export async function loadContentFromFirestore() {
         targetContainer.appendChild(sectionWrapper);
       });
     });
+
+    pages.forEach(page => updateCatalogCount(page, pageItemCounts[page] || 0));
 
     renderRadioBanner();
   };
@@ -521,7 +553,8 @@ async function fetchRSSImageData(rssUrl, cardId, title) {
 
 export function setupSearchListener() {
   const searchInput = document.getElementById("global-search-input");
-  if (!searchInput) return;
+  if (!searchInput || searchInput.dataset.bound === "true") return;
+  searchInput.dataset.bound = "true";
 
   searchInput.addEventListener("input", (e) => {
     const queryTerm = e.target.value.trim();

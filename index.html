@@ -112,6 +112,11 @@
 
     <main>
       <section id="home" class="page active">
+        <div class="page-intro home-intro">
+          <span class="page-kicker">Tale for deg</span>
+          <h1>Hva vil du lytte til?</h1>
+          <p>Oppdag nye historier, podkaster og direktesendt radio.</p>
+        </div>
         <div id="hero-banner-wrapper" class="hero-banner-wrapper" style="display: none;">
           <div id="hero-banner-carousel" class="hero-carousel"></div>
           <div id="carousel-dots" class="carousel-dots"></div>
@@ -126,17 +131,50 @@
       </section>
 
       <section id="audiobooks" class="page">
-        <h2>Lydbøker</h2>
+        <div class="page-intro">
+          <span class="page-kicker">Bibliotek</span>
+          <h1>Lydbøker</h1>
+          <p>Historier du kan ta med deg, når som helst.</p>
+        </div>
+        <div class="catalog-toolbar" data-catalog-toolbar="audiobooks">
+          <span class="catalog-count" data-catalog-count>Utforsker biblioteket</span>
+          <select class="catalog-sort" aria-label="Sorter lydbøker">
+            <option value="default">Anbefalt</option>
+            <option value="title">Tittel A-Å</option>
+          </select>
+        </div>
         <div id="audiobooks-sections" class="dynamic-container"></div>
       </section>
 
       <section id="podcasts" class="page">
-        <h2>Podkaster</h2>
+        <div class="page-intro">
+          <span class="page-kicker">Nytt hver uke</span>
+          <h1>Podkaster</h1>
+          <p>Serier, samtaler og perspektiver å følge.</p>
+        </div>
+        <div class="catalog-toolbar" data-catalog-toolbar="podcasts">
+          <span class="catalog-count" data-catalog-count>Utforsker podkaster</span>
+          <select class="catalog-sort" aria-label="Sorter podkaster">
+            <option value="default">Anbefalt</option>
+            <option value="title">Tittel A-Å</option>
+          </select>
+        </div>
         <div id="podcasts-sections" class="dynamic-container"></div>
       </section>
 
       <section id="radio" class="page">
-        <h2>Direkte Radio</h2>
+        <div class="page-intro radio-intro">
+          <span class="page-kicker"><i class="fa-solid fa-signal"></i> Direkte nå</span>
+          <h1>Radio</h1>
+          <p>Finn en kanal og lytt med én gang.</p>
+        </div>
+        <div class="catalog-toolbar" data-catalog-toolbar="radio">
+          <span class="catalog-count" data-catalog-count>Direktesendt radio</span>
+          <select class="catalog-sort" aria-label="Sorter radiokanaler">
+            <option value="default">Anbefalt</option>
+            <option value="title">Navn A-Å</option>
+          </select>
+        </div>
         <div id="radio-sections" class="dynamic-container"></div>
       </section>
 
