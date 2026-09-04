@@ -147,7 +147,7 @@ export async function loadBannersFromFirestore() {
 }
 
 function renderHeroBanners(banners) {
-  const pages = ["home", "audiobooks", "podcasts"];
+  const pages = ["home", "audiobooks", "podcasts", "radio"];
 
   const homeBanners = banners.filter(b => (b.targetPage === "home" || b.page === "home") && (b.type === "carousel" || !b.type));
   const heroWrapper = document.getElementById("hero-banner-wrapper");
@@ -265,7 +265,7 @@ export async function loadContentFromFirestore() {
 
         let itemsHTML = "";
 
-        if (pageTarget === "radio" || sec.layout === "radio-list" || sec.type === "radio-list") {
+        if (sec.layout === "radio-list" || sec.type === "radio-list") {
           const maxItems = Number(sec.maxItems) > 0 ? Number(sec.maxItems) : (sec.items || []).length;
           (sec.items || []).slice(0, maxItems).forEach((item, index) => {
             const title = item.title || 'Radiokanal';
@@ -323,7 +323,14 @@ export async function loadContentFromFirestore() {
           sectionWrapper.innerHTML = itemsHTML;
         } 
         else {
-          const containerClass = sec.layout === 'grid' ? 'grid-layout' : 'horizontal-scroll';
+          const layoutClassMap = {
+            'grid': 'layout-grid-2',
+            'grid-2': 'layout-grid-2',
+            'grid-3': 'layout-grid-3',
+            'grid-4': 'layout-grid-4',
+            'horizontal-scroll': 'horizontal-scroll'
+          };
+          const containerClass = layoutClassMap[sec.layout] || 'horizontal-scroll';
           const sectionItems = sec.items || [];
           const maxItems = Number(sec.maxItems) > 0 ? Number(sec.maxItems) : sectionItems.length;
 

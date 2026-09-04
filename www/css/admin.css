@@ -479,6 +479,16 @@ body.admin-body {
   margin-top: 8px;
 }
 
+.hidden {
+  display: none !important;
+}
+
+.form-cancel-btn {
+  width: 100%;
+  margin-top: 10px;
+  justify-content: center;
+}
+
 .btn-submit:hover {
   background-color: var(--primary-hover);
 }

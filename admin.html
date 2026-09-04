@@ -159,9 +159,10 @@
         <div class="dashboard-grid">
           <div class="card">
             <div class="card-header">
-              <h3><i class="fa-solid fa-folder-plus"></i> Opprett Ny Seksjon</h3>
+              <h3 id="section-form-heading"><i class="fa-solid fa-folder-plus"></i> Opprett Ny Seksjon</h3>
             </div>
             <form id="add-section-form">
+              <input type="hidden" id="sec-edit-id" value="" />
               <div class="form-group">
                 <label for="sec-title">Seksjonstittel (f.eks. "Anbefalte Podkaster")</label>
                 <input type="text" id="sec-title" placeholder="Skriv inn tittel..." required />
@@ -197,7 +198,9 @@
                 <label for="sec-layout">Visningstype / Layout</label>
                 <select id="sec-layout">
                   <option value="horizontal-scroll">Horisontal Rull (Fabel/Storytel Galleri)</option>
-                  <option value="grid">Grid (Flere rader med kort)</option>
+                  <option value="grid-2">Galleri med 2 i hver rad</option>
+                  <option value="grid-3">Galleri med 3 i hver rad</option>
+                  <option value="grid-4">Galleri med 4 i hver rad</option>
                   <option value="radio-list">Radio Liste (Avlange stasjonskort)</option>
                   <option value="featured-banner">Featured Highlight Banner</option>
                 </select>
@@ -208,9 +211,10 @@
                 <span>Publiser seksjonen i appen</span>
               </label>
 
-              <button type="submit" class="btn-submit">
+              <button type="submit" class="btn-submit" id="section-submit-btn">
                 <i class="fa-solid fa-plus"></i> Lagre og Publisere Seksjon
               </button>
+              <button type="button" class="btn-secondary form-cancel-btn hidden" id="cancel-section-edit-btn">Avbryt redigering</button>
             </form>
           </div>
 
@@ -254,6 +258,7 @@
             </div>
 
             <form id="add-banner-form">
+              <input type="hidden" id="banner-edit-id" value="" />
               <div class="form-grid-2">
                 <div class="form-group">
                   <label for="banner-title">Bannertittel / Hovedoverskrift</label>
@@ -292,14 +297,22 @@
                   </select>
                 </div>
                 <div class="form-group">
+                  <label for="banner-type">Bannerplassering</label>
+                  <select id="banner-type">
+                    <option value="carousel">Hjemmekarusell</option>
+                    <option value="widget">Banner øverst på valgt side</option>
+                  </select>
+                </div>
+                <div class="form-group">
                   <label for="banner-badge">Badge Tag (Valgfritt)</label>
                   <input type="text" id="banner-badge" placeholder="f.eks. EKSKLUSIVT" />
                 </div>
               </div>
 
-              <button type="submit" class="btn-submit">
+              <button type="submit" class="btn-submit" id="banner-submit-btn">
                 <i class="fa-solid fa-rectangle-ad"></i> Publisere Banner
               </button>
+              <button type="button" class="btn-secondary form-cancel-btn hidden" id="cancel-banner-edit-btn">Avbryt redigering</button>
             </form>
           </div>
 

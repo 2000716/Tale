@@ -378,6 +378,21 @@ main > section,
   min-width: 0; /* Forhindrer at grid-elementer sprenger kolonnene */
 }
 
+.layout-grid-2 .book-card,
+.layout-grid-3 .book-card,
+.layout-grid-4 .book-card {
+  width: 100% !important;
+  min-width: 0;
+}
+
+.layout-grid-2 .book-cover,
+.layout-grid-3 .book-cover,
+.layout-grid-4 .book-cover {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
 .media-card img,
 .podcast-card img,
 .podcast-item img,

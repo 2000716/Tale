@@ -146,7 +146,7 @@ function initLiveSectionsListener() {
               </div>
             </div>
             <div style="display: flex; gap: 6px; align-items: center;">
-              <button onclick="editSectionTitle('${docSnap.id}', '${escapeHtml(secData.title)}')" title="Rediger tittel" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-pen"></i> Rediger</button>
+              <button onclick="editSection('${docSnap.id}')" title="Rediger seksjon" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-pen"></i> Rediger</button>
               <button onclick="toggleSectionVisibility('${docSnap.id}', ${secData.visible !== false})" title="Vis eller skjul seksjon" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-eye${secData.visible === false ? '-slash' : ''}"></i></button>
               <div style="display: flex; flex-direction: column; gap: 2px;">
                 <button onclick="moveSectionOrder('${docSnap.id}', 'up')" title="Flytt opp" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-up"></i></button>
@@ -221,6 +221,16 @@ function setupSectionForm() {
   const form = document.getElementById("add-section-form");
   if (!form) return;
 
+  const resetEditor = () => {
+    form.reset();
+    document.getElementById("sec-edit-id").value = "";
+    document.getElementById("section-form-heading").innerHTML = '<i class="fa-solid fa-folder-plus"></i> Opprett Ny Seksjon';
+    document.getElementById("section-submit-btn").innerHTML = '<i class="fa-solid fa-plus"></i> Lagre og Publisere Seksjon';
+    document.getElementById("cancel-section-edit-btn")?.classList.add("hidden");
+  };
+
+  document.getElementById("cancel-section-edit-btn")?.addEventListener("click", resetEditor);
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -231,23 +241,32 @@ function setupSectionForm() {
     const page = document.getElementById("sec-page").value;
     const layout = document.getElementById("sec-layout").value;
     const visible = document.getElementById("sec-visible").checked;
+    const editId = document.getElementById("sec-edit-id").value;
+
+    const sectionPayload = {
+      title,
+      subtitle,
+      order,
+      maxItems,
+      visible,
+      page,
+      targetPages: [page],
+      layout
+    };
 
     try {
-      await addDoc(collection(db, "sections"), {
-        title: title,
-        subtitle,
-        order: order,
-        maxItems,
-        visible,
-        page: page,
-        targetPages: [page],
-        layout: layout,
-        items: [],
-        createdAt: new Date()
-      });
+      if (editId) {
+        await updateDoc(doc(db, "sections", editId), sectionPayload);
+      } else {
+        await addDoc(collection(db, "sections"), {
+          ...sectionPayload,
+          items: [],
+          createdAt: new Date()
+        });
+      }
 
-      form.reset();
-      alert("Seksjon ble opprettet og publisert!");
+      resetEditor();
+      alert(editId ? "Seksjonen ble oppdatert!" : "Seksjon ble opprettet og publisert!");
     } catch (err) {
       console.error("Kunne ikke opprette seksjon:", err);
       alert("Feil ved lagring: " + err.message);
@@ -262,6 +281,15 @@ function setupBannerForm() {
   const form = document.getElementById("add-banner-form");
   if (!form) return;
 
+  const resetEditor = () => {
+    form.reset();
+    document.getElementById("banner-edit-id").value = "";
+    document.getElementById("banner-submit-btn").innerHTML = '<i class="fa-solid fa-rectangle-ad"></i> Publisere Banner';
+    document.getElementById("cancel-banner-edit-btn")?.classList.add("hidden");
+  };
+
+  document.getElementById("cancel-banner-edit-btn")?.addEventListener("click", resetEditor);
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -271,25 +299,36 @@ function setupBannerForm() {
     const imageUrl = document.getElementById("banner-img").value.trim();
     const audioUrl = document.getElementById("banner-audio").value.trim();
     const page = document.getElementById("banner-page").value;
+    const type = document.getElementById("banner-type").value;
     const badge = document.getElementById("banner-badge").value.trim();
+    const editId = document.getElementById("banner-edit-id").value;
+
+    const bannerPayload = {
+      title,
+      subtitle,
+      description,
+      imageUrl,
+      audioUrl,
+      page,
+      targetPage: page,
+      type,
+      badge
+    };
 
     try {
-      await addDoc(collection(db, "banners"), {
-        title,
-        subtitle,
-        description,
-        imageUrl,
-        audioUrl,
-        page,
-        targetPage: page,
-        badge,
-        createdAt: new Date()
-      });
+      if (editId) {
+        await updateDoc(doc(db, "banners", editId), bannerPayload);
+      } else {
+        await addDoc(collection(db, "banners"), {
+          ...bannerPayload,
+          createdAt: new Date()
+        });
+      }
 
-      form.reset();
+      resetEditor();
       const resultsContainer = document.getElementById("banner-api-results");
       if (resultsContainer) resultsContainer.innerHTML = "";
-      alert("Hero Banner ble publisert!");
+      alert(editId ? "Banneret ble oppdatert!" : "Hero Banner ble publisert!");
     } catch (err) {
       console.error("Feil ved lagring av banner:", err);
       alert("Kunne ikke publisere banner: " + err.message);
@@ -436,9 +475,14 @@ function initLiveBannersListener() {
             </div>
           </div>
         </div>
-        <button class="btn-danger btn-delete-banner" data-id="${docSnap.id}" style="background: var(--danger-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-          <i class="fa-solid fa-trash"></i> Slett
-        </button>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn-secondary btn-edit-banner" data-id="${docSnap.id}" style="padding: 6px 10px;">
+            <i class="fa-solid fa-pen"></i> Rediger
+          </button>
+          <button class="btn-danger btn-delete-banner" data-id="${docSnap.id}" style="background: var(--danger-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+            <i class="fa-solid fa-trash"></i> Slett
+          </button>
+        </div>
       `;
 
       bannersList.appendChild(bannerEl);
@@ -454,6 +498,13 @@ function initLiveBannersListener() {
             alert("Feil ved sletting av banner: " + err.message);
           }
         }
+      });
+    });
+
+    document.querySelectorAll(".btn-edit-banner").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const banner = snapshot.docs.find(item => item.id === btn.dataset.id);
+        if (banner) openBannerEditor({ id: banner.id, ...banner.data() });
       });
     });
   }, (err) => {
@@ -680,6 +731,24 @@ async function importItemToSelectedSection(itemObj) {
 // ==========================================
 // 6. ADM-FUNKSJONER FOR EDITERING OG ORGANISERING
 // ==========================================
+window.editSection = function(sectionId) {
+  const section = activeSections.find(item => item.id === sectionId);
+  if (!section) return;
+
+  document.getElementById("sec-edit-id").value = section.id;
+  document.getElementById("sec-title").value = section.title || "";
+  document.getElementById("sec-subtitle").value = section.subtitle || "";
+  document.getElementById("sec-order").value = section.order ?? 1;
+  document.getElementById("sec-max-items").value = section.maxItems ?? 0;
+  document.getElementById("sec-page").value = section.page || section.targetPages?.[0] || "home";
+  document.getElementById("sec-layout").value = section.layout === "grid" ? "grid-2" : (section.layout || "horizontal-scroll");
+  document.getElementById("sec-visible").checked = section.visible !== false;
+  document.getElementById("section-form-heading").innerHTML = '<i class="fa-solid fa-pen"></i> Rediger Seksjon';
+  document.getElementById("section-submit-btn").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lagre Seksjon';
+  document.getElementById("cancel-section-edit-btn")?.classList.remove("hidden");
+  document.getElementById("sec-title")?.scrollIntoView({ behavior: "smooth", block: "center" });
+};
+
 window.moveSectionOrder = async function(sectionId, direction) {
   const index = activeSections.findIndex(s => s.id === sectionId);
   if (index === -1) return;
@@ -715,6 +784,21 @@ window.editSectionTitle = async function(sectionId, currentTitle) {
     alert("Kunne ikke endre tittel: " + err.message);
   }
 };
+
+function openBannerEditor(banner) {
+  document.getElementById("banner-edit-id").value = banner.id;
+  document.getElementById("banner-title").value = banner.title || "";
+  document.getElementById("banner-subtitle").value = banner.subtitle || "";
+  document.getElementById("banner-desc").value = banner.description || "";
+  document.getElementById("banner-img").value = banner.imageUrl || banner.coverUrl || "";
+  document.getElementById("banner-audio").value = banner.audioUrl || "";
+  document.getElementById("banner-page").value = banner.page || banner.targetPage || "home";
+  document.getElementById("banner-type").value = banner.type || (banner.page === "home" ? "carousel" : "widget");
+  document.getElementById("banner-badge").value = banner.badge || "";
+  document.getElementById("banner-submit-btn").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lagre Banner';
+  document.getElementById("cancel-banner-edit-btn")?.classList.remove("hidden");
+  document.getElementById("banner-title")?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
 
 window.toggleSectionVisibility = async function(sectionId, isVisible) {
   try {
