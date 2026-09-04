@@ -6,6 +6,7 @@ const webDir = resolve(root, "www");
 
 mkdirSync(webDir, { recursive: true });
 cpSync(resolve(root, "index.html"), resolve(webDir, "index.html"));
+cpSync(resolve(root, "admin.html"), resolve(webDir, "admin.html"));
 cpSync(resolve(root, "manifest.json"), resolve(webDir, "manifest.json"));
 cpSync(resolve(root, "css"), resolve(webDir, "css"), { recursive: true });
 cpSync(resolve(root, "js"), resolve(webDir, "js"), { recursive: true });

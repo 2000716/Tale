@@ -189,6 +189,10 @@ function initLiveSectionsListener() {
     setupDeleteButtons();
   }, (err) => {
     console.error("Feil ved henting av seksjoner:", err);
+    const manageList = document.getElementById("sections-manage-list");
+    if (manageList) {
+      manageList.innerHTML = `<p class="text-error">Kunne ikke laste seksjoner. Kontroller Firebase-tilkoblingen og tilgangsreglene.</p>`;
+    }
   });
 }
 
@@ -336,6 +340,7 @@ function setupBannerForm() {
     const page = document.getElementById("banner-page").value;
     const type = document.getElementById("banner-type").value;
     const badge = document.getElementById("banner-badge").value.trim();
+    const visible = document.getElementById("banner-visible").checked;
     const editId = document.getElementById("banner-edit-id").value;
 
     const bannerPayload = {
@@ -347,7 +352,8 @@ function setupBannerForm() {
       page,
       targetPage: page,
       type,
-      badge
+      badge,
+      visible
     };
 
     try {
@@ -506,11 +512,15 @@ function initLiveBannersListener() {
           <div>
             <strong>${escapeHtml(bannerData.title || 'Uten tittel')}</strong>
             <div style="font-size: 0.75rem; color: var(--text-muted);">
-              Side: <code>${escapeHtml(bannerData.page || 'home')}</code> | Badge: ${escapeHtml(bannerData.badge || 'Ingen')}
+              Side: <code>${escapeHtml(bannerData.page || 'home')}</code> | Badge: ${escapeHtml(bannerData.badge || 'Ingen')} |
+              <strong style="color: ${bannerData.visible === false ? 'var(--warning-color)' : 'var(--success-color)'};">${bannerData.visible === false ? 'Avpublisert' : 'Publisert'}</strong>
             </div>
           </div>
         </div>
         <div style="display: flex; gap: 6px;">
+          <button class="btn-secondary btn-toggle-banner" data-id="${docSnap.id}" data-visible="${bannerData.visible !== false}" title="Publiser eller avpubliser banneret" style="padding: 6px 10px;">
+            <i class="fa-solid fa-eye${bannerData.visible === false ? '-slash' : ''}"></i>
+          </button>
           <button class="btn-secondary btn-edit-banner" data-id="${docSnap.id}" style="padding: 6px 10px;">
             <i class="fa-solid fa-pen"></i> Rediger
           </button>
@@ -542,8 +552,24 @@ function initLiveBannersListener() {
         if (banner) openBannerEditor({ id: banner.id, ...banner.data() });
       });
     });
+
+    document.querySelectorAll(".btn-toggle-banner").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        try {
+          await updateDoc(doc(db, "banners", btn.dataset.id), {
+            visible: btn.dataset.visible !== "true"
+          });
+        } catch (err) {
+          alert("Kunne ikke endre bannerstatus: " + err.message);
+        }
+      });
+    });
   }, (err) => {
     console.error("Feil ved henting av bannere:", err);
+    const bannersList = document.getElementById("banners-manage-list");
+    if (bannersList) {
+      bannersList.innerHTML = `<p class="text-error">Kunne ikke laste bannere. Kontroller Firebase-tilkoblingen og tilgangsreglene.</p>`;
+    }
   });
 }
 
@@ -833,6 +859,7 @@ function openBannerEditor(banner) {
   document.getElementById("banner-page").value = banner.page || banner.targetPage || "home";
   document.getElementById("banner-type").value = banner.type || (banner.page === "home" ? "carousel" : "widget");
   document.getElementById("banner-badge").value = banner.badge || "";
+  document.getElementById("banner-visible").checked = banner.visible !== false;
   document.getElementById("banner-submit-btn").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lagre Banner';
   document.getElementById("cancel-banner-edit-btn")?.classList.remove("hidden");
   document.getElementById("banner-title")?.scrollIntoView({ behavior: "smooth", block: "center" });

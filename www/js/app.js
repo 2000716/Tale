@@ -149,7 +149,8 @@ export async function loadBannersFromFirestore() {
 function renderHeroBanners(banners) {
   const pages = ["home", "audiobooks", "podcasts", "radio"];
 
-  const homeBanners = banners.filter(b => (b.targetPage === "home" || b.page === "home") && (b.type === "carousel" || !b.type));
+  const publishedBanners = banners.filter(b => b.visible !== false);
+  const homeBanners = publishedBanners.filter(b => (b.targetPage === "home" || b.page === "home") && (b.type === "carousel" || !b.type));
   const heroWrapper = document.getElementById("hero-banner-wrapper");
   const carouselContainer = document.getElementById("hero-banner-carousel");
   const dotsContainer = document.getElementById("carousel-dots");
@@ -196,7 +197,7 @@ function renderHeroBanners(banners) {
   }
 
   pages.forEach(page => {
-    const pageBanners = banners.filter(b => (b.targetPage === page || b.page === page) && b.type === "widget");
+    const pageBanners = publishedBanners.filter(b => (b.targetPage === page || b.page === page) && b.type === "widget");
     if (pageBanners.length === 0) return;
 
     const pageContainer = document.getElementById(`${page}-sections`);

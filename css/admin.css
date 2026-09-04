@@ -520,6 +520,10 @@ body.admin-body {
   display: none !important;
 }
 
+.section-item-overflow {
+  display: none;
+}
+
 .form-cancel-btn {
   width: 100%;
   margin-top: 10px;
@@ -546,6 +550,11 @@ body.admin-body {
 
 .text-muted {
   color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.text-error {
+  color: #fca5a5;
   font-size: 0.85rem;
 }
 
