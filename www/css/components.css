@@ -389,6 +389,7 @@ main > section,
   height: auto;
   aspect-ratio: 1 / 1; /* Sikrer at podcast-omslagene forblir kvadratiske */
   object-fit: cover;
+  border: none;
   border-radius: var(--radius-sm, 8px);
   display: block;
 }

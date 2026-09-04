@@ -33,7 +33,7 @@ main, .content-container {
   overflow: hidden;
   border-radius: var(--radius-lg, 16px);
   box-shadow: 0 18px 40px rgba(7, 11, 30, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: none;
   background: #0b122d;
 }
 
@@ -71,6 +71,7 @@ main, .content-container {
   height: 100%;
   object-fit: cover;
   display: block;
+  border: none;
   border-radius: var(--radius-lg, 16px);
   filter: saturate(1.08) contrast(1.03);
 }
