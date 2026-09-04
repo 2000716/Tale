@@ -124,14 +124,14 @@ function initHeroCarousel() {
 // ==========================================
 export async function loadWeeklyPodcasts() {
   let weeklyPodcasts = [];
-  const cachedWeekly = localStorage.getItem("tale_weekly_podcasts_v2");
+  const cachedWeekly = localStorage.getItem("tale_weekly_podcasts_v3");
 
   if (cachedWeekly) {
     try {
       const cachedData = JSON.parse(cachedWeekly);
       if (cachedData.expiresAt > Date.now()) weeklyPodcasts = cachedData.items || [];
     } catch (e) {
-      localStorage.removeItem("tale_weekly_podcasts_v2");
+      localStorage.removeItem("tale_weekly_podcasts_v3");
     }
   }
 
@@ -148,7 +148,7 @@ export async function loadWeeklyPodcasts() {
           title: podcast['im:name']?.label || "Ukens podkast",
           subtitle: podcast['im:artist']?.label || "Populær podkast",
           description: "En av ukens mest populære podkaster i Norge.",
-          imageUrl: ([...(podcast['im:image'] || [])].pop()?.label || "").replace("100x100", "600x600"),
+          imageUrl: ([...(podcast['im:image'] || [])].pop()?.label || "").replace(/\/\d+x\d+bb\./, "/600x600bb."),
           rssUrl: "",
           appleUrl: podcast.link?.attributes?.href || "",
           badge: "Anbefalt denne uken!",
@@ -171,7 +171,7 @@ export async function loadWeeklyPodcasts() {
         return podcast;
       }));
 
-      localStorage.setItem("tale_weekly_podcasts_v2", JSON.stringify({
+      localStorage.setItem("tale_weekly_podcasts_v3", JSON.stringify({
         expiresAt: Date.now() + (6 * 60 * 60 * 1000),
         items: weeklyPodcasts
       }));
