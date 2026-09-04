@@ -301,6 +301,37 @@ body.admin-body {
   gap: 8px;
 }
 
+.section-page-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section-page-tab {
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: var(--input-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.section-page-tab:hover,
+.section-page-tab.active {
+  border-color: var(--primary-color);
+  background: rgba(59, 130, 246, 0.16);
+  color: var(--text-main);
+}
+
+.section-manage-entry[hidden] {
+  display: none;
+}
+
 .select-mini {
   padding: 4px 8px;
   background-color: var(--input-bg);

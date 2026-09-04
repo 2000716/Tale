@@ -201,7 +201,9 @@
                   <option value="grid-2">Galleri med 2 i hver rad</option>
                   <option value="grid-3">Galleri med 3 i hver rad</option>
                   <option value="grid-4">Galleri med 4 i hver rad</option>
-                  <option value="radio-list">Radio Liste (Avlange stasjonskort)</option>
+                  <option value="radio-list">Radio liste (avlange kort under hverandre)</option>
+                  <option value="radio-grid-3">Radio galleri (avlange kort, 3 i hver rad)</option>
+                  <option value="radio-scroll">Radio galleri (avlange kort, bla sidelengs)</option>
                   <option value="featured-banner">Featured Highlight Banner</option>
                 </select>
               </div>
@@ -221,6 +223,13 @@
           <div class="card">
             <div class="card-header">
               <h3><i class="fa-solid fa-list-check"></i> Aktive Seksjoner i Firestore</h3>
+            </div>
+            <div class="section-page-tabs" role="tablist" aria-label="Seksjoner per side">
+              <button type="button" class="section-page-tab active" data-section-page="all">Alle</button>
+              <button type="button" class="section-page-tab" data-section-page="home">Hjem</button>
+              <button type="button" class="section-page-tab" data-section-page="audiobooks">Lydbøker</button>
+              <button type="button" class="section-page-tab" data-section-page="podcasts">Podkaster</button>
+              <button type="button" class="section-page-tab" data-section-page="radio">Radio</button>
             </div>
             <div id="sections-manage-list" class="manage-list">
               <p class="text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Laster seksjoner...</p>

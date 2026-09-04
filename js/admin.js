@@ -15,12 +15,14 @@ import {
 
 // Global tilstand for seksjoner
 let activeSections = [];
+let selectedSectionPage = "all";
 
 document.addEventListener("DOMContentLoaded", () => {
   setupTabNavigation();
   initLiveSectionsListener();
   initLiveBannersListener();
   setupSectionForm();
+  setupSectionPageTabs();
   setupBannerForm();
   setupBannerApiSearch();
   setupManualForm();
@@ -110,7 +112,10 @@ function initLiveSectionsListener() {
 
       if (manageList) {
         const itemEl = document.createElement("div");
-        itemEl.className = "manage-item";
+        const sectionPage = Array.isArray(secData.targetPages) ? secData.targetPages[0] : (secData.page || "home");
+        itemEl.className = "manage-item section-manage-entry";
+        itemEl.dataset.sectionPage = sectionPage;
+        itemEl.hidden = selectedSectionPage !== "all" && selectedSectionPage !== sectionPage;
         itemEl.style.cssText = "display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--input-bg); border-radius: 6px; margin-bottom: 8px;";
         
         const isSystemLocked = docSnap.id === 'system-continue-listening';
@@ -184,6 +189,19 @@ function initLiveSectionsListener() {
     setupDeleteButtons();
   }, (err) => {
     console.error("Feil ved henting av seksjoner:", err);
+  });
+}
+
+function setupSectionPageTabs() {
+  document.querySelectorAll(".section-page-tab").forEach(button => {
+    button.addEventListener("click", () => {
+      selectedSectionPage = button.dataset.sectionPage || "all";
+      document.querySelectorAll(".section-page-tab").forEach(tab => tab.classList.remove("active"));
+      button.classList.add("active");
+      document.querySelectorAll(".section-manage-entry").forEach(entry => {
+        entry.hidden = selectedSectionPage !== "all" && entry.dataset.sectionPage !== selectedSectionPage;
+      });
+    });
   });
 }
 

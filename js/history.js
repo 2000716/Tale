@@ -17,6 +17,23 @@ function getItemKey(itemOrId) {
   return rawId ? rawId.replace(/[^a-zA-Z0-9-_]/g, '_') : "";
 }
 
+function isDirectRadio(item) {
+  return !!(item && (item.isRadio || item.type === "radio" || item.isLive));
+}
+
+function removeRadioFromLocalHistory() {
+  if (!state.userHistory) return;
+
+  const filteredHistory = Object.fromEntries(
+    Object.entries(state.userHistory).filter(([, item]) => !isDirectRadio(item))
+  );
+
+  state.userHistory = filteredHistory;
+  if (state.currentUser) {
+    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(filteredHistory));
+  }
+}
+
 export async function loadUserHistory() {
   if (!state.currentUser) return;
 
@@ -24,6 +41,7 @@ export async function loadUserHistory() {
   if (cachedHistory) {
     try {
       state.userHistory = JSON.parse(cachedHistory);
+      removeRadioFromLocalHistory();
       renderContinueListening();
       updateDetailPlayButtonState();
     } catch (e) {
@@ -36,7 +54,8 @@ export async function loadUserHistory() {
     const snapshot = await getDocs(historyRef);
     state.userHistory = {};
     snapshot.forEach(docSnap => {
-      state.userHistory[docSnap.id] = docSnap.data();
+      const item = docSnap.data();
+      if (!isDirectRadio(item)) state.userHistory[docSnap.id] = item;
     });
 
     localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
@@ -51,7 +70,7 @@ export async function saveProgressToFirestore(itemId, data) {
   if (!state.currentUser || !itemId || !data) return;
 
   // UX-SJEKK 1: Radio skal ALDRI lagres i "Fortsett å lytte"
-  if (data.isRadio || data.type === "radio" || data.isLive) {
+  if (isDirectRadio(data)) {
     return;
   }
 
@@ -160,9 +179,7 @@ export function renderContinueListening() {
   if (!state.userHistory) state.userHistory = {};
 
   // Filtrer ut eventuelle radio-elementer
-  const items = Object.entries(state.userHistory).filter(([_, item]) => {
-    return item && !item.isRadio && item.type !== "radio" && !item.isLive;
-  });
+  const items = Object.entries(state.userHistory).filter(([, item]) => !isDirectRadio(item));
 
   if (items.length === 0) {
     section.style.display = "none";

@@ -87,6 +87,41 @@
   gap: 12px;
 }
 
+.radio-channels-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.radio-channels-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.radio-channels-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.radio-channels-grid-3 .radio-card-horizontal,
+.radio-channels-scroll .radio-card-horizontal {
+  min-width: 0;
+}
+
+.radio-channels-scroll .radio-card-horizontal {
+  flex: 0 0 min(82vw, 300px);
+  scroll-snap-align: start;
+}
+
+@media (max-width: 390px) {
+  .radio-channels-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
 .radio-card-horizontal {
   display: flex;
   align-items: center;

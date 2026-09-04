@@ -265,7 +265,7 @@ export async function loadContentFromFirestore() {
 
         let itemsHTML = "";
 
-        if (sec.layout === "radio-list" || sec.type === "radio-list") {
+        if (sec.layout === "radio-list" || sec.layout === "radio-grid-3" || sec.layout === "radio-scroll" || sec.type === "radio-list") {
           const maxItems = Number(sec.maxItems) > 0 ? Number(sec.maxItems) : (sec.items || []).length;
           (sec.items || []).slice(0, maxItems).forEach((item, index) => {
             const title = item.title || 'Radiokanal';
@@ -295,11 +295,15 @@ export async function loadContentFromFirestore() {
             `;
           });
 
+          const radioLayoutClass = sec.layout === "radio-grid-3"
+            ? "radio-channels-grid-3"
+            : (sec.layout === "radio-scroll" ? "radio-channels-scroll" : "radio-channels-list");
+
           sectionWrapper.innerHTML = `
             <div class="radio-channels-header">
               <h3>${escapeAttr(sec.title || 'Kanaler')}</h3>
             </div>
-            <div class="radio-channels-list">${itemsHTML}</div>
+            <div class="${radioLayoutClass}">${itemsHTML}</div>
           `;
         } 
         else if (sec.layout === "featured-banner") {
