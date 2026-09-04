@@ -207,7 +207,7 @@ main > section,
   width: 100%;
   max-width: 480px;
   height: calc(72px + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: 0;
   background: var(--bar-bg);
   display: flex;
   justify-content: space-around;
