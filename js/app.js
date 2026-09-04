@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initAuth();
   setupAudioListeners();
   loadContentFromFirestore();
-  loadBannersFromFirestore();
+  loadWeeklyPodcasts();
   setupSearchListener();
   setupEventListeners();
   initHeroCarousel();
@@ -122,7 +122,7 @@ function initHeroCarousel() {
 // ==========================================
 // 1. LASTE BANNERE (Hero Banners / Storytel-stil)
 // ==========================================
-export async function loadBannersFromFirestore() {
+export async function loadWeeklyPodcasts() {
   let weeklyPodcasts = [];
   const cachedWeekly = localStorage.getItem("tale_weekly_podcasts_v2");
 
@@ -135,29 +135,7 @@ export async function loadBannersFromFirestore() {
     }
   }
 
-  const cachedBanners = localStorage.getItem("app_banners_cache");
-  if (cachedBanners) {
-    try {
-      renderHeroBanners(JSON.parse(cachedBanners), weeklyPodcasts);
-    } catch (e) {
-      console.warn("Kunne ikke lese banner-cache:", e);
-    }
-  }
-
-  try {
-    const q = query(collection(db, "banners"));
-    const snapshot = await getDocs(q);
-    const bannersData = [];
-    
-    snapshot.forEach((docSnap) => {
-      bannersData.push({ id: docSnap.id, ...docSnap.data() });
-    });
-
-    localStorage.setItem("app_banners_cache", JSON.stringify(bannersData));
-    renderHeroBanners(bannersData, weeklyPodcasts);
-  } catch (err) {
-    console.warn("Lasting av bannere feilet:", err);
-  }
+  renderHeroBanners(weeklyPodcasts);
 
   if (weeklyPodcasts.length === 0) {
     try {
@@ -182,7 +160,7 @@ export async function loadBannersFromFirestore() {
           title: podcast.name || "Ukens podkast",
           subtitle: podcast.artistName || "Populær podkast",
           description: "En av ukens mest populære podkaster i Norge.",
-          imageUrl: podcast.artworkUrl100 || "",
+          imageUrl: (podcast.artworkUrl100 || "").replace("100x100", "600x600"),
           rssUrl: feedUrl,
           appleUrl: podcast.url || "",
           badge: "Anbefalt denne uken!",
@@ -194,26 +172,20 @@ export async function loadBannersFromFirestore() {
         expiresAt: Date.now() + (6 * 60 * 60 * 1000),
         items: weeklyPodcasts
       }));
-      renderHeroBanners(JSON.parse(localStorage.getItem("app_banners_cache") || "[]"), weeklyPodcasts);
+      renderHeroBanners(weeklyPodcasts);
     } catch (err) {
       console.warn("Kunne ikke hente ukens populære podkaster:", err);
     }
   }
 }
 
-function renderHeroBanners(banners, weeklyPodcasts = []) {
-  const pages = ["home", "audiobooks", "podcasts", "radio"];
-
-  const publishedBanners = banners.filter(b => b.visible !== false);
+function renderHeroBanners(weeklyPodcasts = []) {
   const weeklyBanners = weeklyPodcasts.map(podcast => ({
     ...podcast,
     targetPage: "home",
     type: "carousel"
   }));
-  const homeBanners = [
-    ...weeklyBanners,
-    ...publishedBanners.filter(b => (b.targetPage === "home" || b.page === "home") && (b.type === "carousel" || !b.type))
-  ];
+  const homeBanners = weeklyBanners;
   const heroWrapper = document.getElementById("hero-banner-wrapper");
   const carouselContainer = document.getElementById("hero-banner-carousel");
   const dotsContainer = document.getElementById("carousel-dots");
@@ -262,43 +234,6 @@ function renderHeroBanners(banners, weeklyPodcasts = []) {
     }
   }
 
-  pages.forEach(page => {
-    const pageBanners = publishedBanners.filter(b => (b.targetPage === page || b.page === page) && b.type === "widget");
-    if (pageBanners.length === 0) return;
-
-    const pageContainer = document.getElementById(`${page}-sections`);
-    if (!pageContainer) return;
-
-    pageContainer.querySelectorAll(".hero-banner-widget").forEach(el => el.remove());
-
-    pageBanners.forEach(banner => {
-      const bannerEl = document.createElement("div");
-      bannerEl.className = "hero-banner-widget";
-      const badge = banner.badge ? `<span class="hero-badge">${escapeAttr(banner.badge)}</span>` : '';
-
-      bannerEl.innerHTML = `
-        <div class="hero-banner-card" 
-             data-audio="${escapeAttr(banner.audioUrl || '')}" 
-             data-title="${escapeAttr(banner.title || '')}"
-             data-sub="${escapeAttr(banner.subtitle || '')}"
-             data-cover="${escapeAttr(banner.imageUrl || '')}">
-          <div class="hero-bg" style="background-image: url('${escapeAttr(banner.imageUrl || '')}');"></div>
-          <div class="hero-overlay"></div>
-          <div class="hero-content">
-            ${badge}
-            <h2 class="hero-title">${escapeAttr(banner.title || '')}</h2>
-            <p class="hero-subtitle">${escapeAttr(banner.subtitle || '')}</p>
-            <p class="hero-desc">${escapeAttr(banner.description || '')}</p>
-            <button class="hero-play-btn" type="button">
-              <i class="fa-solid fa-play"></i> Spill nå
-            </button>
-          </div>
-        </div>
-      `;
-
-      pageContainer.prepend(bannerEl);
-    });
-  });
 }
 
 // ==========================================
