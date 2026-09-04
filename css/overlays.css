@@ -9,7 +9,9 @@
   align-items: center;
   padding: 2.5rem 1.5rem;
   text-align: center;
-  background: var(--bg-dark);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(174, 194, 247, 0.18), transparent 34%),
+    linear-gradient(145deg, #070b1e 0%, #101a3c 58%, #17254b 100%);
   color: var(--text-light, #ffffff);
   height: 100vh;
   position: fixed;
@@ -59,17 +61,38 @@
 }
 
 .auth-card {
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(12, 20, 45, 0.82);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 24px;
-  padding: 2.5rem 1.75rem;
+  border-radius: 20px;
+  padding: 2.25rem 1.75rem 1.75rem;
   max-width: 400px;
   width: 100%;
   margin: 0 auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 25px 60px -20px rgba(0, 0, 0, 0.8);
   box-sizing: border-box;
+}
+
+.auth-card h2 {
+  color: #ffffff;
+  font-size: 1.65rem;
+  letter-spacing: 0;
+  margin-bottom: 0.45rem;
+}
+
+.auth-subtitle {
+  color: rgba(226, 232, 240, 0.72);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin: 0 auto 1.35rem;
+  max-width: 280px;
+}
+
+.auth-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .auth-card input {
@@ -91,9 +114,42 @@
 
 .auth-card input:focus {
   outline: none;
-  border-color: #6366f1;
-  background: rgba(15, 23, 42, 0.8);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  border-color: var(--accent-blue, #aec2f7);
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 0 0 4px rgba(174, 194, 247, 0.14);
+}
+
+.auth-card .btn-primary {
+  margin-top: 0.55rem;
+  min-height: 48px;
+}
+
+.auth-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  margin-top: 1.35rem;
+  padding-top: 1.1rem;
+}
+
+.auth-footer .btn-link {
+  margin-top: 0;
+  color: var(--accent-blue, #aec2f7);
+}
+
+@media (max-height: 680px) {
+  #auth-view {
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding-top: 4.5rem;
+  }
+
+  .auth-logo {
+    max-height: 56px;
+    margin-bottom: 1rem;
+  }
+
+  .auth-card {
+    padding-top: 1.5rem;
+  }
 }
 
 /* ==========================================

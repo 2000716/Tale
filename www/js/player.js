@@ -256,6 +256,9 @@ export function playSpecificEpisode(epData, startPosition = 0) {
 
   const totalTimeSpan = document.getElementById("total-time");
   globalAudio.pause();
+  globalAudio.autoplay = false;
+  globalAudio.loop = false;
+  globalAudio.dataset.retryCount = "0";
   globalAudio.src = state.selectedItem.audioUrl;
   globalAudio.load();
 
@@ -428,6 +431,8 @@ export function setupAudioListeners() {
 
   setupDragToDismiss();
   setupExtraPlayerControls();
+  globalAudio.autoplay = false;
+  globalAudio.loop = false;
 
   globalAudio.ontimeupdate = () => {
     if (!state.isUserSeeking && globalAudio.duration) {
@@ -499,6 +504,11 @@ export function setupAudioListeners() {
   };
 
   globalAudio.onended = async () => {
+    if (!state.selectedItem) return;
+
+    const finishedItem = state.selectedItem;
+    const finishedKey = finishedItem.id || finishedItem.title;
+
     updatePlayIcons(false);
     clearSleepTimer();
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "none";
@@ -513,19 +523,23 @@ export function setupAudioListeners() {
       return;
     }
 
-    if (state.selectedItem?.title) {
-      const finishedKey = state.selectedItem.id || state.selectedItem.title;
-
+    if (finishedItem.title) {
       try {
         await removeFromFirestoreHistory(finishedKey);
       } catch (err) {
         console.error("Kunne ikke fjerne fullført spor fra historikk:", err);
       }
 
+      if (state.selectedItem !== finishedItem) return;
+
       closeFullscreenPlayer();
       document.getElementById("audio-player-bar")?.classList.add("hidden");
 
-      globalAudio.src = "";
+      globalAudio.pause();
+      globalAudio.autoplay = false;
+      globalAudio.loop = false;
+      globalAudio.removeAttribute("src");
+      globalAudio.load();
       state.selectedItem = null;
     }
   };
