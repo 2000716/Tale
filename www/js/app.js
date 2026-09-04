@@ -123,10 +123,22 @@ function initHeroCarousel() {
 // 1. LASTE BANNERE (Hero Banners / Storytel-stil)
 // ==========================================
 export async function loadBannersFromFirestore() {
+  let weeklyPodcasts = [];
+  const cachedWeekly = localStorage.getItem("tale_weekly_podcasts");
+
+  if (cachedWeekly) {
+    try {
+      const cachedData = JSON.parse(cachedWeekly);
+      if (cachedData.expiresAt > Date.now()) weeklyPodcasts = cachedData.items || [];
+    } catch (e) {
+      localStorage.removeItem("tale_weekly_podcasts");
+    }
+  }
+
   const cachedBanners = localStorage.getItem("app_banners_cache");
   if (cachedBanners) {
     try {
-      renderHeroBanners(JSON.parse(cachedBanners));
+      renderHeroBanners(JSON.parse(cachedBanners), weeklyPodcasts);
     } catch (e) {
       console.warn("Kunne ikke lese banner-cache:", e);
     }
@@ -142,17 +154,51 @@ export async function loadBannersFromFirestore() {
     });
 
     localStorage.setItem("app_banners_cache", JSON.stringify(bannersData));
-    renderHeroBanners(bannersData);
+    renderHeroBanners(bannersData, weeklyPodcasts);
   } catch (err) {
     console.warn("Lasting av bannere feilet:", err);
   }
+
+  if (weeklyPodcasts.length === 0) {
+    try {
+      const response = await fetch("https://rss.applemarketingtools.com/api/v2/no/podcasts/top/5/podcasts.json");
+      if (!response.ok) throw new Error(`Apple Podcasts svarte med ${response.status}`);
+      const data = await response.json();
+      weeklyPodcasts = (data.feed?.results || []).map((podcast, index) => ({
+        id: `weekly_podcast_${podcast.id || index}`,
+        title: podcast.name || "Ukens podkast",
+        subtitle: podcast.artistName || "Populær podkast",
+        description: "En av ukens mest populære podkaster i Norge.",
+        imageUrl: podcast.artworkUrl100 || "",
+        rssUrl: podcast.url || "",
+        badge: "Anbefalt denne uken!",
+        rank: index + 1
+      }));
+
+      localStorage.setItem("tale_weekly_podcasts", JSON.stringify({
+        expiresAt: Date.now() + (6 * 60 * 60 * 1000),
+        items: weeklyPodcasts
+      }));
+      renderHeroBanners(JSON.parse(localStorage.getItem("app_banners_cache") || "[]"), weeklyPodcasts);
+    } catch (err) {
+      console.warn("Kunne ikke hente ukens populære podkaster:", err);
+    }
+  }
 }
 
-function renderHeroBanners(banners) {
+function renderHeroBanners(banners, weeklyPodcasts = []) {
   const pages = ["home", "audiobooks", "podcasts", "radio"];
 
   const publishedBanners = banners.filter(b => b.visible !== false);
-  const homeBanners = publishedBanners.filter(b => (b.targetPage === "home" || b.page === "home") && (b.type === "carousel" || !b.type));
+  const weeklyBanners = weeklyPodcasts.map(podcast => ({
+    ...podcast,
+    targetPage: "home",
+    type: "carousel"
+  }));
+  const homeBanners = [
+    ...weeklyBanners,
+    ...publishedBanners.filter(b => (b.targetPage === "home" || b.page === "home") && (b.type === "carousel" || !b.type))
+  ];
   const heroWrapper = document.getElementById("hero-banner-wrapper");
   const carouselContainer = document.getElementById("hero-banner-carousel");
   const dotsContainer = document.getElementById("carousel-dots");
@@ -164,15 +210,17 @@ function renderHeroBanners(banners) {
 
       homeBanners.forEach((banner, idx) => {
         const isActive = idx === 0 ? "active" : "";
-        const badge = banner.badge ? `<span class="slide-badge">${escapeAttr(banner.badge)}</span>` : '';
+        const badge = `<span class="slide-badge">${escapeAttr(banner.badge || "Anbefalt denne uken!")}</span>`;
         const imgUrl = banner.imageUrl || banner.coverUrl || banner.cover || '';
 
         slidesHTML += `
           <div class="carousel-slide ${isActive}" 
+            data-id="${escapeAttr(banner.id || '')}"
                data-audio="${escapeAttr(banner.audioUrl || '')}" 
                data-title="${escapeAttr(banner.title || '')}" 
                data-sub="${escapeAttr(banner.subtitle || '')}" 
-               data-cover="${escapeAttr(imgUrl)}">
+               data-cover="${escapeAttr(imgUrl)}"
+               data-rss="${escapeAttr(banner.rssUrl || '')}">
             <img src="${escapeAttr(imgUrl)}" alt="${escapeAttr(banner.title || 'Banner')}">
             <div class="slide-overlay">
               ${badge}
@@ -689,9 +737,22 @@ function setupEventListeners() {
       const title = slide.dataset.title || "Tale Highlight";
       const sub = slide.dataset.sub || "";
       const cover = slide.dataset.cover || "";
+      const rssUrl = slide.dataset.rss || "";
 
       if (audioUrl) {
         playAudioTrack(audioUrl, title, sub, cover);
+      } else if (rssUrl) {
+        openDetailsView({
+          id: slide.dataset.id || title,
+          title,
+          sub,
+          subtitle: sub,
+          cover,
+          coverUrl: cover,
+          rssUrl,
+          type: "podcast",
+          description: "En av ukens mest populære podkaster i Norge."
+        });
       }
       return;
     }
