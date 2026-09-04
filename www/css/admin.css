@@ -328,6 +328,12 @@ body.admin-body {
   color: var(--text-main);
 }
 
+.section-page-context {
+  margin: -8px 0 14px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
 .section-manage-entry[hidden] {
   display: none;
 }

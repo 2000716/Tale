@@ -193,11 +193,28 @@ function initLiveSectionsListener() {
 }
 
 function setupSectionPageTabs() {
+  const pageNames = {
+    all: "alle sider",
+    home: "Hjem",
+    audiobooks: "Lydbøker",
+    podcasts: "Podkaster",
+    radio: "Radio"
+  };
+
   document.querySelectorAll(".section-page-tab").forEach(button => {
     button.addEventListener("click", () => {
       selectedSectionPage = button.dataset.sectionPage || "all";
       document.querySelectorAll(".section-page-tab").forEach(tab => tab.classList.remove("active"));
       button.classList.add("active");
+      const pageContext = document.getElementById("section-page-context");
+      if (pageContext) pageContext.textContent = `Viser seksjoner fra ${pageNames[selectedSectionPage] || "valgt side"}`;
+
+      // Sideknappen velger også mål for en ny seksjon.
+      if (selectedSectionPage !== "all") {
+        const pageSelect = document.getElementById("sec-page");
+        if (pageSelect) pageSelect.value = selectedSectionPage;
+      }
+
       document.querySelectorAll(".section-manage-entry").forEach(entry => {
         entry.hidden = selectedSectionPage !== "all" && entry.dataset.sectionPage !== selectedSectionPage;
       });
