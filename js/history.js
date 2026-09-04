@@ -18,7 +18,12 @@ function getItemKey(itemOrId) {
 }
 
 function isDirectRadio(item) {
-  return !!(item && (item.isRadio || item.type === "radio" || item.isLive));
+  return !!(item && (
+    item.isRadio ||
+    item.type === "radio" ||
+    item.isLive ||
+    String(item.id || "").startsWith("radio_")
+  ));
 }
 
 function removeRadioFromLocalHistory() {
@@ -183,6 +188,8 @@ export function renderContinueListening() {
 
   if (items.length === 0) {
     section.style.display = "none";
+    container.replaceChildren();
+    container.dataset.historySignature = "";
     return;
   }
 
@@ -196,8 +203,12 @@ export function renderContinueListening() {
     return bTime - aTime;
   });
 
-  container.innerHTML = "";
+  const historySignature = items.map(([id]) => id).join("|");
+  if (container.dataset.historySignature === historySignature) return;
+  container.dataset.historySignature = historySignature;
+
   section.style.display = "block";
+  container.innerHTML = "";
 
   items.forEach(([id, item]) => {
     const card = document.createElement("div");
@@ -233,7 +244,8 @@ export function renderContinueListening() {
     card.appendChild(title);
     card.appendChild(author);
 
-    card.onclick = () => {
+    card.onclick = (event) => {
+      event.stopPropagation();
       state.selectedItem = { ...item, id: item.id || id };
       playSpecificEpisode(state.selectedItem, item.currentTime || 0);
     };
