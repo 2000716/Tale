@@ -9,7 +9,7 @@ import { collection, query, orderBy, getDocs } from "https://www.gstatic.com/fir
 let currentSlideIndex = 0;
 
 // Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
-function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0) {
+function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0, isRadio = false) {
   if (!isPlayableAudioUrl(audioUrl)) {
     console.warn("Ignorerer ugyldig audio-URL:", audioUrl);
     return;
@@ -20,7 +20,9 @@ function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0) {
     title: title,
     sub: sub,
     cover: cover,
-    currentTime: currentTime
+    currentTime: currentTime,
+    type: isRadio ? "radio" : undefined,
+    isRadio
   });
 }
 
@@ -705,7 +707,7 @@ function setupEventListeners() {
       const cover = radioBtnOrCard.dataset.cover || "";
 
       if (audioUrl) {
-        playAudioTrack(audioUrl, title, sub, cover);
+        playAudioTrack(audioUrl, title, sub, cover, 0, true);
       }
       return;
     }
@@ -721,7 +723,7 @@ function setupEventListeners() {
           item.title,
           item.sub || item.author || item.publisher || '',
           item.coverUrl || item.cover || '',
-          item.progress || 0
+          item.currentTime || 0
         );
       } else if (item && (item.rssUrl || item.id)) {
         openDetailsView(item);

@@ -73,6 +73,24 @@ export function isPlayableAudioUrl(url) {
   return looksLikeStream && (looksLikeFile || looksLikeStreamEndpoint);
 }
 
+function updateContentPlayButtons() {
+  const selected = state.selectedItem;
+  const currentSource = globalAudio.currentSrc || globalAudio.src;
+  const isPlaying = !!selected && !globalAudio.paused && !globalAudio.ended;
+
+  document.querySelectorAll(".radio-play-btn, .btn-play-sm, .btn-play-featured").forEach(button => {
+    const owner = button.closest("[data-audio]");
+    const source = button.dataset.audio || owner?.dataset.audio || "";
+    const title = button.dataset.title || owner?.dataset.title || "";
+    const matches = isPlaying && ((source && source === currentSource) || (title && title === selected.title));
+
+    button.classList.toggle("is-playing", matches);
+    button.setAttribute("aria-label", matches ? `Pause ${title || selected.title}` : `Spill ${title || "innhold"}`);
+    const icon = button.querySelector("i");
+    if (icon) icon.className = matches ? "fa-solid fa-pause" : "fa-solid fa-play";
+  });
+}
+
 // Global spoling for både UI-knapper og låseskjerm
 export function skipTime(seconds) {
   if (!globalAudio.duration) return;
@@ -290,6 +308,7 @@ export function playSpecificEpisode(epData, startPosition = 0) {
     miniCoverContainer.innerHTML = buildCoverMarkup(state.selectedItem.cover, state.selectedItem.title);
   }
   document.getElementById("audio-player-bar")?.classList.remove("hidden");
+  updateContentPlayButtons();
 
   const fullTitle = document.getElementById("full-title");
   const fullSub = document.getElementById("full-sub");
@@ -358,6 +377,7 @@ export function togglePlay() {
       saveProgressToFirestore(key, state.selectedItem);
     }
   }
+  updateContentPlayButtons();
 }
 
 function setupDragToDismiss() {
@@ -434,7 +454,11 @@ export function setupAudioListeners() {
   globalAudio.autoplay = false;
   globalAudio.loop = false;
 
+  globalAudio.onplay = updateContentPlayButtons;
+  globalAudio.onpause = updateContentPlayButtons;
+
   globalAudio.ontimeupdate = () => {
+    updateContentPlayButtons();
     if (!state.isUserSeeking && globalAudio.duration) {
       const progressPercent = (globalAudio.currentTime / globalAudio.duration) * 100;
       if (progressBar) progressBar.value = progressPercent;
@@ -473,17 +497,20 @@ export function setupAudioListeners() {
 
     if (isLiveStream) {
       updatePlayIcons(false);
+      updateContentPlayButtons();
       return;
     }
 
     if (!currentSrc || !navigator.onLine) {
       updatePlayIcons(false);
+      updateContentPlayButtons();
       return;
     }
 
     if (globalAudio.dataset.retryCount && Number(globalAudio.dataset.retryCount) >= 1) {
       console.warn("Stopper gjentatte forsøk på ugyldig lydkilde.");
       updatePlayIcons(false);
+      updateContentPlayButtons();
       return;
     }
 
@@ -510,6 +537,7 @@ export function setupAudioListeners() {
     const finishedKey = finishedItem.id || finishedItem.title;
 
     updatePlayIcons(false);
+    updateContentPlayButtons();
     clearSleepTimer();
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "none";
     if (progressBar) progressBar.value = 0;

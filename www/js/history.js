@@ -202,6 +202,8 @@ export function renderContinueListening() {
   items.forEach(([id, item]) => {
     const card = document.createElement("div");
     card.className = "book-card continue-card";
+    card.dataset.id = item.id || id;
+    card.dataset.title = item.title || "";
 
     const coverWrap = document.createElement("div");
     coverWrap.className = "book-cover continue-cover-wrap";

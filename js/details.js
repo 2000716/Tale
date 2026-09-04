@@ -1,5 +1,14 @@
 import { playSpecificEpisode } from './player.js';
 
+function escapeAttr(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 // Konfigurasjon og tilstand
 const EPISODES_PER_PAGE = 10;
 let currentItem = null;
@@ -250,7 +259,7 @@ function renderEpisodesOrChapters(items, unitName) {
             ${ep.pubDate ? `<span>${formatDate(ep.pubDate)}</span>` : ''}
           </div>
         </div>
-        <button class="btn-play-sm" aria-label="Spill av">
+        <button class="btn-play-sm" data-audio="${escapeAttr(ep.audioUrl || ep.url || '')}" data-title="${escapeAttr(ep.title || '')}" aria-label="Spill av">
           <i class="fa-solid fa-play"></i>
         </button>
       </div>
