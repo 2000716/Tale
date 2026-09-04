@@ -139,33 +139,36 @@ export async function loadWeeklyPodcasts() {
 
   if (weeklyPodcasts.length === 0) {
     try {
-      const response = await fetch("https://rss.applemarketingtools.com/api/v2/no/podcasts/top/5/podcasts.json");
+        const response = await fetch("https://itunes.apple.com/no/rss/toppodcasts/limit=5/json");
       if (!response.ok) throw new Error(`Apple Podcasts svarte med ${response.status}`);
       const data = await response.json();
-      weeklyPodcasts = await Promise.all((data.feed?.results || []).map(async (podcast, index) => {
-        let feedUrl = "";
-        try {
-          const lookupResponse = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(podcast.id)}&entity=podcast&country=NO`);
-          if (lookupResponse.ok) {
-            const lookupData = await lookupResponse.json();
-            feedUrl = lookupData.results?.[0]?.feedUrl || "";
-          }
-        } catch (lookupError) {
-          console.warn("Kunne ikke hente RSS-feed for ukens podkast:", podcast.name, lookupError);
-        }
-
-        return {
-          id: `weekly_podcast_${podcast.id || index}`,
-          appleId: podcast.id || "",
-          title: podcast.name || "Ukens podkast",
-          subtitle: podcast.artistName || "Populær podkast",
+        weeklyPodcasts = (data.feed?.entry || []).map((podcast, index) => ({
+          id: `weekly_podcast_${podcast.id?.attributes?.['im:id'] || index}`,
+          appleId: podcast.id?.attributes?.['im:id'] || "",
+          title: podcast['im:name']?.label || "Ukens podkast",
+          subtitle: podcast['im:artist']?.label || "Populær podkast",
           description: "En av ukens mest populære podkaster i Norge.",
-          imageUrl: (podcast.artworkUrl100 || "").replace("100x100", "600x600"),
-          rssUrl: feedUrl,
-          appleUrl: podcast.url || "",
+          imageUrl: ([...(podcast['im:image'] || [])].pop()?.label || "").replace("100x100", "600x600"),
+          rssUrl: "",
+          appleUrl: podcast.link?.attributes?.href || "",
           badge: "Anbefalt denne uken!",
           rank: index + 1
-        };
+      }));
+
+      // Render direkte fra topplisten. RSS-oppslag skal ikke kunne skjule banneret.
+      renderHeroBanners(weeklyPodcasts);
+
+      weeklyPodcasts = await Promise.all(weeklyPodcasts.map(async (podcast) => {
+        try {
+          const lookupResponse = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(podcast.appleId)}&entity=podcast&country=NO`);
+          if (lookupResponse.ok) {
+            const lookupData = await lookupResponse.json();
+            return { ...podcast, rssUrl: lookupData.results?.[0]?.feedUrl || "" };
+          }
+        } catch (lookupError) {
+          console.warn("Kunne ikke hente RSS-feed for ukens podkast:", podcast.title, lookupError);
+        }
+        return podcast;
       }));
 
       localStorage.setItem("tale_weekly_podcasts_v2", JSON.stringify({
