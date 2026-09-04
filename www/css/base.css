@@ -75,6 +75,12 @@ input, textarea {
   flex-direction: column;
 }
 
+@media (max-width: 600px) {
+  .view {
+    max-width: 100vw;
+  }
+}
+
 main {
   flex: 1;
   padding: 1.25rem;

@@ -88,7 +88,7 @@
   top: 0;
   z-index: 1000;
   background: var(--bar-bg);
-  padding: calc(0.8rem + env(safe-area-inset-top)) 1.2rem 0.4rem 1.2rem;
+  padding: calc(0.8rem + env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) 0.4rem max(0.75rem, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
@@ -124,6 +124,14 @@
   font-size: 0.8rem;
   background: rgba(174, 194, 247, 0.06);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  max-width: 48%;
+  min-width: 0;
+}
+
+.profile-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .profile-avatar {
@@ -225,7 +233,9 @@ main > section,
   flex-direction: column; /* Ikon øverst, tekst under */
   align-items: center;
   justify-content: center;
-  padding: 4px 12px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4px 8px;
   gap: 5px;
   cursor: pointer;
   transition: color 0.2s ease, transform 0.1s ease;
@@ -432,6 +442,12 @@ main > section,
   }
   .layout-grid-4 {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .bottom-bar {
+    max-width: 100vw;
   }
 }
 
