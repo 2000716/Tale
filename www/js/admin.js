@@ -758,7 +758,10 @@ window.editSection = function(sectionId) {
   document.getElementById("sec-subtitle").value = section.subtitle || "";
   document.getElementById("sec-order").value = section.order ?? 1;
   document.getElementById("sec-max-items").value = section.maxItems ?? 0;
-  document.getElementById("sec-page").value = section.page || section.targetPages?.[0] || "home";
+  const savedPage = Array.isArray(section.targetPages)
+    ? section.targetPages[0]
+    : (section.targetPages || section.page || "home");
+  document.getElementById("sec-page").value = savedPage;
   document.getElementById("sec-layout").value = section.layout === "grid" ? "grid-2" : (section.layout || "horizontal-scroll");
   document.getElementById("sec-visible").checked = section.visible !== false;
   document.getElementById("section-form-heading").innerHTML = '<i class="fa-solid fa-pen"></i> Rediger Seksjon';
