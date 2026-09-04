@@ -124,14 +124,14 @@ function initHeroCarousel() {
 // ==========================================
 export async function loadBannersFromFirestore() {
   let weeklyPodcasts = [];
-  const cachedWeekly = localStorage.getItem("tale_weekly_podcasts");
+  const cachedWeekly = localStorage.getItem("tale_weekly_podcasts_v2");
 
   if (cachedWeekly) {
     try {
       const cachedData = JSON.parse(cachedWeekly);
       if (cachedData.expiresAt > Date.now()) weeklyPodcasts = cachedData.items || [];
     } catch (e) {
-      localStorage.removeItem("tale_weekly_podcasts");
+      localStorage.removeItem("tale_weekly_podcasts_v2");
     }
   }
 
@@ -164,18 +164,33 @@ export async function loadBannersFromFirestore() {
       const response = await fetch("https://rss.applemarketingtools.com/api/v2/no/podcasts/top/5/podcasts.json");
       if (!response.ok) throw new Error(`Apple Podcasts svarte med ${response.status}`);
       const data = await response.json();
-      weeklyPodcasts = (data.feed?.results || []).map((podcast, index) => ({
-        id: `weekly_podcast_${podcast.id || index}`,
-        title: podcast.name || "Ukens podkast",
-        subtitle: podcast.artistName || "Populær podkast",
-        description: "En av ukens mest populære podkaster i Norge.",
-        imageUrl: podcast.artworkUrl100 || "",
-        rssUrl: podcast.url || "",
-        badge: "Anbefalt denne uken!",
-        rank: index + 1
+      weeklyPodcasts = await Promise.all((data.feed?.results || []).map(async (podcast, index) => {
+        let feedUrl = "";
+        try {
+          const lookupResponse = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(podcast.id)}&entity=podcast&country=NO`);
+          if (lookupResponse.ok) {
+            const lookupData = await lookupResponse.json();
+            feedUrl = lookupData.results?.[0]?.feedUrl || "";
+          }
+        } catch (lookupError) {
+          console.warn("Kunne ikke hente RSS-feed for ukens podkast:", podcast.name, lookupError);
+        }
+
+        return {
+          id: `weekly_podcast_${podcast.id || index}`,
+          appleId: podcast.id || "",
+          title: podcast.name || "Ukens podkast",
+          subtitle: podcast.artistName || "Populær podkast",
+          description: "En av ukens mest populære podkaster i Norge.",
+          imageUrl: podcast.artworkUrl100 || "",
+          rssUrl: feedUrl,
+          appleUrl: podcast.url || "",
+          badge: "Anbefalt denne uken!",
+          rank: index + 1
+        };
       }));
 
-      localStorage.setItem("tale_weekly_podcasts", JSON.stringify({
+      localStorage.setItem("tale_weekly_podcasts_v2", JSON.stringify({
         expiresAt: Date.now() + (6 * 60 * 60 * 1000),
         items: weeklyPodcasts
       }));
@@ -220,7 +235,8 @@ function renderHeroBanners(banners, weeklyPodcasts = []) {
                data-title="${escapeAttr(banner.title || '')}" 
                data-sub="${escapeAttr(banner.subtitle || '')}" 
                data-cover="${escapeAttr(imgUrl)}"
-               data-rss="${escapeAttr(banner.rssUrl || '')}">
+               data-rss="${escapeAttr(banner.rssUrl || '')}"
+               data-apple-url="${escapeAttr(banner.appleUrl || '')}">
             <img src="${escapeAttr(imgUrl)}" alt="${escapeAttr(banner.title || 'Banner')}">
             <div class="slide-overlay">
               ${badge}
@@ -750,6 +766,7 @@ function setupEventListeners() {
           cover,
           coverUrl: cover,
           rssUrl,
+          appleUrl: slide.dataset.appleUrl || "",
           type: "podcast",
           description: "En av ukens mest populære podkaster i Norge."
         });
