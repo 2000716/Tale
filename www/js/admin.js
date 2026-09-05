@@ -19,8 +19,15 @@ let activeSections = [];
 let selectedSectionPage = "all";
 
 document.addEventListener("DOMContentLoaded", () => {
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     if (!user) {
+      window.location.replace("./index.html");
+      return;
+    }
+
+    const tokenResult = await user.getIdTokenResult(true);
+    if (tokenResult.claims.admin !== true) {
+      alert("Du har ikke administratortilgang.");
       window.location.replace("./index.html");
       return;
     }
