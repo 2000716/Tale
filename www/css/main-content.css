@@ -452,7 +452,6 @@ main, .content-container {
   display: flex;
   flex-direction: column;
   scroll-snap-align: start;
-  transition: transform 0.18s ease, opacity 0.18s ease;
   padding-bottom: 0.15rem;
 }
 
@@ -500,10 +499,6 @@ main, .content-container {
     animation: none;
     transition: none;
   }
-}
-
-.book-card:hover {
-  transform: translateY(-2px);
 }
 
 .book-cover {
