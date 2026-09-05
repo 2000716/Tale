@@ -262,6 +262,7 @@ export function playSpecificEpisode(epData, startPosition = 0) {
     return;
   }
 
+  globalAudio.pause();
   state.selectedItem = {
     id: epData.id || epData.title,
     title: epData.title || "Ukjent tittel",
@@ -273,7 +274,6 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   };
 
   const totalTimeSpan = document.getElementById("total-time");
-  globalAudio.pause();
   globalAudio.autoplay = false;
   globalAudio.loop = false;
   globalAudio.dataset.retryCount = "0";
@@ -372,10 +372,6 @@ export function togglePlay() {
     globalAudio.pause();
     updatePlayIcons(false);
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "paused";
-    if (state.selectedItem?.title) {
-      const key = state.selectedItem.id || state.selectedItem.title;
-      saveProgressToFirestore(key, state.selectedItem);
-    }
   }
   updateContentPlayButtons();
 }
@@ -447,15 +443,20 @@ export function setupAudioListeners() {
   const progressBar = document.getElementById("progress-bar");
   const currentTimeSpan = document.getElementById("current-time");
   const totalTimeSpan = document.getElementById("total-time");
-  let saveTimer = null;
-
   setupDragToDismiss();
   setupExtraPlayerControls();
   globalAudio.autoplay = false;
   globalAudio.loop = false;
 
   globalAudio.onplay = updateContentPlayButtons;
-  globalAudio.onpause = updateContentPlayButtons;
+  globalAudio.onpause = () => {
+    updateContentPlayButtons();
+
+    if (globalAudio.ended || !state.selectedItem?.title || state.selectedItem.isRadio) return;
+
+    const key = state.selectedItem.id || state.selectedItem.title;
+    saveProgressToFirestore(key, state.selectedItem);
+  };
 
   globalAudio.ontimeupdate = () => {
     updateContentPlayButtons();
@@ -477,14 +478,6 @@ export function setupAudioListeners() {
         }
       }
 
-      // Lagrer automatisk hvert 30. sekund (kun dersom det ikke er radio)
-      if (!saveTimer && state.selectedItem?.title && !state.selectedItem.isRadio) {
-        saveTimer = setTimeout(() => {
-          const key = state.selectedItem.id || state.selectedItem.title;
-          saveProgressToFirestore(key, state.selectedItem);
-          saveTimer = null;
-        }, 30000);
-      }
     }
   };
 
