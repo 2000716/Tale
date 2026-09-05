@@ -19,6 +19,17 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https:/
 let activeSections = [];
 let selectedSectionPage = "all";
 
+// Hjelpefunksjon for å unngå XSS i generert HTML
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   setupAdminLogin();
 
@@ -30,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
+      // Tvinger fornyelse av ID-token for å sjekke om 'admin'-claim er satt i Firebase Auth backend
       const tokenResult = await user.getIdTokenResult(true);
       if (tokenResult.claims.admin !== true) {
         await signOut(auth);
@@ -44,6 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("admin-login-view")?.classList.add("hidden");
     document.getElementById("admin-app")?.classList.remove("hidden");
+    
     setupTabNavigation();
     initLiveSectionsListener();
     initLiveBannersListener();
@@ -57,6 +70,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// ==========================================
+// AUTENTISERING & INNLOGGING
+// ==========================================
 function setupAdminLogin() {
   const form = document.getElementById("admin-login-form");
   const logoutButton = document.getElementById("admin-logout-btn");
@@ -83,6 +99,9 @@ function showAdminLoginError(message) {
   if (errorEl) errorEl.textContent = message;
 }
 
+// ==========================================
+// ANSATTBEHANDLING (/employeeEmails)
+// ==========================================
 function setupEmployeeManagement() {
   const form = document.getElementById("add-employee-form");
   const list = document.getElementById("employees-list");
@@ -100,13 +119,17 @@ function setupEmployeeManagement() {
       await setDoc(doc(db, "employeeEmails", email), {
         email,
         addedAt: new Date(),
-        addedBy: auth.currentUser.email
+        addedBy: auth.currentUser ? auth.currentUser.email : "Ukjent"
       });
       input.value = "";
       message.textContent = "E-postadressen er lagret.";
       loadEmployeeEmails();
     } catch (error) {
-      message.textContent = "Kunne ikke lagre e-postadressen.";
+      if (error.code === 'permission-denied') {
+        message.textContent = "Ingen tilgang: Du må ha admin-rettigheter.";
+      } else {
+        message.textContent = "Kunne ikke lagre e-postadressen.";
+      }
       console.error("Feil ved lagring av ansatt-epost:", error);
     }
   });
@@ -119,6 +142,7 @@ function setupEmployeeManagement() {
       await deleteDoc(doc(db, "employeeEmails", button.dataset.deleteEmployee));
       loadEmployeeEmails();
     } catch (error) {
+      alert("Feil ved sletting: " + (error.code === 'permission-denied' ? "Mangler tilgang." : error.message));
       console.error("Feil ved sletting av ansatt-epost:", error);
     }
   });
@@ -139,7 +163,12 @@ async function loadEmployeeEmails() {
 
     list.innerHTML = snapshot.docs.map((employeeDoc) => {
       const email = employeeDoc.data().email || employeeDoc.id;
-      return `<div class="manage-item employee-entry"><span>${escapeHtml(email)}</span><button type="button" class="btn-danger" data-delete-employee="${escapeHtml(employeeDoc.id)}"><i class="fa-solid fa-trash"></i> Slett</button></div>`;
+      return `<div class="manage-item employee-entry">
+        <span>${escapeHtml(email)}</span>
+        <button type="button" class="btn-danger" data-delete-employee="${escapeHtml(employeeDoc.id)}">
+          <i class="fa-solid fa-trash"></i> Slett
+        </button>
+      </div>`;
     }).join("");
   } catch (error) {
     list.innerHTML = '<p class="text-error">Kunne ikke laste ansatt-epostene.</p>';
@@ -171,18 +200,15 @@ function setupTabNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
     const tabContents = document.querySelectorAll('.tab-content');
 
-    // Fjern active-klasse fra alle knapper og faner
     navItems.forEach(btn => btn.classList.remove('active'));
     tabContents.forEach(tab => tab.classList.remove('active'));
 
-    // Aktiver valgt knapp og fane
     navButton.classList.add('active');
     const targetTab = document.getElementById(tabId);
     if (targetTab) {
       targetTab.classList.add('active');
     }
 
-    // Oppdater tittel i header
     if (titles[tabId]) {
       const pageTitle = document.getElementById('page-title');
       const pageSubtitle = document.getElementById('page-subtitle');
@@ -193,7 +219,7 @@ function setupTabNavigation() {
 }
 
 // ==========================================
-// 1. FIRESTORE SANNTIDSLYTTER FOR SEKSJONER & DASHBOARD STATS
+// 1. FIRESTORE SANNTIDSLYTTER FOR SEKSJONER
 // ==========================================
 function initLiveSectionsListener() {
   const q = query(collection(db, "sections"), orderBy("order", "asc"));
@@ -210,7 +236,6 @@ function initLiveSectionsListener() {
     if (snapshot.empty) {
       if (manageList) manageList.innerHTML = `<p class="text-muted">Ingen seksjoner opprettet ennå.</p>`;
       if (sectionCountEl) sectionCountEl.innerText = "0";
-      
       if (activeUsersEl) activeUsersEl.innerText = "1 240";
       if (hoursEl) hoursEl.innerText = "4 500 t";
 
@@ -248,7 +273,7 @@ function initLiveSectionsListener() {
                 ${secData.items.map(item => `
                   <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; background: var(--card-bg); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">
                     ${escapeHtml(item.title || 'Uten navn')}
-                    <i class="fa-solid fa-xmark" onclick="removeItemFromSection('${docSnap.id}', '${item.id}')" style="cursor: pointer; color: var(--danger-color); margin-left: 2px;" title="Fjern fra seksjon"></i>
+                    <i class="fa-solid fa-xmark" onclick="window.removeItemFromSection('${docSnap.id}', '${item.id}')" style="cursor: pointer; color: var(--danger-color); margin-left: 2px;" title="Fjern fra seksjon"></i>
                   </span>
                 `).join('')}
               </div>
@@ -270,11 +295,11 @@ function initLiveSectionsListener() {
               </div>
             </div>
             <div style="display: flex; gap: 6px; align-items: center;">
-              <button onclick="editSection('${docSnap.id}')" title="Rediger seksjon" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-pen"></i> Rediger</button>
-              <button onclick="toggleSectionVisibility('${docSnap.id}', ${secData.visible !== false})" title="Vis eller skjul seksjon" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-eye${secData.visible === false ? '-slash' : ''}"></i></button>
+              <button onclick="window.editSection('${docSnap.id}')" title="Rediger seksjon" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-pen"></i> Rediger</button>
+              <button onclick="window.toggleSectionVisibility('${docSnap.id}', ${secData.visible !== false})" title="Vis eller skjul seksjon" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-eye${secData.visible === false ? '-slash' : ''}"></i></button>
               <div style="display: flex; flex-direction: column; gap: 2px;">
-                <button onclick="moveSectionOrder('${docSnap.id}', 'up')" title="Flytt opp" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-up"></i></button>
-                <button onclick="moveSectionOrder('${docSnap.id}', 'down')" title="Flytt ned" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-down"></i></button>
+                <button onclick="window.moveSectionOrder('${docSnap.id}', 'up')" title="Flytt opp" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-up"></i></button>
+                <button onclick="window.moveSectionOrder('${docSnap.id}', 'down')" title="Flytt ned" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;"><i class="fa-solid fa-chevron-down"></i></button>
               </div>
               ${!isSystemLocked ? `
                 <button class="btn-danger btn-delete-sec" data-id="${docSnap.id}" style="background: var(--danger-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
@@ -332,7 +357,6 @@ function setupSectionPageTabs() {
       const pageContext = document.getElementById("section-page-context");
       if (pageContext) pageContext.textContent = `Viser seksjoner fra ${pageNames[selectedSectionPage] || "valgt side"}`;
 
-      // Sideknappen velger også mål for en ny seksjon.
       if (selectedSectionPage !== "all") {
         const pageSelect = document.getElementById("sec-page");
         if (pageSelect) pageSelect.value = selectedSectionPage;
@@ -365,12 +389,76 @@ function setupDeleteButtons() {
         try {
           await deleteDoc(doc(db, "sections", secId));
         } catch (err) {
-          alert("Feil ved sletting: " + err.message);
+          alert("Feil ved sletting: " + (err.code === 'permission-denied' ? "Du har ikke tilgang." : err.message));
         }
       }
     });
   });
 }
+
+// ==========================================
+// GLOBALE SEKSJONSHÅNDTERERE (EKSPOSTERT TIL WINDOW)
+// ==========================================
+window.removeItemFromSection = async function(sectionId, itemId) {
+  if (!confirm("Fjerne dette elementet fra seksjonen?")) return;
+  try {
+    const sec = activeSections.find(s => s.id === sectionId);
+    if (!sec || !sec.items) return;
+    const itemToRemove = sec.items.find(i => i.id === itemId);
+    if (!itemToRemove) return;
+
+    await updateDoc(doc(db, "sections", sectionId), {
+      items: arrayRemove(itemToRemove)
+    });
+  } catch (err) {
+    alert("Kunne ikke fjerne elementet: " + (err.code === 'permission-denied' ? "Ingen tilgang." : err.message));
+  }
+};
+
+window.editSection = function(sectionId) {
+  const sec = activeSections.find(s => s.id === sectionId);
+  if (!sec) return;
+
+  document.getElementById("sec-title").value = sec.title || "";
+  document.getElementById("sec-subtitle").value = sec.subtitle || "";
+  document.getElementById("sec-order").value = sec.order || 1;
+  document.getElementById("sec-max-items").value = sec.maxItems || 0;
+  document.getElementById("sec-page").value = Array.isArray(sec.targetPages) ? sec.targetPages[0] : (sec.page || "home");
+  document.getElementById("sec-layout").value = sec.layout || "horizontal-scroll";
+  document.getElementById("sec-visible").checked = sec.visible !== false;
+  document.getElementById("sec-edit-id").value = sec.id;
+
+  document.getElementById("section-form-heading").innerHTML = '<i class="fa-solid fa-pen"></i> Rediger Seksjon';
+  document.getElementById("section-submit-btn").innerHTML = '<i class="fa-solid fa-save"></i> Oppdater Seksjon';
+  document.getElementById("cancel-section-edit-btn")?.classList.remove("hidden");
+
+  window.scrollTo({ top: document.getElementById("add-section-form").offsetTop - 50, behavior: "smooth" });
+};
+
+window.toggleSectionVisibility = async function(sectionId, currentVisibility) {
+  try {
+    await updateDoc(doc(db, "sections", sectionId), {
+      visible: !currentVisibility
+    });
+  } catch (err) {
+    alert("Kunne ikke endre synlighet: " + (err.code === 'permission-denied' ? "Ingen tilgang." : err.message));
+  }
+};
+
+window.moveSectionOrder = async function(sectionId, direction) {
+  const sec = activeSections.find(s => s.id === sectionId);
+  if (!sec) return;
+  const currentOrder = sec.order || 0;
+  const newOrder = direction === 'up' ? Math.max(1, currentOrder - 1) : currentOrder + 1;
+
+  try {
+    await updateDoc(doc(db, "sections", sectionId), {
+      order: newOrder
+    });
+  } catch (err) {
+    alert("Kunne ikke endre rekkefølge: " + (err.code === 'permission-denied' ? "Ingen tilgang." : err.message));
+  }
+};
 
 // ==========================================
 // 2. OPPRETT NY SEKSJON
@@ -426,8 +514,8 @@ function setupSectionForm() {
       resetEditor();
       alert(editId ? "Seksjonen ble oppdatert!" : "Seksjon ble opprettet og publisert!");
     } catch (err) {
-      console.error("Kunne ikke opprette seksjon:", err);
-      alert("Feil ved lagring: " + err.message);
+      console.error("Kunne ikke opprette/oppdatere seksjon:", err);
+      alert("Feil ved lagring: " + (err.code === 'permission-denied' ? "Du har ikke admin-tilgang." : err.message));
     }
   });
 }
@@ -491,12 +579,29 @@ function setupBannerForm() {
       alert(editId ? "Banneret ble oppdatert!" : "Hero Banner ble publisert!");
     } catch (err) {
       console.error("Feil ved lagring av banner:", err);
-      alert("Kunne ikke publisere banner: " + err.message);
+      alert("Kunne ikke publisere banner: " + (err.code === 'permission-denied' ? "Du har ikke admin-tilgang." : err.message));
     }
   });
 }
 
-// API Søk direkte for Hero Banner
+function openBannerEditor(banner) {
+  document.getElementById("banner-title").value = banner.title || "";
+  document.getElementById("banner-subtitle").value = banner.subtitle || "";
+  document.getElementById("banner-desc").value = banner.description || "";
+  document.getElementById("banner-img").value = banner.imageUrl || "";
+  document.getElementById("banner-audio").value = banner.audioUrl || "";
+  document.getElementById("banner-page").value = banner.page || "home";
+  document.getElementById("banner-type").value = banner.type || "audiobook";
+  document.getElementById("banner-badge").value = banner.badge || "";
+  document.getElementById("banner-visible").checked = banner.visible !== false;
+  document.getElementById("banner-edit-id").value = banner.id;
+
+  document.getElementById("banner-submit-btn").innerHTML = '<i class="fa-solid fa-save"></i> Oppdater Banner';
+  document.getElementById("cancel-banner-edit-btn")?.classList.remove("hidden");
+
+  window.scrollTo({ top: document.getElementById("add-banner-form").offsetTop - 50, behavior: "smooth" });
+}
+
 function setupBannerApiSearch() {
   const searchBtn = document.getElementById("banner-api-search-btn");
   const searchInput = document.getElementById("banner-api-input");
@@ -659,7 +764,7 @@ function initLiveBannersListener() {
           try {
             await deleteDoc(doc(db, "banners", bannerId));
           } catch (err) {
-            alert("Feil ved sletting av banner: " + err.message);
+            alert("Feil ved sletting av banner: " + (err.code === 'permission-denied' ? "Mangler tilgang." : err.message));
           }
         }
       });
@@ -679,7 +784,7 @@ function initLiveBannersListener() {
             visible: btn.dataset.visible !== "true"
           });
         } catch (err) {
-          alert("Kunne ikke endre bannerstatus: " + err.message);
+          alert("Kunne ikke endre bannerstatus: " + (err.code === 'permission-denied' ? "Mangler tilgang." : err.message));
         }
       });
     });
@@ -737,13 +842,13 @@ function setupManualForm() {
       alert(`"${title}" ble lagt til i seksjonen!`);
     } catch (err) {
       console.error("Feil ved manuell tilføyelse:", err);
-      alert("Kunne ikke legge til innhold: " + err.message);
+      alert("Kunne ikke legge til innhold: " + (err.code === 'permission-denied' ? "Mangler tilgang." : err.message));
     }
   });
 }
 
 // ==========================================
-// 5. API SØK OG IMPORT (APPLE PODCAST & RADIO BROWSER)
+// 5. API SØK OG IMPORT (APPLE PODCAST & RADIO)
 // ==========================================
 function setupApiSearch() {
   const searchBtn = document.getElementById("api-search-btn");
@@ -791,236 +896,118 @@ async function executeApiSearch() {
   }
 }
 
-function renderPodcastResults(items) {
-  const container = document.getElementById("api-results-container");
-  if (items.length === 0) {
-    container.innerHTML = `<p class="text-muted">Ingen treff funnet.</p>`;
+function renderPodcastResults(podcasts) {
+  const resultsContainer = document.getElementById("api-results-container");
+  if (podcasts.length === 0) {
+    resultsContainer.innerHTML = `<p class="text-muted">Ingen podkaster funnet.</p>`;
     return;
   }
 
-  container.innerHTML = "";
-  container.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 20px;";
+  resultsContainer.innerHTML = "";
+  resultsContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;";
 
-  items.forEach((item, index) => {
+  podcasts.forEach((pod) => {
     const card = document.createElement("div");
-    card.style.cssText = "background: var(--input-bg); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;";
-    
-    const title = item.trackName || item.collectionName || 'Ukjent';
-    const sub = item.artistName || 'Podkast';
-    const cover = item.artworkUrl600 || item.artworkUrl100 || '';
-    const rssUrl = item.feedUrl || '';
+    card.style.cssText = "background: var(--card-bg, #1e1e1e); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--border-color, #333);";
+
+    const title = pod.trackName || pod.collectionName || "Ukjent tittel";
+    const author = pod.artistName || "Ukjent utgiver";
+    const cover = pod.artworkUrl600 || pod.artworkUrl100 || "";
+    const feedUrl = pod.feedUrl || "";
 
     card.innerHTML = `
       <div>
-        <img src="${escapeHtml(cover)}" alt="${escapeHtml(title)}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 6px; margin-bottom: 8px;">
-        <strong style="display: block; font-size: 0.85rem; margin-bottom: 4px;">${escapeHtml(title)}</strong>
-        <p style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(sub)}</p>
+        <img src="${escapeHtml(cover)}" alt="" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" onerror="this.src='https://via.placeholder.com/120'">
+        <strong style="display: block; font-size: 0.85rem; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(title)}</strong>
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">${escapeHtml(author)}</p>
       </div>
-      <button class="btn-import-podcast" data-index="${index}" style="margin-top: 10px; background: var(--primary-color); color: #fff; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">
-        <i class="fa-solid fa-plus"></i> Importer
+      <button class="btn-import-pod" style="background: var(--primary-color, #3b82f6); color: #fff; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">
+        <i class="fa-solid fa-plus"></i> Importér til seksjon
       </button>
     `;
 
-    container.appendChild(card);
+    card.querySelector(".btn-import-pod").addEventListener("click", () => {
+      importToSection({
+        id: "pod_" + (pod.collectionId || Date.now()),
+        title,
+        sub: author,
+        author,
+        coverUrl: cover,
+        cover: cover,
+        audioUrl: feedUrl,
+        audio: feedUrl,
+        type: "podcast"
+      });
+    });
 
-    card.querySelector(".btn-import-podcast").addEventListener("click", () => {
-      importItemToSelectedSection({
-        id: "pod_" + (item.trackId || Date.now()),
+    resultsContainer.appendChild(card);
+  });
+}
+
+function renderRadioResults(stations) {
+  const resultsContainer = document.getElementById("api-results-container");
+  if (stations.length === 0) {
+    resultsContainer.innerHTML = `<p class="text-muted">Ingen radiokanaler funnet.</p>`;
+    return;
+  }
+
+  resultsContainer.innerHTML = "";
+  resultsContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;";
+
+  stations.forEach((station) => {
+    const card = document.createElement("div");
+    card.style.cssText = "background: var(--card-bg, #1e1e1e); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--border-color, #333);";
+
+    const title = station.name || "Ukjent radiokanal";
+    const sub = station.country ? `Radio (${station.country})` : "Direkte Radio";
+    const cover = station.favicon || "https://via.placeholder.com/120?text=Radio";
+    const streamUrl = station.url_resolved || station.url || "";
+
+    card.innerHTML = `
+      <div>
+        <img src="${escapeHtml(cover)}" alt="" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" onerror="this.src='https://via.placeholder.com/120?text=Radio'">
+        <strong style="display: block; font-size: 0.85rem; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(title)}</strong>
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">${escapeHtml(sub)}</p>
+      </div>
+      <button class="btn-import-radio" style="background: var(--primary-color, #3b82f6); color: #fff; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">
+        <i class="fa-solid fa-plus"></i> Importér til seksjon
+      </button>
+    `;
+
+    card.querySelector(".btn-import-radio").addEventListener("click", () => {
+      importToSection({
+        id: "radio_" + (station.stationuuid || Date.now()),
         title,
         sub,
         author: sub,
         coverUrl: cover,
         cover: cover,
-        rssUrl: rssUrl,
-        rss: rssUrl,
-        type: "podcast"
-      });
-    });
-  });
-}
-
-function renderRadioResults(items) {
-  const container = document.getElementById("api-results-container");
-  if (items.length === 0) {
-    container.innerHTML = `<p class="text-muted">Ingen radiokanaler funnet.</p>`;
-    return;
-  }
-
-  container.innerHTML = "";
-  container.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 20px;";
-
-  items.forEach((item, index) => {
-    const card = document.createElement("div");
-    card.style.cssText = "background: var(--input-bg); padding: 12px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;";
-
-    const title = item.name || 'Radiokanal';
-    const sub = item.country || 'Direktesending';
-    const cover = item.favicon || 'https://via.placeholder.com/100?text=Radio';
-    const audioUrl = item.url_resolved || item.url || '';
-
-    card.innerHTML = `
-      <div>
-        <img src="${escapeHtml(cover)}" onerror="this.src='https://via.placeholder.com/100?text=Radio'" style="width: 100%; height: 100px; object-fit: contain; border-radius: 6px; margin-bottom: 8px; background: #000;">
-        <strong style="display: block; font-size: 0.85rem; margin-bottom: 4px;">${escapeHtml(title)}</strong>
-        <p style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(sub)}</p>
-      </div>
-      <button class="btn-import-radio" data-index="${index}" style="margin-top: 10px; background: var(--success-color); color: #fff; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">
-        <i class="fa-solid fa-plus"></i> Importer
-      </button>
-    `;
-
-    container.appendChild(card);
-
-    card.querySelector(".btn-import-radio").addEventListener("click", () => {
-      importItemToSelectedSection({
-        id: "radio_" + (item.stationuuid || Date.now()),
-        title,
-        sub,
-        coverUrl: cover,
-        cover: cover,
-        audioUrl: audioUrl,
-        audio: audioUrl,
-        streamUrl: audioUrl,
+        audioUrl: streamUrl,
+        audio: streamUrl,
         type: "radio"
       });
     });
+
+    resultsContainer.appendChild(card);
   });
 }
 
-async function importItemToSelectedSection(itemObj) {
-  const sectionId = document.getElementById("target-section-select").value;
+async function importToSection(itemData) {
+  const targetSelect = document.getElementById("target-section-select");
+  const sectionId = targetSelect ? targetSelect.value : null;
+
   if (!sectionId) {
-    alert("Du må velge en målseksjon øverst i skjemaet!");
+    alert("Vennligst velg en målseksjon fra nedtrekksmenyen ovenfor først!");
     return;
   }
 
   try {
     await updateDoc(doc(db, "sections", sectionId), {
-      items: arrayUnion(itemObj)
+      items: arrayUnion(itemData)
     });
-
-    alert(`"${itemObj.title}" ble importert til seksjonen!`);
+    alert(`"${itemData.title}" ble importert til seksjonen!`);
   } catch (err) {
-    console.error("Feil under import:", err);
-      const message = err.code === "permission-denied"
-        ? "Importen ble avvist. Firebase-brukeren din mangler admin-tilgang (custom claim: admin=true)."
-        : "Kunne ikke importere: " + err.message;
-      alert(message);
+    console.error("Feil ved import av API-objekt:", err);
+    alert("Kunne ikke importere: " + (err.code === 'permission-denied' ? "Mangler admin-tilgang." : err.message));
   }
-}
-
-// ==========================================
-// 6. ADM-FUNKSJONER FOR EDITERING OG ORGANISERING
-// ==========================================
-window.editSection = function(sectionId) {
-  const section = activeSections.find(item => item.id === sectionId);
-  if (!section) return;
-
-  document.getElementById("sec-edit-id").value = section.id;
-  document.getElementById("sec-title").value = section.title || "";
-  document.getElementById("sec-subtitle").value = section.subtitle || "";
-  document.getElementById("sec-order").value = section.order ?? 1;
-  document.getElementById("sec-max-items").value = section.maxItems ?? 0;
-  const savedPage = Array.isArray(section.targetPages)
-    ? section.targetPages[0]
-    : (section.targetPages || section.page || "home");
-  document.getElementById("sec-page").value = savedPage;
-  document.getElementById("sec-layout").value = section.layout === "grid" ? "grid-2" : (section.layout || "horizontal-scroll");
-  document.getElementById("sec-visible").checked = section.visible !== false;
-  document.getElementById("section-form-heading").innerHTML = '<i class="fa-solid fa-pen"></i> Rediger Seksjon';
-  document.getElementById("section-submit-btn").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lagre Seksjon';
-  document.getElementById("cancel-section-edit-btn")?.classList.remove("hidden");
-  document.getElementById("sec-title")?.scrollIntoView({ behavior: "smooth", block: "center" });
-};
-
-window.moveSectionOrder = async function(sectionId, direction) {
-  const index = activeSections.findIndex(s => s.id === sectionId);
-  if (index === -1) return;
-
-  const targetIndex = direction === 'up' ? index - 1 : index + 1;
-  if (targetIndex < 0 || targetIndex >= activeSections.length) return;
-
-  const currentSec = activeSections[index];
-  const targetSec = activeSections[targetIndex];
-
-  try {
-    const batchUpdates = [
-      updateDoc(doc(db, "sections", currentSec.id), { order: targetSec.order ?? targetIndex }),
-      updateDoc(doc(db, "sections", targetSec.id), { order: currentSec.order ?? index })
-    ];
-    await Promise.all(batchUpdates);
-  } catch (err) {
-    console.error("Feil ved endring av rekkefølge:", err);
-    alert("Kunne ikke flytte seksjonen: " + err.message);
-  }
-};
-
-window.editSectionTitle = async function(sectionId, currentTitle) {
-  const newTitle = prompt("Endre seksjonstittel:", currentTitle);
-  if (newTitle === null || newTitle.trim() === "") return;
-
-  try {
-    await updateDoc(doc(db, "sections", sectionId), {
-      title: newTitle.trim()
-    });
-  } catch (err) {
-    console.error("Feil ved oppdatering av tittel:", err);
-    alert("Kunne ikke endre tittel: " + err.message);
-  }
-};
-
-function openBannerEditor(banner) {
-  document.getElementById("banner-edit-id").value = banner.id;
-  document.getElementById("banner-title").value = banner.title || "";
-  document.getElementById("banner-subtitle").value = banner.subtitle || "";
-  document.getElementById("banner-desc").value = banner.description || "";
-  document.getElementById("banner-img").value = banner.imageUrl || banner.coverUrl || "";
-  document.getElementById("banner-audio").value = banner.audioUrl || "";
-  document.getElementById("banner-page").value = banner.page || banner.targetPage || "home";
-  document.getElementById("banner-type").value = banner.type || (banner.page === "home" ? "carousel" : "widget");
-  document.getElementById("banner-badge").value = banner.badge || "";
-  document.getElementById("banner-visible").checked = banner.visible !== false;
-  document.getElementById("banner-submit-btn").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lagre Banner';
-  document.getElementById("cancel-banner-edit-btn")?.classList.remove("hidden");
-  document.getElementById("banner-title")?.scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
-window.toggleSectionVisibility = async function(sectionId, isVisible) {
-  try {
-    await updateDoc(doc(db, "sections", sectionId), {
-      visible: !isVisible
-    });
-  } catch (err) {
-    console.error("Feil ved endring av synlighet:", err);
-    alert("Kunne ikke endre synlighet: " + err.message);
-  }
-};
-
-window.removeItemFromSection = async function(sectionId, itemId) {
-  const section = activeSections.find(s => s.id === sectionId);
-  if (!section || !section.items) return;
-
-  const itemToRemove = section.items.find(i => i.id === itemId);
-  if (!itemToRemove) return;
-
-  if (confirm(`Vil du fjerne "${itemToRemove.title}" fra denne seksjonen?`)) {
-    try {
-      await updateDoc(doc(db, "sections", sectionId), {
-        items: arrayRemove(itemToRemove)
-      });
-    } catch (err) {
-      console.error("Feil ved sletting av element:", err);
-      alert("Kunne ikke fjerne elementet: " + err.message);
-    }
-  }
-};
-
-function escapeHtml(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 }
