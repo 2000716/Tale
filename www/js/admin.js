@@ -9,7 +9,6 @@ import {
   query, 
   orderBy, 
   onSnapshot,
-  runTransaction,
   arrayUnion,
   arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -259,21 +258,6 @@ function setupDeleteButtons() {
         }
       }
     });
-  });
-}
-
-async function addItemToSection(sectionId, item) {
-  const sectionRef = doc(db, "sections", sectionId);
-
-  await runTransaction(db, async (transaction) => {
-    const sectionSnapshot = await transaction.get(sectionRef);
-    if (!sectionSnapshot.exists()) {
-      throw new Error("Seksjonen finnes ikke lenger. Last siden på nytt.");
-    }
-
-    const currentItems = sectionSnapshot.data().items;
-    const items = Array.isArray(currentItems) ? currentItems : [];
-    transaction.update(sectionRef, { items: [...items, item] });
   });
 }
 
@@ -634,7 +618,9 @@ function setupManualForm() {
     };
 
     try {
-      await addItemToSection(sectionId, newItem);
+      await updateDoc(doc(db, "sections", sectionId), {
+        items: arrayUnion(newItem)
+      });
 
       form.reset();
       alert(`"${title}" ble lagt til i seksjonen!`);
@@ -798,12 +784,17 @@ async function importItemToSelectedSection(itemObj) {
   }
 
   try {
-    await addItemToSection(sectionId, itemObj);
+    await updateDoc(doc(db, "sections", sectionId), {
+      items: arrayUnion(itemObj)
+    });
 
     alert(`"${itemObj.title}" ble importert til seksjonen!`);
   } catch (err) {
     console.error("Feil under import:", err);
-    alert("Kunne ikke importere: " + err.message);
+      const message = err.code === "permission-denied"
+        ? "Importen ble avvist. Firebase-brukeren din mangler admin-tilgang (custom claim: admin=true)."
+        : "Kunne ikke importere: " + err.message;
+      alert(message);
   }
 }
 
