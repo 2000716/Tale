@@ -12,7 +12,27 @@
 </head>
 <body class="admin-body">
 
-  <div class="app-layout">
+  <section id="admin-login-view" class="admin-login-view">
+    <div class="admin-login-card">
+      <div class="brand-logo"><i class="fa-solid fa-wave-square"></i></div>
+      <h1>TALE Admin</h1>
+      <p>Logg inn med en administratorkonto for å fortsette.</p>
+      <form id="admin-login-form">
+        <div class="form-group">
+          <label for="admin-login-email">E-post</label>
+          <input type="email" id="admin-login-email" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="admin-login-password">Passord</label>
+          <input type="password" id="admin-login-password" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn-submit">Logg inn</button>
+        <p id="admin-login-error" class="text-error" role="alert"></p>
+      </form>
+    </div>
+  </section>
+
+  <div id="admin-app" class="app-layout hidden">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-logo">
@@ -40,6 +60,9 @@
         <button class="nav-item" data-tab="tab-manual">
           <i class="fa-solid fa-book-bookmark"></i> Legg til Lydbok / Innhold
         </button>
+        <button class="nav-item" data-tab="tab-employees">
+          <i class="fa-solid fa-user-plus"></i> Ansatte
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -60,6 +83,9 @@
           <a href="./index.html" target="_blank" class="btn-secondary">
             <i class="fa-solid fa-arrow-up-right-from-square"></i> Åpne Tale App
           </a>
+          <button type="button" id="admin-logout-btn" class="btn-secondary">
+            <i class="fa-solid fa-right-from-bracket"></i> Logg ut
+          </button>
         </div>
       </header>
 
@@ -420,6 +446,33 @@
               <i class="fa-solid fa-plus-circle"></i> Legg til Lydbok i Seksjon
             </button>
           </form>
+        </div>
+      </section>
+
+      <section id="tab-employees" class="tab-content">
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-user-plus"></i> Legg til ansatt-epost</h3>
+            </div>
+            <p class="text-muted">Registrer e-postadresser som skal ha tilgang til Tale. Dette oppretter ikke Firebase-brukeren automatisk.</p>
+            <form id="add-employee-form">
+              <div class="form-group">
+                <label for="employee-email">Ansattens e-post</label>
+                <input type="email" id="employee-email" placeholder="ansatt@firma.no" required autocomplete="off" />
+              </div>
+              <button type="submit" class="btn-submit"><i class="fa-solid fa-plus"></i> Lagre e-post</button>
+              <p id="employee-form-message" class="text-muted" role="status"></p>
+            </form>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-users"></i> Registrerte ansatte</h3>
+            </div>
+            <div id="employees-list" class="manage-list">
+              <p class="text-muted">Laster ansatt-eposter...</p>
+            </div>
+          </div>
         </div>
       </section>
 

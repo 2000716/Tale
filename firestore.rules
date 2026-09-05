@@ -32,6 +32,10 @@ service cloud.firestore {
         && request.auth.uid == userId;
     }
 
+    match /employeeEmails/{emailId} {
+      allow read, write: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

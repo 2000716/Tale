@@ -9,29 +9,41 @@ import {
   query, 
   orderBy, 
   onSnapshot,
+  setDoc,
   arrayUnion,
   arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Global tilstand for seksjoner
 let activeSections = [];
 let selectedSectionPage = "all";
 
 document.addEventListener("DOMContentLoaded", () => {
+  setupAdminLogin();
+
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.location.replace("./index.html");
+      document.getElementById("admin-login-view")?.classList.remove("hidden");
+      document.getElementById("admin-app")?.classList.add("hidden");
       return;
     }
 
-    const tokenResult = await user.getIdTokenResult(true);
-    if (tokenResult.claims.admin !== true) {
-      alert("Du har ikke administratortilgang.");
-      window.location.replace("./index.html");
+    try {
+      const tokenResult = await user.getIdTokenResult(true);
+      if (tokenResult.claims.admin !== true) {
+        await signOut(auth);
+        showAdminLoginError("Denne kontoen har ikke administratortilgang.");
+        return;
+      }
+    } catch (error) {
+      await signOut(auth);
+      showAdminLoginError("Kunne ikke bekrefte administratortilgangen.");
       return;
     }
 
+    document.getElementById("admin-login-view")?.classList.add("hidden");
+    document.getElementById("admin-app")?.classList.remove("hidden");
     setupTabNavigation();
     initLiveSectionsListener();
     initLiveBannersListener();
@@ -41,8 +53,99 @@ document.addEventListener("DOMContentLoaded", () => {
     setupBannerApiSearch();
     setupManualForm();
     setupApiSearch();
+    setupEmployeeManagement();
   });
 });
+
+function setupAdminLogin() {
+  const form = document.getElementById("admin-login-form");
+  const logoutButton = document.getElementById("admin-logout-btn");
+  if (!form) return;
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const email = document.getElementById("admin-login-email").value.trim();
+    const password = document.getElementById("admin-login-password").value;
+    showAdminLoginError("");
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      showAdminLoginError("Feil e-post eller passord.");
+    }
+  });
+
+  logoutButton?.addEventListener("click", () => signOut(auth));
+}
+
+function showAdminLoginError(message) {
+  const errorEl = document.getElementById("admin-login-error");
+  if (errorEl) errorEl.textContent = message;
+}
+
+function setupEmployeeManagement() {
+  const form = document.getElementById("add-employee-form");
+  const list = document.getElementById("employees-list");
+  if (!form || !list || form.dataset.ready === "true") return;
+  form.dataset.ready = "true";
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = document.getElementById("employee-email");
+    const message = document.getElementById("employee-form-message");
+    const email = input.value.trim().toLowerCase();
+    if (!email) return;
+
+    try {
+      await setDoc(doc(db, "employeeEmails", email), {
+        email,
+        addedAt: new Date(),
+        addedBy: auth.currentUser.email
+      });
+      input.value = "";
+      message.textContent = "E-postadressen er lagret.";
+      loadEmployeeEmails();
+    } catch (error) {
+      message.textContent = "Kunne ikke lagre e-postadressen.";
+      console.error("Feil ved lagring av ansatt-epost:", error);
+    }
+  });
+
+  list.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-delete-employee]");
+    if (!button || !confirm(`Slett ${button.dataset.deleteEmployee} fra ansattlisten?`)) return;
+
+    try {
+      await deleteDoc(doc(db, "employeeEmails", button.dataset.deleteEmployee));
+      loadEmployeeEmails();
+    } catch (error) {
+      console.error("Feil ved sletting av ansatt-epost:", error);
+    }
+  });
+
+  loadEmployeeEmails();
+}
+
+async function loadEmployeeEmails() {
+  const list = document.getElementById("employees-list");
+  if (!list) return;
+
+  try {
+    const snapshot = await getDocs(query(collection(db, "employeeEmails"), orderBy("email", "asc")));
+    if (snapshot.empty) {
+      list.innerHTML = '<p class="text-muted">Ingen ansatt-eposter er registrert.</p>';
+      return;
+    }
+
+    list.innerHTML = snapshot.docs.map((employeeDoc) => {
+      const email = employeeDoc.data().email || employeeDoc.id;
+      return `<div class="manage-item employee-entry"><span>${escapeHtml(email)}</span><button type="button" class="btn-danger" data-delete-employee="${escapeHtml(employeeDoc.id)}"><i class="fa-solid fa-trash"></i> Slett</button></div>`;
+    }).join("");
+  } catch (error) {
+    list.innerHTML = '<p class="text-error">Kunne ikke laste ansatt-epostene.</p>';
+    console.error("Feil ved lasting av ansatt-eposter:", error);
+  }
+}
 
 // ==========================================
 // 0. FANE-NAVIGASJON (EVENT DELEGATION)
@@ -53,7 +156,8 @@ function setupTabNavigation() {
     'tab-sections': ['Seksjoner & Layout', 'Styr oppsettet og galleriene på Tale-plattformen.'],
     'tab-banners': ['Hero Bannere & Promotering', 'Lag store visuelle bannere i Fabel og Storytel-stil.'],
     'tab-api': ['API Importer (Podkast & Radio)', 'Søk og legg til fra Apple Podcasts eller Radio Browser.'],
-    'tab-manual': ['Legg til Lydbok / Innhold', 'Manuell oppretting av lydbøker og enkeltepisotder.']
+    'tab-manual': ['Legg til Lydbok / Innhold', 'Manuell oppretting av lydbøker og enkeltepisotder.'],
+    'tab-employees': ['Ansatte', 'Administrer e-postadresser med tilgang til Tale.']
   };
 
   document.addEventListener('click', (e) => {

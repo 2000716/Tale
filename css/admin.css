@@ -33,6 +33,49 @@ body.admin-body {
   overflow: hidden;
 }
 
+.admin-login-view {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(circle at top, #172554, var(--bg-color) 55%);
+}
+
+.admin-login-card {
+  width: min(100%, 420px);
+  padding: 32px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+}
+
+.admin-login-card .brand-logo {
+  margin-bottom: 20px;
+}
+
+.admin-login-card h1 {
+  margin-bottom: 8px;
+}
+
+.admin-login-card > p {
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.admin-login-card .form-group {
+  margin-bottom: 16px;
+}
+
+.admin-login-card .btn-submit {
+  margin-top: 8px;
+}
+
+.admin-login-card .text-error {
+  margin-top: 12px;
+}
+
 /* App Grid Layout */
 .app-layout {
   display: flex;
