@@ -9,6 +9,7 @@ import {
   query, 
   orderBy, 
   onSnapshot,
+  runTransaction,
   arrayUnion,
   arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -258,6 +259,21 @@ function setupDeleteButtons() {
         }
       }
     });
+  });
+}
+
+async function addItemToSection(sectionId, item) {
+  const sectionRef = doc(db, "sections", sectionId);
+
+  await runTransaction(db, async (transaction) => {
+    const sectionSnapshot = await transaction.get(sectionRef);
+    if (!sectionSnapshot.exists()) {
+      throw new Error("Seksjonen finnes ikke lenger. Last siden på nytt.");
+    }
+
+    const currentItems = sectionSnapshot.data().items;
+    const items = Array.isArray(currentItems) ? currentItems : [];
+    transaction.update(sectionRef, { items: [...items, item] });
   });
 }
 
@@ -618,10 +634,7 @@ function setupManualForm() {
     };
 
     try {
-      const sectionRef = doc(db, "sections", sectionId);
-      await updateDoc(sectionRef, {
-        items: arrayUnion(newItem)
-      });
+      await addItemToSection(sectionId, newItem);
 
       form.reset();
       alert(`"${title}" ble lagt til i seksjonen!`);
@@ -785,10 +798,7 @@ async function importItemToSelectedSection(itemObj) {
   }
 
   try {
-    const sectionRef = doc(db, "sections", sectionId);
-    await updateDoc(sectionRef, {
-      items: arrayUnion(itemObj)
-    });
+    await addItemToSection(sectionId, itemObj);
 
     alert(`"${itemObj.title}" ble importert til seksjonen!`);
   } catch (err) {
