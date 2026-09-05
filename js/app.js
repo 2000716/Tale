@@ -39,9 +39,7 @@ function escapeAttr(str) {
 document.addEventListener("DOMContentLoaded", () => {
   initAuth();
   setupAudioListeners();
-  loadContentFromFirestore();
   loadWeeklyPodcasts();
-  setupSearchListener();
   setupEventListeners();
   initHeroCarousel();
   setupTouchGuards(); // Sikrer at pinch-zoom og dobbelttrykk-zoom er deaktivert

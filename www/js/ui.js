@@ -55,14 +55,23 @@ export function switchPage(pageId) {
   updateBottomNavVisibility();
 }
 
+export function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function buildCoverMarkup(src, title) {
   if (src && src.trim() !== '') {
-    return `<img src="${src}" alt="${title}" class="book-cover-img" loading="lazy">`;
+    return `<img src="${escapeHtml(src)}" alt="${escapeHtml(title)}" class="book-cover-img" loading="lazy">`;
   }
   const cleanTitle = title ? title.trim() : "Tale";
   return `
     <div class="generated-cover">
-      <span>${cleanTitle}</span>
+      <span>${escapeHtml(cleanTitle)}</span>
     </div>
   `;
 }

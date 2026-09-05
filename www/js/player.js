@@ -477,13 +477,13 @@ export function setupAudioListeners() {
         }
       }
 
-      // Lagrer automatisk hvert 10. sekund (kun dersom det ikke er radio)
+      // Lagrer automatisk hvert 30. sekund (kun dersom det ikke er radio)
       if (!saveTimer && state.selectedItem?.title && !state.selectedItem.isRadio) {
         saveTimer = setTimeout(() => {
           const key = state.selectedItem.id || state.selectedItem.title;
           saveProgressToFirestore(key, state.selectedItem);
           saveTimer = null;
-        }, 10000);
+        }, 30000);
       }
     }
   };

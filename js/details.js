@@ -68,7 +68,7 @@ export async function openDetailsPage(item) {
 
   if (coverContainer) {
     if (imageUrl) {
-      coverContainer.innerHTML = `<img src="${imageUrl}" alt="${itemTitle}" class="details-cover-img" onerror="this.style.display='none'">`;
+      coverContainer.innerHTML = `<img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(itemTitle)}" class="details-cover-img" onerror="this.style.display='none'">`;
     } else {
       coverContainer.innerHTML = `<div class="details-cover-fallback"><i class="fa-solid fa-headphones"></i></div>`;
     }

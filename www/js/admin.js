@@ -1,4 +1,4 @@
-import { db } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 import { 
   collection, 
   addDoc, 
@@ -12,21 +12,29 @@ import {
   arrayUnion,
   arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Global tilstand for seksjoner
 let activeSections = [];
 let selectedSectionPage = "all";
 
 document.addEventListener("DOMContentLoaded", () => {
-  setupTabNavigation();
-  initLiveSectionsListener();
-  initLiveBannersListener();
-  setupSectionForm();
-  setupSectionPageTabs();
-  setupBannerForm();
-  setupBannerApiSearch();
-  setupManualForm();
-  setupApiSearch();
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.replace("./index.html");
+      return;
+    }
+
+    setupTabNavigation();
+    initLiveSectionsListener();
+    initLiveBannersListener();
+    setupSectionForm();
+    setupSectionPageTabs();
+    setupBannerForm();
+    setupBannerApiSearch();
+    setupManualForm();
+    setupApiSearch();
+  });
 });
 
 // ==========================================
@@ -420,7 +428,7 @@ async function executeBannerApiSearch() {
     }
   } catch (err) {
     console.error("Feil under Banner API-søk:", err);
-    resultsContainer.innerHTML = `<p style="color: var(--danger-color);">Feil under søk: ${err.message}</p>`;
+    resultsContainer.innerHTML = `<p style="color: var(--danger-color);">Feil under søk: ${escapeHtml(err.message)}</p>`;
   }
 }
 
@@ -456,7 +464,7 @@ function renderBannerApiResults(items, type) {
 
     card.innerHTML = `
       <div>
-        <img src="${cover}" alt="" style="width: 100%; height: 90px; object-fit: cover; border-radius: 4px; margin-bottom: 6px;" onerror="this.src='https://via.placeholder.com/90'">
+        <img src="${escapeHtml(cover)}" alt="" style="width: 100%; height: 90px; object-fit: cover; border-radius: 4px; margin-bottom: 6px;" onerror="this.src='https://via.placeholder.com/90'">
         <strong style="display: block; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(title)}</strong>
         <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px;">${escapeHtml(subtitle)}</p>
       </div>
@@ -669,7 +677,7 @@ async function executeApiSearch() {
     }
   } catch (err) {
     console.error("Feil under API-søk:", err);
-    resultsContainer.innerHTML = `<p style="color: var(--danger-color);">Feil under søk: ${err.message}</p>`;
+    resultsContainer.innerHTML = `<p style="color: var(--danger-color);">Feil under søk: ${escapeHtml(err.message)}</p>`;
   }
 }
 
@@ -694,7 +702,7 @@ function renderPodcastResults(items) {
 
     card.innerHTML = `
       <div>
-        <img src="${cover}" alt="${escapeHtml(title)}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 6px; margin-bottom: 8px;">
+        <img src="${escapeHtml(cover)}" alt="${escapeHtml(title)}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 6px; margin-bottom: 8px;">
         <strong style="display: block; font-size: 0.85rem; margin-bottom: 4px;">${escapeHtml(title)}</strong>
         <p style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(sub)}</p>
       </div>
@@ -742,7 +750,7 @@ function renderRadioResults(items) {
 
     card.innerHTML = `
       <div>
-        <img src="${cover}" onerror="this.src='https://via.placeholder.com/100?text=Radio'" style="width: 100%; height: 100px; object-fit: contain; border-radius: 6px; margin-bottom: 8px; background: #000;">
+        <img src="${escapeHtml(cover)}" onerror="this.src='https://via.placeholder.com/100?text=Radio'" style="width: 100%; height: 100px; object-fit: contain; border-radius: 6px; margin-bottom: 8px; background: #000;">
         <strong style="display: block; font-size: 0.85rem; margin-bottom: 4px;">${escapeHtml(title)}</strong>
         <p style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(sub)}</p>
       </div>
