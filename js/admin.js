@@ -100,7 +100,7 @@ function showAdminLoginError(message) {
 }
 
 // ==========================================
-// ANSATTBEHANDLING (/employeeEmails)
+// ANSATTBEHANDLING (/employeeEmails) - AKKURAT SLIK I OPPRINNELIG KODE
 // ==========================================
 function setupEmployeeManagement() {
   const form = document.getElementById("add-employee-form");
@@ -397,7 +397,7 @@ function setupDeleteButtons() {
 }
 
 // ==========================================
-// GLOBALE SEKSJONSHÅNDTERERE (EKSPOSTERT TIL WINDOW)
+// GLOBALE SEKSJONSHÅNDTERERE (EKSPORTERT TIL WINDOW)
 // ==========================================
 window.removeItemFromSection = async function(sectionId, itemId) {
   if (!confirm("Fjerne dette elementet fra seksjonen?")) return;
