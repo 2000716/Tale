@@ -4,6 +4,7 @@ import {
   addDoc, 
   getDocs, 
   doc, 
+  getDoc,
   deleteDoc, 
   updateDoc, 
   query, 
@@ -41,14 +42,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Tvinger fornyelse av ID-token for å sjekke om 'admin'-claim er satt i Firebase Auth backend
-      const tokenResult = await user.getIdTokenResult(true);
-      if (tokenResult.claims.admin !== true) {
+      // Sjekker Firestore for å se om brukeren har admin-rolle
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      const isAdmin = userDoc.exists() && (userDoc.data().role === "admin" || userDoc.data().isAdmin === true);
+
+      if (!isAdmin) {
         await signOut(auth);
         showAdminLoginError("Denne kontoen har ikke administratortilgang.");
         return;
       }
     } catch (error) {
+      console.error("Feil ved validering av admin-tilgang:", error);
       await signOut(auth);
       showAdminLoginError("Kunne ikke bekrefte administratortilgangen.");
       return;
@@ -100,7 +106,7 @@ function showAdminLoginError(message) {
 }
 
 // ==========================================
-// ANSATTBEHANDLING (/employeeEmails) - AKKURAT SLIK I OPPRINNELIG KODE
+// ANSATTBEHANDLING (/employeeEmails)
 // ==========================================
 function setupEmployeeManagement() {
   const form = document.getElementById("add-employee-form");
@@ -725,7 +731,7 @@ function initLiveBannersListener() {
     }
 
     snapshot.forEach((docSnap) => {
-      const bannerData = docSnap.data();
+      const bannerData = { id: docSnap.id, ...docSnap.data() };
       const bannerEl = document.createElement("div");
       bannerEl.className = "manage-item";
       bannerEl.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border-radius: 6px; margin-bottom: 8px;";
@@ -736,7 +742,7 @@ function initLiveBannersListener() {
           <div>
             <strong>${escapeHtml(bannerData.title || 'Uten tittel')}</strong>
             <div style="font-size: 0.75rem; color: var(--text-muted);">
-              Side: <code>${escapeHtml(bannerData.page || 'home')}</code> | Badge: ${escapeHtml(bannerData.badge || 'Ingen')} |
+              Side: <code>${escapeHtml(bannerData.page || 'home')}</code> | Badge: ${escapeHtml(bannerData.badge || 'Ingen')} | 
               <strong style="color: ${bannerData.visible === false ? 'var(--warning-color)' : 'var(--success-color)'};">${bannerData.visible === false ? 'Avpublisert' : 'Publisert'}</strong>
             </div>
           </div>
@@ -754,110 +760,38 @@ function initLiveBannersListener() {
         </div>
       `;
 
-      bannersList.appendChild(bannerEl);
-    });
+      bannerEl.querySelector(".btn-edit-banner").addEventListener("click", () => openBannerEditor(bannerData));
+      bannerEl.querySelector(".btn-toggle-banner").addEventListener("click", async () => {
+        try {
+          await updateDoc(doc(db, "banners", docSnap.id), { visible: bannerData.visible === false });
+        } catch (err) {
+          alert("Feil ved endring av synlighet.");
+        }
+      });
 
-    document.querySelectorAll(".btn-delete-banner").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        const bannerId = e.currentTarget.dataset.id;
-        if (confirm("Vil du slette dette banneret?")) {
+      bannerEl.querySelector(".btn-delete-banner").addEventListener("click", async () => {
+        if (confirm("Er du sikker på at du vil slette dette banneret?")) {
           try {
-            await deleteDoc(doc(db, "banners", bannerId));
+            await deleteDoc(doc(db, "banners", docSnap.id));
           } catch (err) {
-            alert("Feil ved sletting av banner: " + (err.code === 'permission-denied' ? "Mangler tilgang." : err.message));
+            alert("Feil ved sletting av banner.");
           }
         }
       });
-    });
 
-    document.querySelectorAll(".btn-edit-banner").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const banner = snapshot.docs.find(item => item.id === btn.dataset.id);
-        if (banner) openBannerEditor({ id: banner.id, ...banner.data() });
-      });
+      bannersList.appendChild(bannerEl);
     });
-
-    document.querySelectorAll(".btn-toggle-banner").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        try {
-          await updateDoc(doc(db, "banners", btn.dataset.id), {
-            visible: btn.dataset.visible !== "true"
-          });
-        } catch (err) {
-          alert("Kunne ikke endre bannerstatus: " + (err.code === 'permission-denied' ? "Mangler tilgang." : err.message));
-        }
-      });
-    });
-  }, (err) => {
-    console.error("Feil ved henting av bannere:", err);
-    const bannersList = document.getElementById("banners-manage-list");
-    if (bannersList) {
-      bannersList.innerHTML = `<p class="text-error">Kunne ikke laste bannere. Kontroller Firebase-tilkoblingen og tilgangsreglene.</p>`;
-    }
   });
 }
 
 // ==========================================
-// 4. MANUELL REGISTRERING AV LYDBOK / INNHOLD
-// ==========================================
-function setupManualForm() {
-  const form = document.getElementById("add-manual-item-form");
-  if (!form) return;
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const sectionId = document.getElementById("manual-target-section").value;
-    if (!sectionId) {
-      alert("Du må velge en seksjon først!");
-      return;
-    }
-
-    const title = document.getElementById("item-title").value.trim();
-    const author = document.getElementById("item-author").value.trim();
-    const coverUrl = document.getElementById("item-cover").value.trim();
-    const audioUrl = document.getElementById("item-audio").value.trim();
-    const description = document.getElementById("item-desc").value.trim();
-
-    const newItem = {
-      id: "manual_" + Date.now(),
-      title,
-      sub: author,
-      author,
-      coverUrl,
-      cover: coverUrl,
-      audioUrl,
-      audio: audioUrl,
-      description,
-      desc: description,
-      type: "audiobook"
-    };
-
-    try {
-      await updateDoc(doc(db, "sections", sectionId), {
-        items: arrayUnion(newItem)
-      });
-
-      form.reset();
-      alert(`"${title}" ble lagt til i seksjonen!`);
-    } catch (err) {
-      console.error("Feil ved manuell tilføyelse:", err);
-      alert("Kunne ikke legge til innhold: " + (err.code === 'permission-denied' ? "Mangler tilgang." : err.message));
-    }
-  });
-}
-
-// ==========================================
-// 5. API SØK OG IMPORT (APPLE PODCAST & RADIO)
+// 4. API SØK & IMPORT (PODKAST / RADIO)
 // ==========================================
 function setupApiSearch() {
   const searchBtn = document.getElementById("api-search-btn");
-  const searchInput = document.getElementById("api-search-input");
+  const searchInput = document.getElementById("api-input");
 
-  if (searchBtn) {
-    searchBtn.addEventListener("click", () => executeApiSearch());
-  }
-
+  if (searchBtn) searchBtn.addEventListener("click", executeApiSearch);
   if (searchInput) {
     searchInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
@@ -869,145 +803,133 @@ function setupApiSearch() {
 }
 
 async function executeApiSearch() {
-  const queryTerm = document.getElementById("api-search-input").value.trim();
-  const apiType = document.getElementById("api-type-select").value;
-  const resultsContainer = document.getElementById("api-results-container");
+  const queryTerm = document.getElementById("api-input").value.trim();
+  const apiType = document.getElementById("api-type").value;
+  const container = document.getElementById("api-results");
 
-  if (!queryTerm) {
-    alert("Skriv inn et søkeord først.");
-    return;
-  }
+  if (!queryTerm) return alert("Skriv inn et søkeord.");
 
-  resultsContainer.innerHTML = `<p class="text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Søker i ${apiType === 'podcast' ? 'Apple Podcast' : 'Radio Browser'} API...</p>`;
+  container.innerHTML = `<p class="text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Søker...</p>`;
 
   try {
     if (apiType === "podcast") {
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&media=podcast&country=NO&limit=12`);
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&media=podcast&country=NO&limit=8`);
       const data = await res.json();
-      renderPodcastResults(data.results || []);
+      renderApiResults(data.results || [], "podcast");
     } else {
-      const res = await fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(queryTerm)}?limit=12`);
+      const res = await fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(queryTerm)}?limit=8`);
       const data = await res.json();
-      renderRadioResults(data || []);
+      renderApiResults(data || [], "radio");
     }
   } catch (err) {
-    console.error("Feil under API-søk:", err);
-    resultsContainer.innerHTML = `<p style="color: var(--danger-color);">Feil under søk: ${escapeHtml(err.message)}</p>`;
+    container.innerHTML = `<p class="text-error">Feil ved søk: ${escapeHtml(err.message)}</p>`;
   }
 }
 
-function renderPodcastResults(podcasts) {
-  const resultsContainer = document.getElementById("api-results-container");
-  if (podcasts.length === 0) {
-    resultsContainer.innerHTML = `<p class="text-muted">Ingen podkaster funnet.</p>`;
+function renderApiResults(items, type) {
+  const container = document.getElementById("api-results");
+  if (items.length === 0) {
+    container.innerHTML = `<p class="text-muted">Ingen treff funnet.</p>`;
     return;
   }
 
-  resultsContainer.innerHTML = "";
-  resultsContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;";
+  container.innerHTML = "";
+  container.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;";
 
-  podcasts.forEach((pod) => {
+  items.forEach(item => {
     const card = document.createElement("div");
-    card.style.cssText = "background: var(--card-bg, #1e1e1e); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--border-color, #333);";
+    card.className = "api-card";
+    card.style.cssText = "background: var(--input-bg); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between;";
 
-    const title = pod.trackName || pod.collectionName || "Ukjent tittel";
-    const author = pod.artistName || "Ukjent utgiver";
-    const cover = pod.artworkUrl600 || pod.artworkUrl100 || "";
-    const feedUrl = pod.feedUrl || "";
+    let title = "", subtitle = "", cover = "", audio = "", itemType = type;
+
+    if (type === "podcast") {
+      title = item.trackName || item.collectionName || "Ukjent Podkast";
+      subtitle = item.artistName || "Podkast";
+      cover = item.artworkUrl600 || item.artworkUrl100 || "";
+      audio = item.feedUrl || "";
+    } else {
+      title = item.name || "Radiokanal";
+      subtitle = item.country || "Radio";
+      cover = item.favicon || "https://via.placeholder.com/150?text=Radio";
+      audio = item.url_resolved || item.url || "";
+    }
+
+    const itemId = "api_" + Math.random().toString(36).substr(2, 9);
 
     card.innerHTML = `
       <div>
-        <img src="${escapeHtml(cover)}" alt="" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" onerror="this.src='https://via.placeholder.com/120'">
-        <strong style="display: block; font-size: 0.85rem; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(title)}</strong>
-        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">${escapeHtml(author)}</p>
+        <img src="${escapeHtml(cover)}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" onerror="this.src='https://via.placeholder.com/120'">
+        <strong style="display: block; font-size: 0.85rem;">${escapeHtml(title)}</strong>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(subtitle)}</p>
       </div>
-      <button class="btn-import-pod" style="background: var(--primary-color, #3b82f6); color: #fff; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">
-        <i class="fa-solid fa-plus"></i> Importér til seksjon
+      <button class="btn-primary btn-add-api-item" style="margin-top: 8px; width: 100%; padding: 6px;">
+        <i class="fa-solid fa-plus"></i> Legg til seksjon
       </button>
     `;
 
-    card.querySelector(".btn-import-pod").addEventListener("click", () => {
-      importToSection({
-        id: "pod_" + (pod.collectionId || Date.now()),
+    card.querySelector(".btn-add-api-item").addEventListener("click", async () => {
+      const targetSecId = document.getElementById("target-section-select").value;
+      if (!targetSecId) return alert("Velg en målseksjon i nedtrekksmenyen over først.");
+
+      const newItem = {
+        id: itemId,
         title,
-        sub: author,
-        author,
-        coverUrl: cover,
-        cover: cover,
-        audioUrl: feedUrl,
-        audio: feedUrl,
-        type: "podcast"
-      });
+        subtitle,
+        author: subtitle,
+        cover,
+        audioUrl: audio,
+        type: itemType,
+        addedAt: new Date().toISOString()
+      };
+
+      try {
+        await updateDoc(doc(db, "sections", targetSecId), {
+          items: arrayUnion(newItem)
+        });
+        alert(`"${title}" ble lagt til i seksjonen!`);
+      } catch (err) {
+        alert("Kunne ikke legge til elementet: " + err.message);
+      }
     });
 
-    resultsContainer.appendChild(card);
+    container.appendChild(card);
   });
 }
 
-function renderRadioResults(stations) {
-  const resultsContainer = document.getElementById("api-results-container");
-  if (stations.length === 0) {
-    resultsContainer.innerHTML = `<p class="text-muted">Ingen radiokanaler funnet.</p>`;
-    return;
-  }
+// ==========================================
+// 5. MANUELL OPPRETTING AV INNHOLD
+// ==========================================
+function setupManualForm() {
+  const form = document.getElementById("manual-item-form");
+  if (!form) return;
 
-  resultsContainer.innerHTML = "";
-  resultsContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;";
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  stations.forEach((station) => {
-    const card = document.createElement("div");
-    card.style.cssText = "background: var(--card-bg, #1e1e1e); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--border-color, #333);";
+    const targetSecId = document.getElementById("manual-target-section").value;
+    if (!targetSecId) return alert("Velg en målseksjon.");
 
-    const title = station.name || "Ukjent radiokanal";
-    const sub = station.country ? `Radio (${station.country})` : "Direkte Radio";
-    const cover = station.favicon || "https://via.placeholder.com/120?text=Radio";
-    const streamUrl = station.url_resolved || station.url || "";
+    const newItem = {
+      id: "manual_" + Math.random().toString(36).substr(2, 9),
+      title: document.getElementById("manual-title").value.trim(),
+      subtitle: document.getElementById("manual-subtitle").value.trim(),
+      author: document.getElementById("manual-author").value.trim(),
+      cover: document.getElementById("manual-cover").value.trim(),
+      audioUrl: document.getElementById("manual-audio").value.trim(),
+      type: document.getElementById("manual-type").value,
+      description: document.getElementById("manual-desc").value.trim(),
+      addedAt: new Date().toISOString()
+    };
 
-    card.innerHTML = `
-      <div>
-        <img src="${escapeHtml(cover)}" alt="" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" onerror="this.src='https://via.placeholder.com/120?text=Radio'">
-        <strong style="display: block; font-size: 0.85rem; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(title)}</strong>
-        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">${escapeHtml(sub)}</p>
-      </div>
-      <button class="btn-import-radio" style="background: var(--primary-color, #3b82f6); color: #fff; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">
-        <i class="fa-solid fa-plus"></i> Importér til seksjon
-      </button>
-    `;
-
-    card.querySelector(".btn-import-radio").addEventListener("click", () => {
-      importToSection({
-        id: "radio_" + (station.stationuuid || Date.now()),
-        title,
-        sub,
-        author: sub,
-        coverUrl: cover,
-        cover: cover,
-        audioUrl: streamUrl,
-        audio: streamUrl,
-        type: "radio"
+    try {
+      await updateDoc(doc(db, "sections", targetSecId), {
+        items: arrayUnion(newItem)
       });
-    });
-
-    resultsContainer.appendChild(card);
+      form.reset();
+      alert("Innhold ble publisert til seksjonen!");
+    } catch (err) {
+      alert("Feil ved lagring av manuelt innhold: " + err.message);
+    }
   });
-}
-
-async function importToSection(itemData) {
-  const targetSelect = document.getElementById("target-section-select");
-  const sectionId = targetSelect ? targetSelect.value : null;
-
-  if (!sectionId) {
-    alert("Vennligst velg en målseksjon fra nedtrekksmenyen ovenfor først!");
-    return;
-  }
-
-  try {
-    await updateDoc(doc(db, "sections", sectionId), {
-      items: arrayUnion(itemData)
-    });
-    alert(`"${itemData.title}" ble importert til seksjonen!`);
-  } catch (err) {
-    console.error("Feil ved import av API-objekt:", err);
-    alert("Kunne ikke importere: " + (err.code === 'permission-denied' ? "Mangler admin-tilgang." : err.message));
-  }
 }
