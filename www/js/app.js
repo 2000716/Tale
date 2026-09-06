@@ -3,10 +3,11 @@ import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl } from "./player.js";
-import { collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Karusell-tilstand
 let currentSlideIndex = 0;
+let sectionsUnsubscribe = null;
 
 // Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
 function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0, isRadio = false) {
@@ -381,7 +382,11 @@ export async function loadContentFromFirestore() {
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
             const itemKey = `item_data_${cardId.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            window[itemKey] = item;
+            const normalizedItem = { ...item, audioUrl };
+            if (!audioUrl && !rssUrl && (type === 'podcast' || type === 'audiobook') && rawAudioUrl) {
+              normalizedItem.rssUrl = rawAudioUrl;
+            }
+            window[itemKey] = normalizedItem;
 
             itemsHTML += `
               <div class="book-card${index >= maxItems ? ' section-item-overflow' : ''}" 
@@ -451,20 +456,20 @@ export async function loadContentFromFirestore() {
     }
   }
 
-  try {
-    const q = query(collection(db, "sections"), orderBy("order", "asc"));
-    const snapshot = await getDocs(q);
-    const sectionsData = [];
-    
-    snapshot.forEach((docSnap) => {
-      sectionsData.push({ id: docSnap.id, ...docSnap.data() });
-    });
+  if (sectionsUnsubscribe) sectionsUnsubscribe();
+
+  const sectionsQuery = query(collection(db, "sections"), orderBy("order", "asc"));
+  sectionsUnsubscribe = onSnapshot(sectionsQuery, (snapshot) => {
+    const sectionsData = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
 
     localStorage.setItem("app_sections_cache", JSON.stringify(sectionsData));
     renderSectionsData(sectionsData);
-  } catch (err) {
-    console.error("Henting fra Firestore feilet:", err);
-  }
+  }, (err) => {
+    console.error("Sanntidslasting fra Firestore feilet:", err);
+  });
 }
 
 async function renderRadioBanner() {
@@ -731,7 +736,7 @@ function setupEventListeners() {
     if (continueCard) {
       const item = extractCardItemData(continueCard);
       
-      if (item && item.audioUrl) {
+      if (item && isPlayableAudioUrl(item.audioUrl)) {
         playAudioTrack(
           item.audioUrl,
           item.title,
@@ -750,7 +755,7 @@ function setupEventListeners() {
     if (card) {
       const item = extractCardItemData(card);
 
-      if (item && item.audioUrl) {
+      if (item && isPlayableAudioUrl(item.audioUrl)) {
         playAudioTrack(
           item.audioUrl,
           item.title,

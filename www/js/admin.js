@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const adminEmailRef = doc(db, "adminEmails", user.email.toLowerCase());
       const adminEmailDoc = await getDoc(adminEmailRef);
-      const isAdmin = adminEmailDoc.exists() && adminEmailDoc.data().enabled !== false;
+      const isAdmin = adminEmailDoc.exists() && adminEmailDoc.data().enabled === true;
 
       if (!isAdmin) {
         await signOut(auth);
@@ -647,10 +647,12 @@ async function executeBannerApiSearch() {
   try {
     if (apiType === "podcast") {
       const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&media=podcast&country=NO&limit=6`);
+      if (!res.ok) throw new Error(`Apple Podcasts svarte med ${res.status}`);
       const data = await res.json();
       renderBannerApiResults(data.results || [], "podcast");
     } else {
       const res = await fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(queryTerm)}?limit=6`);
+      if (!res.ok) throw new Error(`Radio Browser svarte med ${res.status}`);
       const data = await res.json();
       renderBannerApiResults(data || [], "radio");
     }
@@ -820,10 +822,12 @@ async function executeApiSearch() {
   try {
     if (apiType === "podcast") {
       const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&media=podcast&country=NO&limit=8`);
+      if (!res.ok) throw new Error(`Apple Podcasts svarte med ${res.status}`);
       const data = await res.json();
       renderApiResults(data.results || [], "podcast");
     } else if (apiType === "radio") {
       const res = await fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(queryTerm)}?limit=8`);
+      if (!res.ok) throw new Error(`Radio Browser svarte med ${res.status}`);
       const data = await res.json();
       renderApiResults(data || [], "radio");
     } else {
@@ -894,8 +898,8 @@ function renderApiResults(items, type) {
         subtitle,
         author: subtitle,
         cover,
-        audioUrl: audio,
-        rssUrl: type === "audiobook" ? audio : "",
+        audioUrl: type === "radio" ? audio : "",
+        rssUrl: type === "podcast" || type === "audiobook" ? audio : "",
         type: itemType,
         description: type === "audiobook" ? (item.description || "Gratis lydbok fra LibriVox") : "",
         addedAt: new Date().toISOString()
