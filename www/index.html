@@ -266,7 +266,15 @@
             <h3>Om innholdet</h3>
             <p id="details-desc" class="details-desc">Beskrivelse laster inn...</p>
             <button class="details-read-more-btn" id="readMoreBtn">Se mer</button>
+            <a id="details-source-link" class="details-source-link" href="#" target="_blank" rel="noopener noreferrer" hidden>
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Besøk studioet
+            </a>
           </div>
+
+          <section id="details-facts" class="details-facts" hidden>
+            <h3>Om serien</h3>
+            <div id="details-facts-grid" class="details-facts-grid"></div>
+          </section>
         </div>
 
         <div class="episode-list-container">
@@ -289,7 +297,10 @@
         </div>
 
         <div class="recommendations-container">
-          <h3>Anbefalinger</h3>
+          <div class="recommendations-heading">
+            <h3>Anbefalinger</h3>
+            <span id="recommendations-subtitle">Mer å lytte til</span>
+          </div>
           <div id="recommendations-list" class="horizontal-scroll"></div>
         </div>
       </div>

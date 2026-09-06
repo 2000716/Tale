@@ -26,6 +26,11 @@ const subEl = document.getElementById('details-sub');
 const descEl = document.getElementById('details-desc');
 const readMoreBtn = document.getElementById('readMoreBtn');
 const startPlayBtn = document.getElementById('start-play-btn');
+const sourceLink = document.getElementById('details-source-link');
+const factsSection = document.getElementById('details-facts');
+const factsGrid = document.getElementById('details-facts-grid');
+const recommendationsList = document.getElementById('recommendations-list');
+const recommendationsContainer = document.querySelector('.recommendations-container');
 
 const episodeListContainer = document.querySelector('.episode-list-container');
 const episodeList = document.getElementById('episode-list');
@@ -61,6 +66,15 @@ export async function openDetailsPage(item) {
   }
 
   const imageUrl = item.cover || item.coverUrl || item.image || item.imageUrl || '';
+
+  if (sourceLink) {
+    const itemSourceUrl = item.sourceUrl || item.studioUrl || item.website || '';
+    sourceLink.hidden = !itemSourceUrl;
+    if (itemSourceUrl) sourceLink.href = itemSourceUrl;
+    else sourceLink.removeAttribute('href');
+  }
+  if (factsSection) factsSection.hidden = true;
+  if (recommendationsContainer) recommendationsContainer.hidden = true;
 
   if (titleEl) titleEl.textContent = itemTitle;
   if (subEl) subEl.textContent = itemSub;
@@ -125,14 +139,32 @@ export async function openDetailsPage(item) {
           descEl.innerHTML = cleanHTML(rssFeedDescription);
         }
 
+        const sourceUrl = item.sourceUrl || item.studioUrl || item.website || data.feed?.link || '';
+        if (sourceUrl && sourceLink) {
+          sourceLink.href = sourceUrl;
+          sourceLink.hidden = false;
+        }
+
+        renderFacts({
+          creator: item.author || item.publisher || data.feed?.author || data.feed?.owner || '',
+          category: item.category || data.feed?.category || '',
+          language: data.feed?.language || '',
+          updated: data.feed?.lastBuildDate || data.feed?.pubDate || ''
+        });
+
         fetchedEpisodes = (data.items || []).map(ep => ({
           title: ep.title || 'Uten tittel',
           audioUrl: ep.enclosure?.link || ep.link || '',
           cover: ep.thumbnail || ep.itunes?.image || ep.enclosure?.thumbnail || imageUrl,
           duration: ep.enclosure?.duration || ep.duration || '',
           pubDate: ep.pubDate || '',
-          description: ep.description || ep.summary || ep.content || ''
+          description: ep.description || ep.summary || ep.content || '',
+          season: ep.itunes?.season || ep.season || '',
+          episode: ep.itunes?.episode || ep.episode || ''
         }));
+
+        const rssSeasons = [...new Set(fetchedEpisodes.map(ep => Number(ep.season)).filter(Number.isFinite))].sort((a, b) => a - b);
+        if (rssSeasons.length > 1) currentItem.seasons = rssSeasons;
       }
     } catch (err) {
       console.error("Kunne ikke hente RSS:", err);
@@ -142,10 +174,59 @@ export async function openDetailsPage(item) {
 
   // 3. Konfigurer UI etter type
   setupContentTypeUI(item, contentType);
+  renderRecommendations(item);
 
   if (detailsPage) {
     detailsPage.classList.add('active');
   }
+}
+
+function renderFacts(facts) {
+  if (!factsSection || !factsGrid) return;
+  const rows = [
+    ['Skaper', facts.creator],
+    ['Kategori', facts.category],
+    ['Språk', facts.language],
+    ['Sist oppdatert', facts.updated ? formatDate(facts.updated) : '']
+  ].filter(([, value]) => value);
+
+  if (!rows.length) return;
+  factsGrid.innerHTML = rows.map(([label, value]) => `
+    <div class="details-fact">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </div>
+  `).join('');
+  factsSection.hidden = false;
+}
+
+function renderRecommendations(item) {
+  if (!recommendationsList || !recommendationsContainer) return;
+
+  const explicit = Array.isArray(item.recommendations) ? item.recommendations : [];
+  const related = [...document.querySelectorAll('.book-card[data-item-key]')]
+    .map(card => window[card.dataset.itemKey])
+    .filter(candidate => candidate && candidate.title !== item.title && (candidate.type || 'podcast') === (item.type || 'podcast'));
+  const candidates = [...explicit, ...related].filter((candidate, index, list) =>
+    candidate?.title && list.findIndex(other => other.title === candidate.title) === index
+  ).slice(0, 6);
+
+  if (!candidates.length) return;
+  recommendationsList.innerHTML = candidates.map(candidate => {
+    const cover = candidate.cover || candidate.coverUrl || candidate.image || '';
+    return `<button class="recommendation-card" type="button" data-recommendation-title="${escapeAttr(candidate.title)}">
+      <span class="recommendation-cover">${cover ? `<img src="${escapeAttr(cover)}" alt="">` : '<i class="fa-solid fa-headphones"></i>'}</span>
+      <strong>${escapeHtml(candidate.title)}</strong>
+      <span>${escapeHtml(candidate.sub || candidate.author || candidate.publisher || '')}</span>
+    </button>`;
+  }).join('');
+  recommendationsList.querySelectorAll('[data-recommendation-title]').forEach(button => {
+    button.addEventListener('click', () => {
+      const next = candidates.find(candidate => candidate.title === button.dataset.recommendationTitle);
+      if (next) openDetailsPage(next);
+    });
+  });
+  recommendationsContainer.hidden = false;
 }
 
 // Alias for bakoverkompatibilitet
@@ -337,6 +418,15 @@ function cleanHTML(str) {
   const temp = document.createElement('div');
   temp.innerHTML = str;
   return temp.textContent || temp.innerText || '';
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function formatDate(dateString) {
