@@ -831,10 +831,18 @@ async function executeApiSearch() {
       const data = await res.json();
       renderApiResults(data || [], "radio");
     } else {
-      const res = await fetch(`https://librivox.org/api/feed/audiobooks/?format=json&title=${encodeURIComponent(queryTerm)}`);
-      if (!res.ok) throw new Error(`LibriVox svarte med ${res.status}`);
+      const archiveQuery = `collection:librivoxaudio AND title:(${queryTerm})`;
+      const params = new URLSearchParams({
+        q: archiveQuery,
+        fl: "identifier,title,creator,description",
+        rows: "8",
+        page: "1",
+        output: "json"
+      });
+      const res = await fetch(`https://archive.org/advancedsearch.php?${params}`);
+      if (!res.ok) throw new Error(`Internet Archive svarte med ${res.status}`);
       const data = await res.json();
-      renderApiResults(data.books || [], "audiobook");
+      renderApiResults(data.response?.docs || [], "audiobook");
     }
   } catch (err) {
     container.innerHTML = `<p class="text-error">Feil ved søk: ${escapeHtml(err.message)}</p>`;
@@ -870,9 +878,9 @@ function renderApiResults(items, type) {
       audio = item.url_resolved || item.url || "";
     } else {
       title = item.title || "Ukjent lydbok";
-      subtitle = (item.authors || []).map(author => `${author.first_name || ""} ${author.last_name || ""}`.trim()).join(", ") || "LibriVox";
-      cover = item.coverart_url || "https://via.placeholder.com/150?text=Lydbok";
-      audio = item.url_rss || "";
+      subtitle = Array.isArray(item.creator) ? item.creator.join(", ") : (item.creator || "LibriVox");
+      cover = item.identifier ? `https://archive.org/services/img/${encodeURIComponent(item.identifier)}` : "https://via.placeholder.com/150?text=Lydbok";
+      audio = "";
     }
 
     const itemId = "api_" + Math.random().toString(36).substr(2, 9);
@@ -901,7 +909,8 @@ function renderApiResults(items, type) {
         audioUrl: type === "radio" ? audio : "",
         rssUrl: type === "podcast" || type === "audiobook" ? audio : "",
         type: itemType,
-        description: type === "audiobook" ? (item.description || "Gratis lydbok fra LibriVox") : "",
+        archiveIdentifier: type === "audiobook" ? item.identifier : "",
+        description: type === "audiobook" ? (item.description || "Gratis lydbok fra LibriVox via Internet Archive") : "",
         addedAt: new Date().toISOString()
       };
 

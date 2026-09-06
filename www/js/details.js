@@ -90,6 +90,24 @@ export async function openDetailsPage(item) {
       fetchedEpisodes = item.episodes;
     } else if (item.chapters && Array.isArray(item.chapters)) {
       fetchedEpisodes = item.chapters;
+    } else if (contentType === 'audiobook' && item.archiveIdentifier) {
+      try {
+        const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(item.archiveIdentifier)}`);
+        if (!res.ok) throw new Error(`Internet Archive svarte med ${res.status}`);
+        const data = await res.json();
+        const files = (data.files || [])
+          .filter(file => /\.(mp3|m4b)$/i.test(file.name || ''))
+          .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+
+        fetchedEpisodes = files.map((file, index) => ({
+          title: file.name.replace(/\.(mp3|m4b)$/i, '').replace(/[_-]+/g, ' ') || `Kapittel ${index + 1}`,
+          audioUrl: `https://archive.org/download/${encodeURIComponent(item.archiveIdentifier)}/${file.name.split('/').map(encodeURIComponent).join('/')}`,
+          cover: imageUrl,
+          duration: file.length || ''
+        }));
+      } catch (err) {
+        console.error('Kunne ikke hente lydbok fra Internet Archive:', err);
+      }
     } else {
       fetchedEpisodes = [];
     }
