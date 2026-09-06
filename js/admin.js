@@ -42,15 +42,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Sjekker Firestore for å se om brukeren har admin-rolle
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      const isAdmin = userDoc.exists() && (userDoc.data().role === "admin" || userDoc.data().isAdmin === true);
+      const adminEmailRef = doc(db, "adminEmails", user.email.toLowerCase());
+      const adminEmailDoc = await getDoc(adminEmailRef);
+      const isAdmin = adminEmailDoc.exists() && adminEmailDoc.data().enabled !== false;
 
       if (!isAdmin) {
         await signOut(auth);
-        showAdminLoginError("Denne kontoen har ikke administratortilgang.");
+        showAdminLoginError("Denne e-postadressen har ikke administratortilgang.");
         return;
       }
     } catch (error) {
@@ -62,7 +60,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("admin-login-view")?.classList.add("hidden");
     document.getElementById("admin-app")?.classList.remove("hidden");
-    
     setupTabNavigation();
     initLiveSectionsListener();
     initLiveBannersListener();
@@ -82,11 +79,10 @@ document.addEventListener("DOMContentLoaded", () => {
 function setupAdminLogin() {
   const form = document.getElementById("admin-login-form");
   const logoutButton = document.getElementById("admin-logout-btn");
-  if (!form) return;
 
-  form.addEventListener("submit", async (event) => {
+  form?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const email = document.getElementById("admin-login-email").value.trim();
+    const email = document.getElementById("admin-login-email").value.trim().toLowerCase();
     const password = document.getElementById("admin-login-password").value;
     showAdminLoginError("");
 
@@ -789,7 +785,7 @@ function initLiveBannersListener() {
 // ==========================================
 function setupApiSearch() {
   const searchBtn = document.getElementById("api-search-btn");
-  const searchInput = document.getElementById("api-input");
+  const searchInput = document.getElementById("api-search-input");
 
   if (searchBtn) searchBtn.addEventListener("click", executeApiSearch);
   if (searchInput) {
@@ -803,9 +799,9 @@ function setupApiSearch() {
 }
 
 async function executeApiSearch() {
-  const queryTerm = document.getElementById("api-input").value.trim();
-  const apiType = document.getElementById("api-type").value;
-  const container = document.getElementById("api-results");
+  const queryTerm = document.getElementById("api-search-input").value.trim();
+  const apiType = document.getElementById("api-type-select").value;
+  const container = document.getElementById("api-results-container");
 
   if (!queryTerm) return alert("Skriv inn et søkeord.");
 
@@ -816,10 +812,15 @@ async function executeApiSearch() {
       const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&media=podcast&country=NO&limit=8`);
       const data = await res.json();
       renderApiResults(data.results || [], "podcast");
-    } else {
+    } else if (apiType === "radio") {
       const res = await fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(queryTerm)}?limit=8`);
       const data = await res.json();
       renderApiResults(data || [], "radio");
+    } else {
+      const res = await fetch(`https://librivox.org/api/feed/audiobooks/?format=json&title=${encodeURIComponent(queryTerm)}`);
+      if (!res.ok) throw new Error(`LibriVox svarte med ${res.status}`);
+      const data = await res.json();
+      renderApiResults(data.books || [], "audiobook");
     }
   } catch (err) {
     container.innerHTML = `<p class="text-error">Feil ved søk: ${escapeHtml(err.message)}</p>`;
@@ -827,7 +828,7 @@ async function executeApiSearch() {
 }
 
 function renderApiResults(items, type) {
-  const container = document.getElementById("api-results");
+  const container = document.getElementById("api-results-container");
   if (items.length === 0) {
     container.innerHTML = `<p class="text-muted">Ingen treff funnet.</p>`;
     return;
@@ -848,11 +849,16 @@ function renderApiResults(items, type) {
       subtitle = item.artistName || "Podkast";
       cover = item.artworkUrl600 || item.artworkUrl100 || "";
       audio = item.feedUrl || "";
-    } else {
+    } else if (type === "radio") {
       title = item.name || "Radiokanal";
       subtitle = item.country || "Radio";
       cover = item.favicon || "https://via.placeholder.com/150?text=Radio";
       audio = item.url_resolved || item.url || "";
+    } else {
+      title = item.title || "Ukjent lydbok";
+      subtitle = (item.authors || []).map(author => `${author.first_name || ""} ${author.last_name || ""}`.trim()).join(", ") || "LibriVox";
+      cover = item.coverart_url || "https://via.placeholder.com/150?text=Lydbok";
+      audio = item.url_rss || "";
     }
 
     const itemId = "api_" + Math.random().toString(36).substr(2, 9);
@@ -879,7 +885,9 @@ function renderApiResults(items, type) {
         author: subtitle,
         cover,
         audioUrl: audio,
+        rssUrl: type === "audiobook" ? audio : "",
         type: itemType,
+        description: type === "audiobook" ? (item.description || "Gratis lydbok fra LibriVox") : "",
         addedAt: new Date().toISOString()
       };
 
@@ -901,7 +909,7 @@ function renderApiResults(items, type) {
 // 5. MANUELL OPPRETTING AV INNHOLD
 // ==========================================
 function setupManualForm() {
-  const form = document.getElementById("manual-item-form");
+  const form = document.getElementById("add-manual-item-form");
   if (!form) return;
 
   form.addEventListener("submit", async (e) => {
@@ -912,13 +920,13 @@ function setupManualForm() {
 
     const newItem = {
       id: "manual_" + Math.random().toString(36).substr(2, 9),
-      title: document.getElementById("manual-title").value.trim(),
-      subtitle: document.getElementById("manual-subtitle").value.trim(),
-      author: document.getElementById("manual-author").value.trim(),
-      cover: document.getElementById("manual-cover").value.trim(),
-      audioUrl: document.getElementById("manual-audio").value.trim(),
-      type: document.getElementById("manual-type").value,
-      description: document.getElementById("manual-desc").value.trim(),
+      title: document.getElementById("item-title").value.trim(),
+      subtitle: document.getElementById("item-author").value.trim(),
+      author: document.getElementById("item-author").value.trim(),
+      cover: document.getElementById("item-cover").value.trim(),
+      audioUrl: document.getElementById("item-audio").value.trim(),
+      type: "audiobook",
+      description: document.getElementById("item-desc").value.trim(),
       addedAt: new Date().toISOString()
     };
 

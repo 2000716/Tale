@@ -16,7 +16,7 @@
     <div class="admin-login-card">
       <div class="brand-logo"><i class="fa-solid fa-wave-square"></i></div>
       <h1>TALE Admin</h1>
-      <p>Logg inn med en administratorkonto for å fortsette.</p>
+      <p>Logg inn med e-post og passord.</p>
       <form id="admin-login-form">
         <div class="form-group">
           <label for="admin-login-email">E-post</label>
@@ -371,7 +371,7 @@
       <section id="tab-api" class="tab-content">
         <div class="card">
           <div class="card-header">
-            <h3><i class="fa-solid fa-magnifying-glass"></i> Søk og Importer fra Apple Podcast & Radio API</h3>
+            <h3><i class="fa-solid fa-magnifying-glass"></i> Søk og importer innhold</h3>
           </div>
 
           <div class="form-grid-2" style="margin-bottom: 20px;">
@@ -386,12 +386,13 @@
               <select id="api-type-select">
                 <option value="podcast">Apple Podcast API</option>
                 <option value="radio">Radio Browser API (Norske & globale radiokanaler)</option>
+                <option value="audiobook">LibriVox lydbøker (gratis public domain)</option>
               </select>
             </div>
           </div>
 
           <div class="form-group search-row">
-            <input type="text" id="api-search-input" placeholder="Søk etter podkast eller radiokanal..." />
+            <input type="text" id="api-search-input" placeholder="Søk etter podkast, radiokanal eller lydbok..." />
             <button type="button" id="api-search-btn" class="btn-submit">
               <i class="fa-solid fa-magnifying-glass"></i> Søk i API
             </button>
