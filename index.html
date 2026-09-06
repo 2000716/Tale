@@ -231,9 +231,10 @@
       <button id="details-close-btn" class="close-btn" aria-label="Lukk"><i class="fa-solid fa-xmark"></i></button>
       
       <div class="details-content">
-        <div class="details-hero">
+        <header class="details-hero">
+          <div class="details-hero-backdrop" aria-hidden="true"></div>
           <div id="details-cover-container" class="details-cover-container"></div>
-          
+
           <div class="details-header-info">
             <div class="details-badges">
               <span id="details-badge-type" class="badge-tag">Podkast</span>
@@ -241,7 +242,7 @@
             <h2 id="details-title">Tittel</h2>
             <p id="details-sub" class="details-sub">Kategori / Utgiver</p>
           </div>
-        </div>
+        </header>
 
         <div class="details-action-bar">
           <button id="start-play-btn" class="btn-primary">
@@ -261,7 +262,7 @@
           </div>
         </div>
 
-        <div class="details-body">
+        <main class="details-body">
           <div class="details-desc-box" id="descBox">
             <h3>Om innholdet</h3>
             <p id="details-desc" class="details-desc">Beskrivelse laster inn...</p>
@@ -275,16 +276,17 @@
             <h3>Om serien</h3>
             <div id="details-facts-grid" class="details-facts-grid"></div>
           </section>
-        </div>
+        </main>
 
         <div class="episode-list-container">
-          <div class="section-title-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <div>
+          <div class="section-title-wrapper">
+            <div class="episode-heading">
               <h3 id="details-badge-episodes">0 episoder</h3>
               <span id="episode-count-text" class="meta-small"></span>
             </div>
 
             <div id="season-select-wrapper" class="season-select-wrapper" style="display: none;">
+              <span class="season-label">Sesong</span>
               <select id="season-select" class="season-dropdown"></select>
             </div>
           </div>

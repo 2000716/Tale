@@ -581,3 +581,251 @@
   padding: 1rem;
   width: 100%;
 }
+
+/* Ny detaljside: tydelig hero, lesbar innholdsflate og kompakt episodeheader. */
+#details-page {
+  padding: calc(env(safe-area-inset-top, 20px) + 0.85rem) 1rem 3rem;
+  background: #f6f2e9;
+}
+
+#details-page .details-content {
+  gap: 0;
+  align-items: stretch;
+}
+
+#details-page .close-btn {
+  top: calc(env(safe-area-inset-top, 10px) + 0.7rem);
+  right: 0.85rem;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 4px 16px rgba(45, 39, 31, 0.12);
+}
+
+#details-page .details-hero {
+  position: relative;
+  min-height: 282px;
+  justify-content: flex-end;
+  overflow: hidden;
+  margin: 0 -1rem 1.1rem;
+  padding: 3.25rem 1rem 1.35rem;
+  background: #e7dfcf;
+  isolation: isolate;
+}
+
+#details-page .details-hero-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(160deg, #d6e0df 0%, #eee6d6 58%, #f6f2e9 100%);
+  opacity: 0.95;
+}
+
+#details-page .details-hero-backdrop::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(246, 242, 233, 0.05), rgba(246, 242, 233, 0.9));
+  content: '';
+}
+
+#details-page .details-cover-container {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  max-width: 168px;
+  max-height: 168px;
+  margin: 0 auto 1rem;
+}
+
+#details-page .details-cover-container img,
+#details-page .details-cover-img,
+#details-page .details-cover-fallback {
+  border-radius: 20px;
+  box-shadow: 0 18px 34px rgba(45, 39, 31, 0.2);
+}
+
+#details-page .details-header-info {
+  position: relative;
+  align-items: center;
+  width: 100%;
+}
+
+#details-page .details-badges { margin-bottom: 0.45rem; }
+
+#details-page .details-content h2,
+#details-page .details-title {
+  width: 168px;
+  max-width: 168px;
+  margin: 0 auto 0.35rem;
+  color: #27231e;
+  font-size: 1.32rem;
+  line-height: 1.16;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+#details-page .details-sub {
+  max-width: 168px;
+  margin: 0 auto;
+  color: #655e53;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+#details-page .details-action-bar {
+  gap: 0.75rem;
+  margin-bottom: 1.2rem;
+}
+
+#details-page .btn-primary {
+  border-radius: 14px;
+  background: #2c665f;
+  box-shadow: 0 9px 18px rgba(44, 102, 95, 0.2);
+}
+
+#details-page .btn-primary:hover { background: #24554f; }
+
+#details-page .secondary-actions { gap: 0.55rem; }
+
+#details-page .btn-action-icon {
+  width: 38px;
+  height: 38px;
+  border-color: #ded6c9;
+  background: rgba(255, 255, 255, 0.62);
+  color: #4b463e;
+}
+
+#details-page .details-body { width: 100%; }
+
+#details-page .details-desc-box {
+  margin-bottom: 0.9rem;
+  padding: 1.1rem;
+  border: 1px solid #e3dbce;
+  border-radius: 16px;
+  background: rgba(255, 253, 249, 0.78);
+  box-shadow: 0 7px 20px rgba(67, 57, 45, 0.05);
+}
+
+#details-page .details-desc-box h3,
+#details-page .details-facts h3,
+#details-page .recommendations-container h3 {
+  color: #302b24;
+  font-size: 0.98rem;
+  letter-spacing: 0;
+}
+
+#details-page .details-desc {
+  color: #554e44;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+#details-page .details-source-link { color: #2c665f; }
+
+#details-page .details-facts {
+  margin-bottom: 1.15rem;
+  padding: 0.15rem 0;
+}
+
+#details-page .details-facts-grid {
+  border-color: #e3dbce;
+  border-radius: 14px;
+  background: #e3dbce;
+}
+
+#details-page .details-fact { background: rgba(255, 253, 249, 0.78); }
+#details-page .details-fact span { color: #877e70; }
+#details-page .details-fact strong { color: #3a342c; }
+
+#details-page .episode-list-container {
+  margin-top: 0.25rem;
+  padding: 1.05rem 0 0;
+  border-top: 1px solid #ded6c9;
+}
+
+#details-page .section-title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-bottom: 0.7rem;
+}
+
+#details-page .episode-heading {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+#details-page .section-title-wrapper h3 {
+  color: #302b24;
+  font-size: 1.05rem;
+}
+
+#details-page .meta-small { color: #897f70; }
+
+#details-page .season-select-wrapper {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.3rem 0.28rem 0.65rem;
+  border: 1px solid #d9d0c1;
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.8);
+}
+
+#details-page .season-label {
+  color: #897f70;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+#details-page .season-dropdown {
+  padding: 0.32rem 0.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: #e5efeb;
+  color: #2c665f;
+  font-size: 0.78rem;
+}
+
+#details-page .episode-item {
+  gap: 0.7rem;
+  padding: 0.72rem 0.35rem;
+  border-bottom-color: #e9e2d8;
+  border-radius: 12px;
+}
+
+#details-page .episode-item:hover { background: rgba(255, 253, 249, 0.72); }
+#details-page .episode-thumb { border-radius: 10px; background: #e5ded2; }
+#details-page .episode-title { color: #302b24; }
+#details-page .ep-desc { color: #756d61; }
+#details-page .episode-footer-meta { color: #9a9081; }
+#details-page .btn-play-sm { border-color: #d9d0c1; background: #fffdf9; color: #2c665f; }
+
+#details-page .recommendations-container {
+  margin-top: 1.8rem;
+  padding-top: 1.05rem;
+  border-top: 1px solid #ded6c9;
+}
+
+#details-page .recommendations-heading span { color: #897f70; }
+#details-page .recommendation-cover { border-radius: 14px; background: #e5ded2; }
+#details-page .recommendation-card strong { color: #302b24; }
+#details-page .recommendation-card span { color: #897f70; }
+#details-page .recommendation-card:hover .recommendation-cover { outline-color: #2c665f; }
+
+@media (max-width: 360px) {
+  #details-page .details-cover-container,
+  #details-page .details-content h2,
+  #details-page .details-title,
+  #details-page .details-sub {
+    width: 148px;
+    max-width: 148px;
+  }
+
+  #details-page .details-cover-container { height: 148px; }
+  #details-page .details-hero { min-height: 260px; }
+  #details-page .season-label { display: none; }
+}
