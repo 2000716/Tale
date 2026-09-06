@@ -76,6 +76,12 @@ export async function openDetailsPage(item) {
   if (factsSection) factsSection.hidden = true;
   if (recommendationsContainer) recommendationsContainer.hidden = true;
 
+  renderFacts({
+    reader: item.reader || item.narrator || item.readBy || '',
+    studio: item.studio || item.publisher || '',
+    category: item.category || ''
+  });
+
   if (titleEl) titleEl.textContent = itemTitle;
   if (subEl) subEl.textContent = itemSub;
   if (descEl) descEl.innerHTML = cleanHTML(rawDesc || 'Ingen beskrivelse tilgjengelig.');
@@ -146,10 +152,9 @@ export async function openDetailsPage(item) {
         }
 
         renderFacts({
-          creator: item.author || item.publisher || data.feed?.author || data.feed?.owner || '',
-          category: item.category || data.feed?.category || '',
-          language: data.feed?.language || '',
-          updated: data.feed?.lastBuildDate || data.feed?.pubDate || ''
+          reader: item.reader || item.narrator || item.readBy || item.author || '',
+          studio: item.studio || item.publisher || data.feed?.author || data.feed?.owner || '',
+          category: item.category || data.feed?.category || ''
         });
 
         fetchedEpisodes = (data.items || []).map(ep => ({
@@ -184,10 +189,9 @@ export async function openDetailsPage(item) {
 function renderFacts(facts) {
   if (!factsSection || !factsGrid) return;
   const rows = [
-    ['Skaper', facts.creator],
-    ['Kategori', facts.category],
-    ['Språk', facts.language],
-    ['Sist oppdatert', facts.updated ? formatDate(facts.updated) : '']
+    ['Leser', facts.reader],
+    ['Studio', facts.studio],
+    ['Kategori', facts.category]
   ].filter(([, value]) => value);
 
   if (!rows.length) return;
@@ -207,9 +211,12 @@ function renderRecommendations(item) {
   const related = [...document.querySelectorAll('.book-card[data-item-key]')]
     .map(card => window[card.dataset.itemKey])
     .filter(candidate => candidate && candidate.title !== item.title && (candidate.type || 'podcast') === (item.type || 'podcast'));
-  const candidates = [...explicit, ...related].filter((candidate, index, list) =>
-    candidate?.title && list.findIndex(other => other.title === candidate.title) === index
-  ).slice(0, 6);
+  const candidates = [...explicit, ...related]
+    .map(candidate => typeof candidate === 'string' ? { title: candidate } : candidate)
+    .filter((candidate, index, list) =>
+      candidate?.title && list.findIndex(other => other.title === candidate.title) === index
+    )
+    .slice(0, 6);
 
   if (!candidates.length) return;
   recommendationsList.innerHTML = candidates.map(candidate => {

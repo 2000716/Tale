@@ -829,3 +829,106 @@
   #details-page .details-hero { min-height: 260px; }
   #details-page .season-label { display: none; }
 }
+
+/* Tale-palett: lyse blaa flater, hvite kort og en ren aksentfarge. */
+#details-page {
+  background: #edf6ff;
+  color: #172b4d;
+}
+
+#details-page .close-btn {
+  background: #ffffff;
+  color: #214a83;
+  box-shadow: 0 4px 12px rgba(33, 74, 131, 0.12);
+}
+
+#details-page .details-hero {
+  min-height: 282px;
+  background: #dcecff;
+}
+
+#details-page .details-hero-backdrop,
+#details-page .details-hero-backdrop::after {
+  background: #dcecff;
+  opacity: 1;
+}
+
+#details-page .details-cover-container img,
+#details-page .details-cover-img,
+#details-page .details-cover-fallback {
+  box-shadow: 0 14px 28px rgba(33, 74, 131, 0.18);
+}
+
+#details-page .details-content h2,
+#details-page .details-title,
+#details-page .section-title-wrapper h3,
+#details-page .details-desc-box h3,
+#details-page .details-facts h3,
+#details-page .recommendations-container h3 {
+  color: #172b4d;
+}
+
+#details-page .details-sub,
+#details-page .details-desc,
+#details-page .ep-desc {
+  color: #526987;
+}
+
+#details-page .btn-primary {
+  background: #aecbfa;
+  color: #172b4d;
+  box-shadow: 0 8px 18px rgba(94, 145, 220, 0.2);
+}
+
+#details-page .btn-primary:hover { background: #9dbff3; }
+
+#details-page .btn-action-icon,
+#details-page .details-desc-box,
+#details-page .details-fact,
+#details-page .recommendation-cover,
+#details-page .btn-play-sm {
+  background: #ffffff;
+}
+
+#details-page .btn-action-icon,
+#details-page .btn-play-sm { color: #214a83; }
+
+#details-page .details-desc-box {
+  border-color: #cfe1f7;
+  box-shadow: 0 6px 18px rgba(33, 74, 131, 0.06);
+}
+
+#details-page .details-source-link,
+#details-page .details-fact strong,
+#details-page .recommendation-card strong { color: #214a83; }
+
+#details-page .details-facts-grid {
+  border-color: #cfe1f7;
+  background: #cfe1f7;
+}
+
+#details-page .details-fact span,
+#details-page .meta-small,
+#details-page .season-label,
+#details-page .recommendations-heading span,
+#details-page .recommendation-card span,
+#details-page .episode-footer-meta { color: #6c83a0; }
+
+#details-page .episode-list-container,
+#details-page .recommendations-container { border-top-color: #cfe1f7; }
+
+#details-page .season-select-wrapper {
+  border-color: #c0d8f3;
+  background: #ffffff;
+}
+
+#details-page .season-dropdown {
+  background: #e7f1ff;
+  color: #214a83;
+}
+
+#details-page .episode-item { border-bottom-color: #dcecff; }
+#details-page .episode-item:hover { background: #ffffff; }
+#details-page .episode-thumb { background: #dcecff; }
+#details-page .btn-play-sm { border-color: #cfe1f7; }
+#details-page .recommendation-card:hover .recommendation-cover { outline-color: #aecbfa; }
