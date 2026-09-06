@@ -9,7 +9,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return signedIn()
-        && get(/databases/$(database)/documents/adminEmails/$(request.auth.token.email)).data.enabled != false;
+        && get(/databases/$(database)/documents/adminEmails/$(request.auth.token.email.lower())).data.enabled != false;
     }
 
     match /sections/{sectionId} {
@@ -37,7 +37,7 @@ service cloud.firestore {
     }
 
     match /adminEmails/{emailId} {
-      allow read: if signedIn() && request.auth.token.email == emailId;
+      allow read: if signedIn() && request.auth.token.email.lower() == emailId;
       allow write: if false;
     }
 

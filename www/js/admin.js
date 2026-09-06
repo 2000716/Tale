@@ -89,7 +89,17 @@ function setupAdminLogin() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
-      showAdminLoginError("Feil e-post eller passord.");
+      console.error("Admininnlogging feilet:", error);
+      const messages = {
+        "auth/invalid-credential": "E-posten eller passordet er feil.",
+        "auth/invalid-login-credentials": "E-posten eller passordet er feil.",
+        "auth/user-not-found": "Denne e-posten finnes ikke under Firebase Authentication.",
+        "auth/wrong-password": "Passordet er feil.",
+        "auth/invalid-email": "Skriv inn en gyldig e-postadresse.",
+        "auth/operation-not-allowed": "Email/Password er ikke aktivert i Firebase Authentication.",
+        "auth/too-many-requests": "For mange forsøk. Vent litt og prøv igjen."
+      };
+      showAdminLoginError(messages[error.code] || "Innloggingen kunne ikke gjennomføres.");
     }
   });
 
