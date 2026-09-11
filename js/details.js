@@ -1,4 +1,4 @@
-import { playSpecificEpisode } from './player.js';
+import { playSpecificEpisode, getAudioUrl } from './player.js';
 
 function escapeAttr(value) {
   return String(value || '')
@@ -79,7 +79,7 @@ export async function openDetailsPage(item) {
   renderFacts({
     reader: item.reader || item.narrator || item.readBy || '',
     studio: item.studio || item.publisher || '',
-    category: item.category || ''
+    category: item.category || (Array.isArray(item.genres) ? item.genres.join(', ') : '')
   });
 
   if (titleEl) titleEl.textContent = itemTitle;
@@ -154,7 +154,7 @@ export async function openDetailsPage(item) {
         renderFacts({
           reader: item.reader || item.narrator || item.readBy || item.author || '',
           studio: item.studio || item.publisher || data.feed?.author || data.feed?.owner || '',
-          category: item.category || data.feed?.category || ''
+          category: item.category || (Array.isArray(item.genres) ? item.genres.join(', ') : '') || data.feed?.category || ''
         });
 
         fetchedEpisodes = (data.items || []).map(ep => ({
@@ -240,7 +240,7 @@ function renderRecommendations(item) {
 export const openDetailsView = openDetailsPage;
 
 function setupContentTypeUI(item, type) {
-  const audioUrl = item.audioUrl || item.streamUrl || item.audio || item.url || '';
+  const audioUrl = getAudioUrl(item);
 
   if (type === 'radio') {
     if (badgeType) badgeType.textContent = 'Direkte Radio';
@@ -382,7 +382,7 @@ function renderEpisodesOrChapters(items, unitName) {
         playSpecificEpisode({
           title: selected.title || currentItem.title,
           sub: currentItem.sub || currentItem.author || '',
-          audioUrl: selected.audioUrl || selected.url || currentItem.audioUrl,
+          audioUrl: getAudioUrl(selected) || getAudioUrl(currentItem),
           cover: selected.cover || fallbackCover
         }, 0);
       }

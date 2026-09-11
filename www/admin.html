@@ -51,6 +51,9 @@
         <button class="nav-item" data-tab="tab-sections">
           <i class="fa-solid fa-layer-group"></i> Seksjoner & Layout
         </button>
+        <button class="nav-item" data-tab="tab-pages">
+          <i class="fa-solid fa-palette"></i> Sider & Sjangere
+        </button>
         <button class="nav-item" data-tab="tab-banners">
           <i class="fa-solid fa-rectangle-ad"></i> Hero Bannere & Promotering
         </button>
@@ -217,7 +220,12 @@
                   <option value="audiobooks">Lydbøker-side</option>
                   <option value="podcasts">Podkaster-side</option>
                   <option value="radio">Radio-side</option>
+                  <option value="custom">Egen side</option>
                 </select>
+              </div>
+              <div class="form-group" id="custom-page-field" hidden>
+                <label for="sec-custom-page">Egen side-nøkkel</label>
+                <input type="text" id="sec-custom-page" placeholder="For eksempel dokumentarer" pattern="[a-z0-9-]+" />
               </div>
 
               <div class="form-group">
@@ -261,6 +269,49 @@
             <div id="sections-manage-list" class="manage-list">
               <p class="text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Laster seksjoner...</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-pages" class="tab-content">
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-palette"></i> Design ny side</h3>
+            </div>
+            <form id="add-page-form">
+              <input type="hidden" id="page-edit-id" value="" />
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="page-title-input">Sidetittel</label>
+                  <input type="text" id="page-title-input" placeholder="For eksempel Dokumentarer" required />
+                </div>
+                <div class="form-group">
+                  <label for="page-slug">Adresse / nøkkel</label>
+                  <input type="text" id="page-slug" placeholder="dokumentarer" required pattern="[a-z0-9-]+" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="page-subtitle-input">Beskrivelse</label>
+                <textarea id="page-subtitle-input" rows="2" placeholder="Hva skal siden samle?"></textarea>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="page-icon">Ikon</label>
+                  <input type="text" id="page-icon" value="fa-layer-group" placeholder="fa-book" />
+                </div>
+                <div class="form-group">
+                  <label for="page-genres">Sjangere</label>
+                  <input type="text" id="page-genres" placeholder="Krim, Historie, Barn" />
+                </div>
+              </div>
+              <label class="checkbox-row"><input type="checkbox" id="page-visible" checked /><span>Publiser siden i Tale</span></label>
+              <button type="submit" class="btn-submit" id="page-submit-btn"><i class="fa-solid fa-plus"></i> Publiser side</button>
+            </form>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3><i class="fa-solid fa-table-columns"></i> Egne sider</h3></div>
+            <div id="pages-manage-list" class="manage-list"><p class="text-muted">Laster sider...</p></div>
           </div>
         </div>
       </section>
@@ -441,6 +492,11 @@
             <div class="form-group">
               <label for="item-desc">Beskrivelse / Sammendrag</label>
               <textarea id="item-desc" rows="3" placeholder="Kort om boken..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="item-genre">Sjangere</label>
+              <input type="text" id="item-genre" placeholder="Krim, Historie, Barn" />
             </div>
 
             <button type="submit" class="btn-submit">

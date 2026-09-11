@@ -67,10 +67,15 @@ export function isPlayableAudioUrl(url) {
   if (!cleaned || cleaned === 'undefined' || cleaned === 'null') return false;
 
   const looksLikeStream = /^(https?:\/\/|\/|blob:|data:)/i.test(cleaned);
-  const looksLikeFile = /\.(mp3|aac|wav|ogg|m4a|mp4|m3u8)(\?.*)?$/i.test(cleaned);
-  const looksLikeStreamEndpoint = /(?:stream|audio|listen|radio|podcast|play|mp3|aac|m4a|ogg|wav)/i.test(cleaned);
+  const path = cleaned.split(/[?#]/, 1)[0];
+  const looksLikeFile = /\.(mp3|aac|wav|ogg|m4a|m4b|mp4|webm|flac|opus|m3u8|pls|aac)(?:$|\/)/i.test(path);
+  const looksLikeStreamEndpoint = /(?:stream|audio|listen|radio|podcast|play|media|download|file|mp3|aac|m4a|m4b|ogg|wav|webm|flac|opus)/i.test(cleaned);
 
-  return looksLikeStream && (looksLikeFile || looksLikeStreamEndpoint);
+  return looksLikeStream && (looksLikeFile || looksLikeStreamEndpoint || /^https?:\/\/[^?#]+(?:[?#].*)?$/i.test(cleaned));
+}
+
+export function getAudioUrl(item = {}) {
+  return item.audioUrl || item.audioURL || item.audio || item.streamUrl || item.streamURL || item.mediaUrl || item.enclosureUrl || item.url || '';
 }
 
 function updateContentPlayButtons() {
@@ -274,7 +279,7 @@ export function playSpecificEpisode(epData, startPosition = 0) {
     id: epData.id || epData.title,
     title: epData.title || "Ukjent tittel",
     sub: epData.sub || epData.author || "",
-    audioUrl: epData.audioUrl,
+    audioUrl: getAudioUrl(epData),
     cover: epData.cover || epData.coverUrl || "",
     isRadio: epData.isRadio || epData.type === "radio" || false,
     type: epData.type || (epData.isRadio ? "radio" : "podcast")

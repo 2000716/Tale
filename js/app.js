@@ -2,8 +2,8 @@ import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
-import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl } from "./player.js";
-import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl, getAudioUrl } from "./player.js";
+import { collection, query, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Karusell-tilstand
 let currentSlideIndex = 0;
@@ -243,6 +243,18 @@ function renderHeroBanners(weeklyPodcasts = []) {
 // ==========================================
 export async function loadContentFromFirestore() {
   const pages = ["home", "audiobooks", "podcasts", "radio"];
+  try {
+    const customPages = (await getDocs(collection(db, "pages"))).docs
+      .map(pageDoc => ({ id: pageDoc.id, ...pageDoc.data() }))
+      .filter(page => page.visible !== false && page.slug);
+    customPages.forEach(page => {
+      if (pages.includes(page.slug)) return;
+      pages.push(page.slug);
+      createCustomPageChrome(page);
+    });
+  } catch (error) {
+    console.warn("Kunne ikke hente egendefinerte sider:", error);
+  }
 
   const updateCatalogCount = (page, count) => {
     const countEl = document.querySelector(`[data-catalog-toolbar="${page}"] [data-catalog-count]`);
@@ -303,7 +315,7 @@ export async function loadContentFromFirestore() {
             const title = item.title || 'Radiokanal';
             const sub = item.sub || item.description || 'Direktesending';
             const manualCover = item.coverUrl || item.cover || item.image || '';
-            const rawAudioUrl = item.audioUrl || item.audio || item.streamUrl || '';
+            const rawAudioUrl = getAudioUrl(item);
             const audioUrl = isPlayableAudioUrl(rawAudioUrl) ? rawAudioUrl : '';
             const cardId = `radio-card-${sec.id || index}-${index}`;
 
@@ -376,7 +388,7 @@ export async function loadContentFromFirestore() {
             const sub = item.sub || item.author || item.publisher || '';
             const rssUrl = item.rssUrl || item.rss || '';
             const manualCover = item.coverUrl || item.cover || item.image || '';
-            const rawAudioUrl = item.audioUrl || item.audio || item.streamUrl || '';
+            const rawAudioUrl = getAudioUrl(item);
             const audioUrl = isPlayableAudioUrl(rawAudioUrl) ? rawAudioUrl : '';
             const type = item.type || (pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
@@ -470,6 +482,26 @@ export async function loadContentFromFirestore() {
   }, (err) => {
     console.error("Sanntidslasting fra Firestore feilet:", err);
   });
+}
+
+function createCustomPageChrome(page) {
+  const safeSlug = String(page.slug).replace(/[^a-z0-9-]/gi, "").toLowerCase();
+  if (!safeSlug || document.getElementById(safeSlug)) return;
+
+  const pageElement = document.createElement("section");
+  pageElement.id = safeSlug;
+  pageElement.className = "page";
+  pageElement.innerHTML = `<div class="page-intro"><span class="page-kicker"><i class="fa-solid ${escapeAttr(page.icon || "fa-layer-group")}"></i> Tale</span><h1>${escapeAttr(page.title || safeSlug)}</h1><p>${escapeAttr(page.subtitle || "Utforsk innhold på Tale.")}</p></div><div id="${safeSlug}-sections" class="dynamic-container"></div>`;
+  document.querySelector("main")?.appendChild(pageElement);
+
+  const nav = document.querySelector(".bottom-bar");
+  if (nav) {
+    const button = document.createElement("button");
+    button.className = "nav-btn";
+    button.dataset.target = safeSlug;
+    button.innerHTML = `<i class="fa-solid ${escapeAttr(page.icon || "fa-layer-group")}"></i><span class="nav-text">${escapeHtml(page.title || safeSlug)}</span>`;
+    nav.appendChild(button);
+  }
 }
 
 async function renderRadioBanner() {

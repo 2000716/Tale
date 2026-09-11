@@ -28,6 +28,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /pages/{pageId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
     match /users/{userId}/history/{historyId} {
       allow read, write: if signedIn()
         && request.auth.uid == userId;

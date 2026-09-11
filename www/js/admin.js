@@ -62,6 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("admin-app")?.classList.remove("hidden");
     setupTabNavigation();
     initLiveSectionsListener();
+    setupPageDesigner();
     initLiveBannersListener();
     setupSectionForm();
     setupSectionPageTabs();
@@ -227,6 +228,67 @@ function setupTabNavigation() {
       if (pageTitle) pageTitle.innerText = titles[tabId][0];
       if (pageSubtitle) pageSubtitle.innerText = titles[tabId][1];
     }
+  });
+}
+
+function setupPageDesigner() {
+  const form = document.getElementById("add-page-form");
+  const list = document.getElementById("pages-manage-list");
+  if (!form || !list || form.dataset.ready === "true") return;
+  form.dataset.ready = "true";
+
+  const reset = () => {
+    form.reset();
+    document.getElementById("page-edit-id").value = "";
+    document.getElementById("page-icon").value = "fa-layer-group";
+    document.getElementById("page-submit-btn").innerHTML = '<i class="fa-solid fa-plus"></i> Publiser side';
+  };
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const title = document.getElementById("page-title-input").value.trim();
+    const slug = document.getElementById("page-slug").value.trim().toLowerCase();
+    const pagePayload = {
+      title,
+      slug,
+      subtitle: document.getElementById("page-subtitle-input").value.trim(),
+      icon: document.getElementById("page-icon").value.trim() || "fa-layer-group",
+      genres: document.getElementById("page-genres").value.split(",").map(value => value.trim()).filter(Boolean),
+      visible: document.getElementById("page-visible").checked,
+      order: Number(document.getElementById("page-order")?.value || 50),
+      updatedAt: new Date()
+    };
+    if (!/^[a-z0-9-]+$/.test(slug) || ["home", "audiobooks", "podcasts", "radio", "account"].includes(slug)) {
+      alert("Bruk en unik nøkkel med små bokstaver, tall og bindestrek.");
+      return;
+    }
+
+    try {
+      const editId = document.getElementById("page-edit-id").value;
+      if (editId) await updateDoc(doc(db, "pages", editId), pagePayload);
+      else await setDoc(doc(db, "pages", slug), { ...pagePayload, createdAt: new Date() });
+      reset();
+    } catch (error) {
+      console.error("Kunne ikke lagre egendefinert side:", error);
+      alert("Kunne ikke lagre siden: " + error.message);
+    }
+  });
+
+  onSnapshot(collection(db, "pages"), (snapshot) => {
+    list.innerHTML = snapshot.empty ? '<p class="text-muted">Ingen egne sider opprettet ennå.</p>' : "";
+    snapshot.docs.forEach(pageDoc => {
+      const page = { id: pageDoc.id, ...pageDoc.data() };
+      const row = document.createElement("div");
+      row.className = "manage-item";
+      row.innerHTML = `<strong>${escapeHtml(page.title || page.slug)}</strong><span class="text-muted">${escapeHtml(page.slug || "")} · ${(page.genres || []).map(escapeHtml).join(", ") || "Ingen sjangere"}</span><button type="button" class="btn-danger" data-delete-page="${escapeHtml(page.id)}"><i class="fa-solid fa-trash"></i> Slett</button>`;
+      row.querySelector("[data-delete-page]").addEventListener("click", async () => {
+        if (confirm(`Slett siden ${page.title || page.slug}?`)) await deleteDoc(doc(db, "pages", page.id));
+      });
+      list.appendChild(row);
+    });
+  }, error => {
+    list.innerHTML = '<p class="text-error">Kunne ikke laste egne sider.</p>';
+    console.error("Feil ved lasting av egne sider:", error);
   });
 }
 
@@ -488,6 +550,10 @@ function setupSectionForm() {
   };
 
   document.getElementById("cancel-section-edit-btn")?.addEventListener("click", resetEditor);
+  document.getElementById("sec-page")?.addEventListener("change", (event) => {
+    const customField = document.getElementById("custom-page-field");
+    if (customField) customField.hidden = event.target.value !== "custom";
+  });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -496,10 +562,17 @@ function setupSectionForm() {
     const subtitle = document.getElementById("sec-subtitle").value.trim();
     const order = parseInt(document.getElementById("sec-order").value) || 1;
     const maxItems = Math.max(0, parseInt(document.getElementById("sec-max-items").value) || 0);
-    const page = document.getElementById("sec-page").value;
+    const selectedPage = document.getElementById("sec-page").value;
+    const customPage = document.getElementById("sec-custom-page")?.value.trim().toLowerCase() || "";
+    const page = selectedPage === "custom" ? customPage : selectedPage;
     const layout = document.getElementById("sec-layout").value;
     const visible = document.getElementById("sec-visible").checked;
     const editId = document.getElementById("sec-edit-id").value;
+
+    if (!page || !/^[a-z0-9-]+$/.test(page)) {
+      alert("Velg en gyldig side eller skriv inn en side-nøkkel med små bokstaver.");
+      return;
+    }
 
     const sectionPayload = {
       title,
@@ -906,8 +979,8 @@ function renderApiResults(items, type) {
         subtitle,
         author: subtitle,
         cover,
-        audioUrl: type === "radio" ? audio : "",
-        rssUrl: type === "podcast" || type === "audiobook" ? audio : "",
+        rssUrl: type === "podcast" ? audio : "",
+        audioUrl: type === "audiobook" ? "" : (type === "radio" ? audio : ""),
         type: itemType,
         archiveIdentifier: type === "audiobook" ? item.identifier : "",
         description: type === "audiobook" ? (item.description || "Gratis lydbok fra LibriVox via Internet Archive") : "",
@@ -950,6 +1023,8 @@ function setupManualForm() {
       audioUrl: document.getElementById("item-audio").value.trim(),
       type: "audiobook",
       description: document.getElementById("item-desc").value.trim(),
+      category: document.getElementById("item-genre").value.trim(),
+      genres: document.getElementById("item-genre").value.split(",").map(value => value.trim()).filter(Boolean),
       addedAt: new Date().toISOString()
     };
 
