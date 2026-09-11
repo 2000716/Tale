@@ -5,7 +5,7 @@
 /* Fast minispiller (plassert rett over bunnmenyen med litt luft) */
 .player {
   position: fixed !important;
-  bottom: calc(78px + env(safe-area-inset-bottom)) !important; /* Økt fra 70px for mer luft ned til menyen */
+  bottom: calc(var(--bottom-nav-height, 72px) + 12px) !important;
   left: 8px !important;                                       /* Litt luft fra venstre kant */
   right: 8px !important;                                      /* Litt luft fra høyre kant */
   width: calc(100% - 16px) !important;                        /* Holder spilleren innenfor skjermen */

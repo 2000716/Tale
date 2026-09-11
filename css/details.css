@@ -1,6 +1,17 @@
 /* ==========================================
-   EGEN CSS FOR INFORMASJONS- / DETALJSIDEN 
+   EGEN CSS FOR INFORMASJONS- / DETALJSIDEN (STORYTEL-STIL)
    ========================================== */
+
+:root {
+  --storytel-bg: #f7f5f0;          /* Tonet myk hvit/krem bakgrunn */
+  --storytel-card: #ffffff;        /* Ren hvit for boksene */
+  --storytel-orange: #ff5a1f;      /* Karakteristisk Storytel-oransje */
+  --storytel-orange-hover: #e0480e;
+  --storytel-text-main: #191919;   /* Mørk, nesten svart tekst */
+  --storytel-text-muted: #666666;  /* Dempet gråfarge */
+  --storytel-border: #eae6df;      /* Myk rammefarge */
+  --storytel-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
 
 #details-page {
   position: fixed;
@@ -10,12 +21,12 @@
   max-width: 480px;
   height: 100vh;
   height: 100dvh;
-  background-color: var(--bg-content, #faf8f3);
-  color: var(--text-dark, #18181b);
+  background-color: var(--storytel-bg);
+  color: var(--storytel-text-main);
   z-index: 1500;
   overflow-y: auto;
   
-  padding: calc(env(safe-area-inset-top, 20px) + 1rem) 1.5rem 3rem 1.5rem;
+  padding: calc(env(safe-area-inset-top, 20px) + 0.85rem) 1.25rem calc(var(--bottom-nav-height, 72px) + 1.5rem) 1.25rem;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 
@@ -36,23 +47,24 @@
   pointer-events: auto;
 }
 
-.details-content {
+#details-page .details-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   text-align: center;
   padding-bottom: 2rem;
   width: 100%;
+  gap: 0;
 }
 
-/* Lukk-knapp */
-.close-btn {
+/* --- Lukk-knapp --- */
+#details-page .close-btn {
   position: absolute;
   top: calc(env(safe-area-inset-top, 10px) + 0.8rem);
   right: 1.2rem;
-  background: rgba(0, 0, 0, 0.06);
-  border: none;
-  color: #18181b;
+  background: var(--storytel-card);
+  border: 1px solid var(--storytel-border);
+  color: var(--storytel-text-main);
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -61,58 +73,69 @@
   justify-content: center;
   cursor: pointer;
   z-index: 10;
-  transition: background 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: background 0.2s ease, transform 0.1s ease;
 }
 
-.close-btn:hover {
-  background: rgba(0, 0, 0, 0.12);
+#details-page .close-btn:hover {
+  background: #f0ece1;
 }
 
 /* --- Hero / Cover og Toppseksjon --- */
-.details-hero {
+#details-page .details-hero {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
   margin-top: 0.5rem;
   margin-bottom: 1.2rem;
+  background: transparent;
+  isolation: isolate;
 }
 
-.details-cover-container {
-  width: 160px;
-  height: 160px;
-  max-width: 160px;
-  max-height: 160px;
-  margin-bottom: 1.2rem;
+#details-page .details-hero-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: transparent;
+}
+
+#details-page .details-cover-container {
+  width: 170px;
+  height: 170px;
+  max-width: 170px;
+  max-height: 170px;
+  margin: 0 auto 1.2rem auto;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
+  position: relative;
 }
 
-.details-cover-container img,
-.details-cover-img,
-.details-cover-container .generated-cover {
+#details-page .details-cover-container img,
+#details-page .details-cover-img,
+#details-page .details-cover-container .generated-cover,
+#details-page .details-cover-fallback {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  object-position: center;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
 }
 
-.details-cover-fallback {
-  width: 100%;
-  height: 100%;
-  background: #e4e4e7;
-  border-radius: 16px;
+#details-page .details-cover-fallback {
+  background: #e5e0d8;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 3rem;
-  color: #71717a;
+  color: var(--storytel-text-muted);
 }
 
-.details-header-info {
+#details-page .details-header-info {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -120,172 +143,483 @@
   text-align: center;
 }
 
+#details-page .details-badges {
+  margin-bottom: 0.5rem;
+}
+
 /* --- Type Etiketter (Radio / Lydbok / Podkast) --- */
 .badge-tag,
 .details-type-badge {
   display: inline-block;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.25rem 0.75rem;
+  letter-spacing: 0.06em;
+  padding: 0.3rem 0.85rem;
   border-radius: 20px;
   margin-bottom: 0.5rem;
-  background-color: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
+  background-color: rgba(255, 90, 31, 0.1);
+  color: var(--storytel-orange);
 }
 
-/* Dynamiske farger basert på innholdstype */
 #details-page[data-type="radio"] .badge-tag {
   background-color: rgba(16, 185, 129, 0.12);
-  color: #059669; /* Grønn for radio */
+  color: #059669;
 }
 
 #details-page[data-type="audiobook"] .badge-tag {
-  background-color: rgba(245, 158, 11, 0.12);
-  color: #d97706; /* Oransje for lydbok */
+  background-color: rgba(255, 90, 31, 0.12);
+  color: var(--storytel-orange);
 }
 
 #details-page[data-type="podcast"] .badge-tag {
-  background-color: rgba(59, 98, 196, 0.12);
-  color: #2563eb; /* Blå for podkast */
+  background-color: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
 }
 
-.details-content h2, 
-.details-title {
-  font-size: 1.3rem;
-  font-weight: 700;
-  margin-bottom: 0.3rem;
-  color: #09090b;
-  line-height: 1.3;
+#details-page .details-content h2, 
+#details-page .details-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0 auto 0.35rem auto;
+  color: var(--storytel-text-main);
+  line-height: 1.25;
+  text-align: center;
+  max-width: 280px;
+  overflow-wrap: anywhere;
 }
 
-.details-sub {
-  color: #52525b;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+#details-page .details-sub {
+  color: var(--storytel-text-muted);
+  margin: 0 auto 1rem auto;
+  font-size: 0.88rem;
   font-weight: 500;
+  max-width: 280px;
+  overflow-wrap: anywhere;
+}
+
+#details-page .details-body {
+  width: 100%;
+}
+
+/* --- Handlingsknapper (Spill av m.m.) --- */
+#details-page .details-action-bar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+#details-page .btn-primary {
+  width: 100%;
+  background-color: var(--storytel-orange);
+  color: #ffffff;
+  border: none;
+  border-radius: 30px;
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(255, 90, 31, 0.25);
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+#details-page .btn-primary:hover {
+  background-color: var(--storytel-orange-hover);
+}
+
+#details-page .btn-primary:active {
+  transform: scale(0.98);
+}
+
+#details-page .secondary-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+#details-page .btn-action-icon {
+  background: var(--storytel-card);
+  border: 1px solid var(--storytel-border);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--storytel-text-main);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+#details-page .btn-action-icon:hover {
+  background: #f0ece1;
+}
+
+#details-page .btn-action-icon:active {
+  transform: scale(0.95);
 }
 
 /* --- Beskrivelsesboks --- */
-.details-desc-box,
-.details-description-box {
+#details-page .details-desc-box,
+#details-page .details-description-box {
   width: 100%;
-  background-color: #f4f4f5;
-  border: 1px solid #e4e4e7;
-  border-radius: 12px;
-  padding: 1rem;
+  background-color: var(--storytel-card);
+  border: 1px solid var(--storytel-border);
+  border-radius: 16px;
+  padding: 1.25rem;
   margin-bottom: 1.2rem;
   text-align: left;
   font-size: 0.9rem;
-  line-height: 1.5;
-  color: #27272a;
+  line-height: 1.6;
+  color: var(--storytel-text-main);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--storytel-shadow);
 }
 
-.details-desc-box h3 {
+#details-page .details-desc-box h3,
+#details-page .details-facts h3,
+#details-page .recommendations-container h3 {
   margin-top: 0;
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
-  color: #09090b;
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+  color: var(--storytel-text-main);
   font-weight: 700;
 }
 
-.details-desc {
+#details-page .details-desc {
   margin: 0;
+  color: #4a4a4a;
   overflow: hidden;
   transition: max-height 0.3s ease;
 }
 
-.details-source-link {
+#details-page .details-source-link {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   margin-top: 1rem;
-  color: #2563eb;
-  font-size: 0.82rem;
+  color: var(--storytel-orange);
+  font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
 }
 
-.details-source-link:hover { text-decoration: underline; }
+#details-page .details-source-link:hover { 
+  text-decoration: underline; 
+}
 
-.details-facts {
+#details-page .details-read-more-btn {
+  background: none;
+  border: none;
+  color: var(--storytel-orange);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0;
+  margin-top: 0.75rem;
+  align-self: flex-start;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+#details-page .details-read-more-btn:hover {
+  color: var(--storytel-orange-hover);
+  text-decoration: underline;
+}
+
+/* --- Fakta-rutenett --- */
+#details-page .details-facts {
   width: 100%;
   margin-bottom: 1.3rem;
   text-align: left;
 }
 
-.details-facts h3,
-.recommendations-container h3 {
-  margin: 0 0 0.75rem;
-  color: #09090b;
-  font-size: 1rem;
-}
-
-.details-facts-grid {
+#details-page .details-facts-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
   overflow: hidden;
-  border: 1px solid #e4e4e7;
-  border-radius: 12px;
-  background: #e4e4e7;
+  border: 1px solid var(--storytel-border);
+  border-radius: 16px;
+  background: var(--storytel-border);
+  box-shadow: var(--storytel-shadow);
 }
 
-.details-fact {
+#details-page .details-fact {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding: 0.75rem;
-  background: #f4f4f5;
+  padding: 0.85rem;
+  background: var(--storytel-card);
 }
 
-.details-fact span,
-.recommendations-heading span,
-.recommendation-card span {
-  color: #71717a;
+#details-page .details-fact span {
+  color: var(--storytel-text-muted);
   font-size: 0.75rem;
+  font-weight: 500;
 }
 
-.details-fact strong {
-  color: #18181b;
-  font-size: 0.82rem;
+#details-page .details-fact strong {
+  color: var(--storytel-text-main);
+  font-size: 0.85rem;
+  font-weight: 700;
   overflow-wrap: anywhere;
 }
 
-.recommendations-container {
+/* ==========================================
+   EPISODELISTE OG SESONGSTYRING 
+   ========================================== */
+#details-page .episode-list-container {
   width: 100%;
-  margin-top: 1.5rem;
+  margin-top: 0.5rem;
+  text-align: left; 
+  border-top: 1px solid var(--storytel-border);
+  padding-top: 1.2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+#details-page[data-type="radio"] .episode-list-container {
+  display: none;
+}
+
+#details-page .section-title-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0.8rem;
+  gap: 0.7rem;
+}
+
+#details-page .episode-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+#details-page .section-title-wrapper h3 {
+  margin: 0;
+  color: var(--storytel-text-main);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+#details-page .season-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.4rem 0.2rem 0.7rem;
+  border: 1px solid var(--storytel-border);
+  border-radius: 20px;
+  background: var(--storytel-card);
+}
+
+#details-page .season-label {
+  color: var(--storytel-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+#details-page .season-dropdown {
+  background-color: transparent;
+  color: var(--storytel-text-main);
+  border: none;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+}
+
+#details-page .season-dropdown option {
+  background-color: var(--storytel-card);
+  color: var(--storytel-text-main);
+}
+
+/* --- Episode-elementer --- */
+#details-page .episode-item,
+#details-page .episode-card {
+  display: flex;
+  gap: 12px;
+  padding: 0.85rem 0.6rem;
+  border-bottom: 1px solid var(--storytel-border);
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-radius: 12px;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#details-page .episode-item:hover,
+#details-page .episode-card:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+#details-page .episode-thumb,
+#details-page .episode-poster {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background-color: #e5e0d8;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--storytel-text-muted);
+  font-size: 1.2rem;
+}
+
+#details-page .episode-thumb img,
+#details-page .episode-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#details-page .episode-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
   text-align: left;
 }
 
-.recommendations-heading {
+#details-page .episode-title,
+#details-page .episode-info h4 {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--storytel-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 0 0.2rem 0;
+}
+
+#details-page .ep-desc {
+  font-size: 0.8rem;
+  color: var(--storytel-text-muted);
+  margin-bottom: 0.3rem;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+}
+
+#details-page .episode-footer-meta,
+#details-page .meta-small {
+  font-size: 0.75rem;
+  color: var(--storytel-text-muted);
+  display: flex;
+  gap: 12px;
+}
+
+#details-page .btn-play-sm {
+  background: var(--storytel-card);
+  border: 1px solid var(--storytel-border);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: var(--storytel-orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+#details-page .btn-play-sm:hover {
+  background: #f0ece1;
+}
+
+/* --- Knapper for lasting --- */
+#load-more-episodes-btn,
+#details-page .btn-secondary {
+  background: var(--storytel-card);
+  border: 1px solid var(--storytel-border);
+  color: var(--storytel-text-main);
+  padding: 0.8rem 1rem;
+  border-radius: 25px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  width: 100%;
+  margin-top: 1rem;
+  box-shadow: var(--storytel-shadow);
+}
+
+#load-more-episodes-btn:hover,
+#details-page .btn-secondary:hover {
+  background: #f0ece1;
+}
+
+.loading-episodes {
+  font-size: 0.85rem;
+  color: var(--storytel-text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 1rem;
+  width: 100%;
+}
+
+/* --- Anbefalinger --- */
+#details-page .recommendations-container {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--storytel-border);
+  text-align: left;
+}
+
+#details-page .recommendations-heading {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.recommendations-heading h3 { margin-bottom: 0.75rem; }
+#details-page .recommendations-heading h3 { 
+  margin-bottom: 0.75rem; 
+}
 
-.recommendations-container .horizontal-scroll {
+#details-page .recommendations-heading span {
+  color: var(--storytel-text-muted);
+}
+
+#details-page .recommendations-container .horizontal-scroll {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.85rem;
   overflow-x: auto;
-  padding-bottom: 0.35rem;
+  padding-bottom: 0.5rem;
   scrollbar-width: none;
 }
 
-.recommendations-container .horizontal-scroll::-webkit-scrollbar { display: none; }
+#details-page .recommendations-container .horizontal-scroll::-webkit-scrollbar { 
+  display: none; 
+}
 
-.recommendation-card {
+#details-page .recommendation-card {
   display: flex;
   flex: 0 0 116px;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.35rem;
   padding: 0;
   border: 0;
   background: transparent;
@@ -294,554 +628,53 @@
   text-align: left;
 }
 
-.recommendation-cover {
-  display: flex;
-  width: 116px;
-  height: 116px;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border-radius: 12px;
-  background: #e4e4e7;
-  color: #71717a;
-}
-
-.recommendation-cover img { width: 100%; height: 100%; object-fit: cover; }
-.recommendation-card strong { overflow: hidden; font-size: 0.82rem; text-overflow: ellipsis; white-space: nowrap; }
-.recommendation-card:hover .recommendation-cover { outline: 2px solid #2563eb; outline-offset: 2px; }
-
-/* Plassert inn i boksen som et eget element i bunnen */
-.details-read-more-btn {
-  background: none;
-  border: none;
-  color: #2563eb;
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0;
-  margin-top: 0.75rem;
-  align-self: flex-start;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.details-read-more-btn:hover {
-  color: #1d4ed8;
-  text-decoration: underline;
-}
-
-/* --- Handlingsknapper (Action Bar / Spill av) --- */
-.details-action-bar {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.btn-primary {
-  width: 100%;
-  background-color: var(--accent-blue, #2563eb);
-  color: #ffffff;
-  border: none;
-  border-radius: 12px;
-  padding: 0.85rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-  transition: background-color 0.2s ease, transform 0.1s ease;
-}
-
-.btn-primary:active {
-  transform: scale(0.98);
-}
-
-.secondary-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-.btn-action-icon {
-  background: #f4f4f5;
-  border: 1px solid #e4e4e7;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #18181b;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
-}
-
-.btn-action-icon:hover {
-  background: #e4e4e7;
-}
-
-.btn-action-icon:active {
-  transform: scale(0.95);
-}
-
-/* ==========================================
-   EPISODELISTE OG SESONGSTYRING 
-   ========================================== */
-.episode-list-container {
-  width: 100%;
-  margin-top: 0.5rem;
-  text-align: left; 
-  border-top: 1px solid #e4e4e7;
-  padding-top: 1.2rem;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Skjul episodeliste for Radio */
-#details-page[data-type="radio"] .episode-list-container {
-  display: none;
-}
-
-.section-title-wrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 0.8rem;
-}
-
-.section-title-wrapper h3 {
-  margin: 0;
-  color: #09090b;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-/* --- Sesong-dropdown styling --- */
-.season-select-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-.season-dropdown {
-  background-color: #f4f4f5;
-  color: #18181b;
-  border: 1px solid #e4e4e7;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
-}
-
-.season-dropdown:focus,
-.season-dropdown:hover {
-  background-color: #e4e4e7;
-  border-color: var(--accent-blue, #2563eb);
-}
-
-.season-dropdown option {
-  background-color: var(--card-content, #fffdf9);
-  color: #18181b;
-}
-
-/* --- Episode-elementer --- */
-.episode-item,
-.episode-card {
-  display: flex;
-  gap: 12px;
-  padding: 0.75rem 0.5rem;
-  border-bottom: 1px solid #f4f4f5;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  border-radius: 8px;
-  align-items: center;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.episode-item:hover,
-.episode-card:hover {
-  background: #f4f4f5;
-}
-
-/* Episodebilde styling */
-.episode-thumb,
-.episode-poster {
-  width: 52px;
-  height: 52px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  background-color: #e4e4e7;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #71717a;
-  font-size: 1.2rem;
-}
-
-.episode-thumb img,
-.episode-poster img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.episode-info {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  flex: 1;
-  text-align: left;
-}
-
-.episode-title,
-.episode-info h4 {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #09090b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0 0 0.2rem 0;
-}
-
-.ep-desc {
-  font-size: 0.78rem;
-  color: #52525b;
-  margin-bottom: 0.3rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.35;
-}
-
-.episode-footer-meta,
-.meta-small {
-  font-size: 0.75rem;
-  color: #71717a;
-  display: flex;
-  gap: 12px;
-}
-
-.btn-play-sm {
-  background: #f4f4f5;
-  border: 1px solid #e4e4e7;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  color: #18181b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.btn-play-sm:hover {
-  background: #e4e4e7;
-}
-
-/* --- "Vis flere"-knapp --- */
-#load-more-episodes-btn,
-.btn-secondary {
-  background: #f4f4f5;
-  border: 1px solid #e4e4e7;
-  color: #18181b;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
-  width: 100%;
-  margin-top: 1rem;
-}
-
-#load-more-episodes-btn:hover,
-.btn-secondary:hover {
-  background: #e4e4e7;
-  border-color: #d4d4d8;
-}
-
-.loading-episodes {
-  font-size: 0.85rem;
-  color: #71717a;
-  font-style: italic;
-  text-align: center;
-  padding: 1rem;
-  width: 100%;
-}
-
-/* Ny detaljside: tydelig hero, lesbar innholdsflate og kompakt episodeheader. */
-#details-page {
-  padding: calc(env(safe-area-inset-top, 20px) + 0.85rem) 1rem 3rem;
-  background: var(--bg-content, #faf8f3);
-}
-
-#details-page .details-content {
-  gap: 0;
-  align-items: stretch;
-}
-
-#details-page .close-btn {
-  top: calc(env(safe-area-inset-top, 10px) + 0.7rem);
-  right: 0.85rem;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 4px 16px rgba(45, 39, 31, 0.12);
-}
-
-#details-page .details-hero {
-  position: relative;
-  min-height: 0;
-  justify-content: flex-end;
-  overflow: hidden;
-  margin: 0 -1rem 0.85rem;
-  padding: 3.25rem 1rem 0.5rem;
-  background: var(--bg-content, #faf8f3);
-  isolation: isolate;
-}
-
-#details-page .details-hero-backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--bg-content, #faf8f3);
-}
-
-#details-page .details-cover-container {
-  position: relative;
-  width: 168px;
-  height: 168px;
-  max-width: 168px;
-  max-height: 168px;
-  margin: 0 auto 0.9rem;
-  align-self: center;
-}
-
-#details-page .details-cover-container img,
-#details-page .details-cover-img,
-#details-page .details-cover-fallback {
-  display: block;
-  object-position: center;
-  border-radius: 20px;
-  box-shadow: 0 12px 26px rgba(45, 39, 31, 0.14);
-}
-
-#details-page .details-header-info {
-  position: relative;
-  align-items: center;
-  width: 100%;
-}
-
-#details-page .details-badges { margin-bottom: 0.45rem; }
-
-#details-page .details-content h2,
-#details-page .details-title {
-  width: 168px;
-  max-width: 168px;
-  margin: 0 auto 0.35rem;
-  color: #27231e;
-  font-size: 1.32rem;
-  line-height: 1.16;
-  overflow-wrap: anywhere;
-  text-align: center;
-}
-
-#details-page .details-sub {
-  max-width: 168px;
-  margin: 0 auto;
-  color: #655e53;
-  font-size: 0.82rem;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
-#details-page .details-action-bar {
-  gap: 0.75rem;
-  margin-bottom: 0.85rem;
-}
-
-#details-page .btn-primary {
-  border-radius: 14px;
-  background: #2c665f;
-  box-shadow: 0 9px 18px rgba(44, 102, 95, 0.2);
-}
-
-#details-page .btn-primary:hover { background: #24554f; }
-
-#details-page .secondary-actions { gap: 0.55rem; }
-
-#details-page .btn-action-icon {
-  width: 42px;
-  height: 42px;
-  border-color: #e4e4e7;
-  background: var(--card-content, #fffdf9);
-  color: #3f3f46;
-  box-shadow: 0 2px 8px rgba(24, 24, 27, 0.05);
-}
-
-#details-page .btn-action-icon:hover,
-#details-page .btn-action-icon:focus-visible {
-  background: #f4f4f5;
-  border-color: #d4d4d8;
-}
-
-#details-page .details-body { width: 100%; }
-
-#details-page .details-desc-box {
-  margin-bottom: 0.7rem;
-  padding: 1.1rem;
-  border: 1px solid #e4e4e7;
-  border-radius: 12px;
-  background: var(--card-content, #fffdf9);
-  box-shadow: 0 4px 14px rgba(24, 24, 27, 0.04);
-}
-
-#details-page .details-desc-box h3,
-#details-page .details-facts h3,
-#details-page .recommendations-container h3 {
-  color: #302b24;
-  font-size: 0.98rem;
-  letter-spacing: 0;
-}
-
-#details-page .details-desc {
-  color: #554e44;
-  font-size: 0.88rem;
-  line-height: 1.6;
-}
-
-#details-page .details-source-link { color: #2c665f; }
-
-#details-page .details-facts {
-  margin-bottom: 1.15rem;
-  padding: 0.15rem 0;
-}
-
-#details-page .details-facts-grid {
-  border-color: #e3dbce;
-  border-radius: 14px;
-  background: #e3dbce;
-}
-
-#details-page .details-fact { background: rgba(255, 253, 249, 0.78); }
-#details-page .details-fact span { color: #877e70; }
-#details-page .details-fact strong { color: #3a342c; }
-
-#details-page .episode-list-container {
-  margin-top: 0.25rem;
-  padding: 0.75rem 0 0;
-  border-top: 1px solid #e4e4e7;
-}
-
-#details-page .section-title-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.7rem;
-  margin-bottom: 0.7rem;
-}
-
-#details-page .episode-heading {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-#details-page .section-title-wrapper h3 {
-  color: #302b24;
-  font-size: 1.05rem;
-}
-
-#details-page .meta-small { color: #897f70; }
-
-#details-page .season-select-wrapper {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.28rem 0.3rem 0.28rem 0.65rem;
-  border: 1px solid #d9d0c1;
-  border-radius: 999px;
-  background: rgba(255, 253, 249, 0.8);
-}
-
-#details-page .season-label {
-  color: #897f70;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-#details-page .season-dropdown {
-  padding: 0.32rem 0.5rem;
-  border: 0;
-  border-radius: 999px;
-  background: #e5efeb;
-  color: #2c665f;
-  font-size: 0.78rem;
-}
-
-#details-page .episode-item {
-  gap: 0.7rem;
-  padding: 0.72rem 0.35rem;
-  border-bottom-color: #e9e2d8;
-  border-radius: 12px;
-}
-
-#details-page .episode-item:hover { background: rgba(255, 253, 249, 0.72); }
-#details-page .episode-thumb { border-radius: 10px; background: #e5ded2; }
-#details-page .episode-title { color: #302b24; }
-#details-page .ep-desc { color: #756d61; }
-#details-page .episode-footer-meta { color: #9a9081; }
-#details-page .btn-play-sm { border-color: #d9d0c1; background: #fffdf9; color: #2c665f; }
-
-#details-page .recommendations-container {
-  margin-top: 1.1rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid #e4e4e7;
-}
-
-#details-page .recommendations-heading span { color: #897f70; }
 #details-page .recommendation-cover {
+  display: flex;
   width: 116px;
   height: 116px;
-  border-radius: 12px;
-  background: var(--card-content, #fffdf9);
-  border: 1px solid #e4e4e7;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--storytel-card);
+  border: 1px solid var(--storytel-border);
   box-sizing: border-box;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
-#details-page .recommendation-cover img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-#details-page .recommendation-card strong { color: #302b24; }
-#details-page .recommendation-card span { color: #897f70; }
-#details-page .recommendation-card:hover .recommendation-cover { outline-color: #2c665f; }
 
+#details-page .recommendation-cover img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
+}
+
+#details-page .recommendation-card strong { 
+  color: var(--storytel-text-main);
+  overflow: hidden; 
+  font-size: 0.82rem; 
+  font-weight: 700;
+  text-overflow: ellipsis; 
+  white-space: nowrap; 
+}
+
+#details-page .recommendation-card span {
+  color: var(--storytel-text-muted);
+  font-size: 0.75rem;
+}
+
+#details-page .recommendation-card:hover .recommendation-cover { 
+  outline: 2px solid var(--storytel-orange); 
+  outline-offset: 2px; 
+}
+
+/* Tilpasning for mindre skjermer */
 @media (max-width: 360px) {
-  #details-page .details-cover-container,
-  #details-page .details-content h2,
-  #details-page .details-title,
-  #details-page .details-sub {
-    width: 148px;
-    max-width: 148px;
+  #details-page .details-cover-container {
+    width: 140px;
+    height: 140px;
   }
-
-  #details-page .details-cover-container { height: 148px; }
-  #details-page .details-hero { min-height: 0; }
-  #details-page .season-label { display: none; }
+  
+  #details-page .season-label { 
+    display: none; 
+  }
 }

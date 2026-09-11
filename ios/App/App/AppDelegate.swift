@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,8 +8,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        configureAudioSession()
         return true
+    }
+
+    private func configureAudioSession() {
+        let audioSession = AVAudioSession.sharedInstance()
+
+        do {
+            try audioSession.setCategory(
+                .playback,
+                mode: .spokenAudio,
+                options: [.allowAirPlay, .allowBluetoothA2DP]
+            )
+            try audioSession.setActive(true)
+        } catch {
+            print("Kunne ikke konfigurere lydsesjon: \(error)")
+        }
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

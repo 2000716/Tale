@@ -214,8 +214,8 @@ main > section,
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  height: calc(72px + env(safe-area-inset-bottom));
-  padding-bottom: 0;
+  height: var(--bottom-nav-height, calc(72px + env(safe-area-inset-bottom)));
+  padding-bottom: env(safe-area-inset-bottom);
   background: var(--bar-bg);
   display: flex;
   justify-content: space-around;
@@ -223,6 +223,7 @@ main > section,
   z-index: 1200;
   border-top: 1px solid var(--bar-border);
   box-shadow: none;
+  box-sizing: border-box;
 }
 
 .bottom-bar .nav-btn {

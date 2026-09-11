@@ -206,38 +206,41 @@ export function setupExtraPlayerControls() {
 
 export function updateMediaSession(item) {
   if ('mediaSession' in navigator) {
-    const coverUrl = item.cover || item.coverUrl || 'https://via.placeholder.com/512';
+    const coverUrl = item.cover || item.coverUrl || '';
 
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: item.title || 'Innhold',
         artist: item.sub || item.author || '',
         album: item.type === 'podcast' ? 'Podcast' : (item.type === 'audiobook' ? 'Lydbok' : 'Tale'),
-        artwork: [
-          { src: coverUrl, sizes: '96x96', type: 'image/png' },
-          { src: coverUrl, sizes: '128x128', type: 'image/png' },
-          { src: coverUrl, sizes: '192x192', type: 'image/png' },
-          { src: coverUrl, sizes: '512x512', type: 'image/png' }
-        ]
+        artwork: coverUrl ? [
+          { src: coverUrl, sizes: '96x96' },
+          { src: coverUrl, sizes: '192x192' },
+          { src: coverUrl, sizes: '512x512' }
+        ] : []
       });
 
-      navigator.mediaSession.setActionHandler('play', () => {
-        globalAudio.play();
-        updatePlayIcons(true);
-        navigator.mediaSession.playbackState = "playing";
+      const setActionHandler = (action, handler) => {
+        try {
+          navigator.mediaSession.setActionHandler(action, handler);
+        } catch (error) {
+          console.debug(`MediaSession støtter ikke ${action}:`, error);
+        }
+      };
+
+      setActionHandler('play', () => {
+        globalAudio.play().catch(() => updatePlayIcons(false));
       });
-      navigator.mediaSession.setActionHandler('pause', () => {
+      setActionHandler('pause', () => {
         globalAudio.pause();
-        updatePlayIcons(false);
-        navigator.mediaSession.playbackState = "paused";
       });
-      navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+      setActionHandler('seekbackward', (details) => {
         skipTime(-(details.seekOffset || 15));
       });
-      navigator.mediaSession.setActionHandler('seekforward', (details) => {
+      setActionHandler('seekforward', (details) => {
         skipTime(details.seekOffset || 15);
       });
-      navigator.mediaSession.setActionHandler('seekto', (details) => {
+      setActionHandler('seekto', (details) => {
         if (details.fastSeek && ('fastSeek' in globalAudio)) {
           globalAudio.fastSeek(details.seekTime);
           return;
@@ -245,6 +248,10 @@ export function updateMediaSession(item) {
         if (details.seekTime !== undefined) {
           globalAudio.currentTime = details.seekTime;
         }
+      });
+      setActionHandler('stop', () => {
+        globalAudio.pause();
+        globalAudio.currentTime = 0;
       });
     } catch (e) {
       console.warn("MediaSession feilet:", e);
@@ -365,13 +372,9 @@ export function closeFullscreenPlayer({ restorePreviousPage = true } = {}) {
 export function togglePlay() {
   if (!globalAudio.src) return;
   if (globalAudio.paused) {
-    globalAudio.play();
-    updatePlayIcons(true);
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "playing";
+    globalAudio.play().catch(() => updatePlayIcons(false));
   } else {
     globalAudio.pause();
-    updatePlayIcons(false);
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "paused";
   }
   updateContentPlayButtons();
 }
@@ -447,10 +450,18 @@ export function setupAudioListeners() {
   setupExtraPlayerControls();
   globalAudio.autoplay = false;
   globalAudio.loop = false;
+  globalAudio.preload = "auto";
+  globalAudio.playsInline = true;
 
-  globalAudio.onplay = updateContentPlayButtons;
-  globalAudio.onpause = () => {
+  globalAudio.onplay = () => {
+    updatePlayIcons(true);
     updateContentPlayButtons();
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "playing";
+  };
+  globalAudio.onpause = () => {
+    updatePlayIcons(false);
+    updateContentPlayButtons();
+    if ('mediaSession' in navigator && !globalAudio.ended) navigator.mediaSession.playbackState = "paused";
 
     if (globalAudio.ended || !state.selectedItem?.title || state.selectedItem.isRadio) return;
 
