@@ -83,7 +83,7 @@ input, textarea {
 
 main {
   flex: 1;
-  padding: 1.25rem;
+  padding: calc(116px + env(safe-area-inset-top)) 1.25rem 1.25rem;
   padding-bottom: calc(var(--bottom-nav-height, 72px) + 82px);
   background-color: var(--bg-content);
 }
