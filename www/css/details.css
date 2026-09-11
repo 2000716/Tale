@@ -1,16 +1,16 @@
 /* ==========================================
-   EGEN CSS FOR INFORMASJONS- / DETALJSIDEN (STORYTEL-STIL)
+  INFORMASJONS- OG DETALJSIDE
    ========================================== */
 
 :root {
-  --storytel-bg: #f7f5f0;          /* Tonet myk hvit/krem bakgrunn */
-  --storytel-card: #ffffff;        /* Ren hvit for boksene */
-  --storytel-orange: #ff5a1f;      /* Karakteristisk Storytel-oransje */
-  --storytel-orange-hover: #e0480e;
-  --storytel-text-main: #191919;   /* Mørk, nesten svart tekst */
-  --storytel-text-muted: #666666;  /* Dempet gråfarge */
-  --storytel-border: #eae6df;      /* Myk rammefarge */
-  --storytel-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --storytel-bg: var(--bg-content);
+  --storytel-card: var(--text-light);
+  --storytel-orange: var(--accent-blue);
+  --storytel-orange-hover: var(--text-light);
+  --storytel-text-main: var(--bg-dark);
+  --storytel-text-muted: var(--bg-dark);
+  --storytel-border: var(--accent-blue);
+  --storytel-shadow: none;
 }
 
 #details-page {
@@ -35,8 +35,8 @@
   visibility: hidden;
   pointer-events: none;
 
-  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
-              opacity 0.3s ease,
+  transition: transform 0.28s ease, 
+              opacity 0.2s ease,
               visibility 0.3s ease;
 }
 
@@ -676,5 +676,64 @@
   
   #details-page .season-label { 
     display: none; 
+  }
+}
+
+/* Tale-flatene bruker bare hvit, mørkeblå og lyseblå. */
+#details-page,
+#details-page .details-content,
+#details-page .details-hero,
+#details-page .details-body {
+  background: var(--bg-content);
+  color: var(--bg-dark);
+}
+
+#details-page * {
+  box-shadow: none !important;
+}
+
+#details-page .details-cover-fallback,
+#details-page .episode-thumb,
+#details-page .episode-poster {
+  background: var(--accent-blue);
+  color: var(--bg-dark);
+}
+
+#details-page .badge-tag,
+#details-page .details-type-badge,
+#details-page[data-type="radio"] .badge-tag,
+#details-page[data-type="audiobook"] .badge-tag,
+#details-page[data-type="podcast"] .badge-tag {
+  background: var(--accent-blue);
+  color: var(--bg-dark);
+}
+
+#details-page .btn-primary {
+  background: var(--accent-blue);
+  color: var(--bg-dark);
+}
+
+#details-page .btn-primary:hover,
+#details-page .btn-action-icon:hover,
+#details-page .btn-play-sm:hover,
+#details-page .btn-secondary:hover,
+#details-page .close-btn:hover,
+#details-page .episode-item:hover,
+#details-page .episode-card:hover {
+  background: var(--accent-blue);
+  color: var(--bg-dark);
+}
+
+#details-page .details-source-link,
+#details-page .details-read-more-btn,
+#details-page .btn-play-sm {
+  color: var(--bg-dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #details-page,
+  .page.active {
+    transition: none;
+    animation: none;
   }
 }

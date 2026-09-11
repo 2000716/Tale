@@ -59,16 +59,14 @@
 }
 
 .auth-card {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--bar-bg);
+  border: 1px solid var(--accent-blue);
   border-radius: 20px;
   padding: 2.25rem 1.75rem 1.75rem;
   max-width: 400px;
   width: 100%;
   margin: 0 auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
   box-sizing: border-box;
 }
 
@@ -98,11 +96,11 @@
   padding: 0.9rem 1rem 0.9rem 2.8rem;
   margin: 0.4rem 0;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--accent-blue);
+  background: var(--bg-dark);
   color: #ffffff;
   font-size: 0.95rem;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
   box-sizing: border-box;
 }
 
@@ -112,9 +110,8 @@
 
 .auth-card input:focus {
   outline: none;
-  border-color: #6366f1;
-  background: rgba(15, 23, 42, 0.8);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  border-color: var(--text-light);
+  background: var(--bg-dark);
 }
 
 .auth-card .btn-primary {
