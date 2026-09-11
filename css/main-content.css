@@ -102,7 +102,7 @@ main, .content-container {
   position: relative;
   width: 100%;
   max-width: 480px;
-  margin: 0.5rem auto 1.5rem auto;
+  margin: 1rem auto 1.5rem auto;
   overflow: hidden;
   border-radius: var(--radius-lg, 16px);
   box-shadow: 0 18px 40px rgba(7, 11, 30, 0.16);
