@@ -782,6 +782,8 @@ function setupEventListeners() {
       return;
     }
 
+function setupEventListeners() {
+  document.addEventListener("click", async (e) => {
     // 3. Bok/Podkast-kort
     const card = e.target.closest(".book-card");
     if (card) {
@@ -791,8 +793,8 @@ function setupEventListeners() {
         playAudioTrack(
           item.audioUrl,
           item.title,
-          item.sub || item.author || item.publisher || '',
-          item.coverUrl || item.cover || ''
+          item.sub || item.author || item.publisher || "",
+          item.coverUrl || item.cover || ""
         );
       } else {
         openDetailsView(item);
@@ -861,6 +863,7 @@ function setupEventListeners() {
       return;
     }
 
+    // Avspillerkontroller
     if (e.target.closest("#mini-play-btn")) {
       e.stopPropagation();
       togglePlay();
@@ -870,7 +873,7 @@ function setupEventListeners() {
       togglePlay();
       return;
     }
-    
+
     if (e.target.closest("#skip-back-btn")) {
       skipTime(-15);
       return;
@@ -883,13 +886,14 @@ function setupEventListeners() {
     if (e.target.closest("#open-full-player")) {
       const fullPlayer = document.getElementById("fullscreen-player");
       if (fullPlayer) {
-        fullPlayer.style.setProperty('--y-offset', '0px');
+        fullPlayer.style.setProperty("--y-offset", "0px");
         fullPlayer.classList.add("active");
       }
       updateUrlHash("fullscreen-player");
       updateBottomNavVisibility();
       return;
     }
+
     if (e.target.closest("#player-close-btn")) {
       document.getElementById("fullscreen-player")?.classList.remove("active");
       const lastPage = localStorage.getItem("lastActivePage") || "home";
@@ -898,6 +902,7 @@ function setupEventListeners() {
     }
   });
 
+  // Skjemainnsending (Auth)
   document.addEventListener("submit", async (e) => {
     if (e.target?.id === "auth-form") {
       e.preventDefault();
