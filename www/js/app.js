@@ -10,6 +10,7 @@ import { collection, query, orderBy, onSnapshot, getDocs } from "https://www.gst
 let currentSlideIndex = 0;
 let sectionsUnsubscribe = null;
 let accountFavorites = [];
+const NEW_EPISODE_DAYS = 14;
 
 // Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
 function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0, isRadio = false) {
@@ -459,6 +460,7 @@ export async function loadContentFromFirestore() {
     pages.forEach(page => updateCatalogCount(page, pageItemCounts[page] || 0));
 
     renderRadioBanner();
+    renderNewEpisodesGallery(sectionsList);
   };
 
   const cachedSections = localStorage.getItem("app_sections_cache");
@@ -484,6 +486,102 @@ export async function loadContentFromFirestore() {
   }, (err) => {
     console.error("Sanntidslasting fra Firestore feilet:", err);
   });
+}
+
+function isNewEpisode(pubDate) {
+  const timestamp = Date.parse(pubDate || '');
+  if (!Number.isFinite(timestamp)) return false;
+  const age = Date.now() - timestamp;
+  return age >= 0 && age <= NEW_EPISODE_DAYS * 24 * 60 * 60 * 1000;
+}
+
+async function renderNewEpisodesGallery(sectionsList) {
+  const section = document.getElementById('new-episodes-section');
+  const container = document.getElementById('new-episodes-container');
+  if (!section || !container) return;
+
+  const podcastItems = sectionsList
+    .filter(sectionData => sectionData.visible !== false)
+    .flatMap(sectionData => sectionData.items || [])
+    .filter(item => (item.type || 'podcast') === 'podcast' && (item.rssUrl || item.rss));
+  const feeds = [...new Map(podcastItems.map(item => [item.rssUrl || item.rss, item])).values()];
+
+  if (!feeds.length) {
+    section.hidden = true;
+    return;
+  }
+
+  const results = await Promise.all(feeds.map(async (podcast) => {
+    const rssUrl = podcast.rssUrl || podcast.rss;
+    const cacheKey = `tale_feed_${encodeURIComponent(rssUrl)}`;
+    let feedItems = [];
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+      if (cached?.expiresAt > Date.now()) feedItems = cached.items || [];
+    } catch (error) {
+      localStorage.removeItem(cacheKey);
+    }
+
+    if (!feedItems.length) {
+      try {
+        const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+        const data = await response.json();
+        if (data.status === 'ok') {
+          feedItems = data.items || [];
+          localStorage.setItem(cacheKey, JSON.stringify({
+            expiresAt: Date.now() + 6 * 60 * 60 * 1000,
+            items: feedItems
+          }));
+        }
+      } catch (error) {
+        console.warn('Kunne ikke hente nye podkastepisoder:', error);
+      }
+    }
+
+    return feedItems.filter(episode => isNewEpisode(episode.pubDate)).map(episode => ({
+      ...episode,
+      podcastTitle: podcast.title || podcast.name || 'Podkast',
+      podcastSub: podcast.sub || podcast.author || podcast.publisher || '',
+      podcastCover: podcast.coverUrl || podcast.cover || podcast.image || ''
+    }));
+  }));
+
+  const episodes = results.flat()
+    .sort((left, right) => Date.parse(right.pubDate || '') - Date.parse(left.pubDate || ''))
+    .slice(0, 12);
+
+  if (!episodes.length) {
+    section.hidden = true;
+    container.replaceChildren();
+    return;
+  }
+
+  container.innerHTML = episodes.map((episode, index) => {
+    const title = episode.title || 'Ny episode';
+    const cover = episode.thumbnail || episode.itunes?.image || episode.enclosure?.thumbnail || episode.podcastCover;
+    const audioUrl = episode.enclosure?.link || episode.link || '';
+    const itemKey = `new_episode_${index}_${Date.now()}`.replace(/[^a-zA-Z0-9_]/g, '_');
+    window[itemKey] = {
+      id: `new_${encodeURIComponent(episode.podcastTitle)}_${encodeURIComponent(title)}`,
+      title,
+      sub: episode.podcastTitle,
+      author: episode.podcastSub,
+      cover,
+      coverUrl: cover,
+      audioUrl,
+      pubDate: episode.pubDate,
+      type: 'podcast'
+    };
+    return `<div class="book-card new-episode-card" data-item-key="${itemKey}" data-title="${escapeAttr(title)}">
+      <div class="book-cover new-episode-cover">
+        ${buildCoverMarkup(cover, title)}
+        <span class="new-episode-badge">NY</span>
+      </div>
+      <div class="book-title">${escapeAttr(title)}</div>
+      <div class="book-author">${escapeAttr(episode.podcastTitle)}</div>
+    </div>`;
+  }).join('');
+  section.hidden = false;
 }
 
 function createCustomPageChrome(page) {

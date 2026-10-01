@@ -16,6 +16,7 @@ function escapeAttr(value) {
 
 // Konfigurasjon og tilstand
 const EPISODES_PER_PAGE = 10;
+const NEW_EPISODE_DAYS = 14;
 let currentItem = null;
 let currentSeason = 1;
 let visibleEpisodesCount = EPISODES_PER_PAGE;
@@ -362,16 +363,17 @@ function renderEpisodesOrChapters(items, unitName) {
     const durationText = ep.duration ? parseDuration(ep.duration) : '';
     const descText = cleanHTML(ep.description || ep.summary || '');
     const epCover = ep.cover || fallbackCover;
+    const isNew = unitName === 'episoder' && isNewEpisode(ep.pubDate);
 
     return `
-      <div class="episode-item" data-index="${index}">
+      <div class="episode-item${isNew ? ' is-new' : ''}" data-index="${index}">
         <div class="episode-thumb">
           ${epCover 
             ? `<img src="${epCover}" alt="${ep.title}" onerror="this.parentElement.innerHTML='<i class=\\'fa-solid fa-podcast\\'></i>'">` 
             : '<i class="fa-solid fa-podcast"></i>'}
         </div>
         <div class="episode-info">
-          <div class="episode-title">${ep.title || `Episode ${index + 1}`}</div>
+          <div class="episode-title">${ep.title || `Episode ${index + 1}`} ${isNew ? '<span class="episode-new-badge">NY</span>' : ''}</div>
           ${descText ? `<div class="ep-desc">${descText}</div>` : ''}
           <div class="episode-footer-meta">
             ${durationText ? `<span><i class="fa-regular fa-clock"></i> ${durationText}</span>` : ''}
@@ -413,6 +415,13 @@ function renderEpisodesOrChapters(items, unitName) {
       loadMoreBtn.style.display = 'none';
     }
   }
+}
+
+function isNewEpisode(pubDate) {
+  const timestamp = Date.parse(pubDate || '');
+  if (!Number.isFinite(timestamp)) return false;
+  const age = Date.now() - timestamp;
+  return age >= 0 && age <= NEW_EPISODE_DAYS * 24 * 60 * 60 * 1000;
 }
 
 export function closeDetailsPage() {

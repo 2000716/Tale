@@ -405,6 +405,45 @@ main, .content-container {
   font-size: 1.15rem;
 }
 
+#home .new-episodes-section {
+  margin: 0 0 2.25rem;
+}
+
+#home .new-episodes-section .section-header {
+  margin-bottom: 1rem;
+}
+
+#home .new-episodes-section .section-header h3,
+#home .new-episodes-section .section-header p {
+  color: #000000;
+}
+
+#home .new-episode-cover {
+  position: relative;
+}
+
+.new-episode-badge,
+.episode-new-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.new-episode-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  min-width: 30px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 5px;
+}
+
 .horizontal-scroll,
 .horizontal-scroll-container {
   display: flex !important;

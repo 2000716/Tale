@@ -775,3 +775,14 @@
     animation: none;
   }
 }
+
+#details-page .episode-new-badge {
+  margin-left: 0.4rem;
+  padding: 0.16rem 0.35rem;
+  border-radius: 4px;
+  vertical-align: 0.08rem;
+}
+
+#details-page .episode-item.is-new {
+  background: rgba(220, 38, 38, 0.04);
+}
