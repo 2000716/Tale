@@ -1,6 +1,6 @@
 import { playSpecificEpisode, getAudioUrl } from './player.js';
 import { state } from './state.js';
-import { updateBottomNavVisibility } from './ui.js';
+import { updateBottomNavVisibility, updateUrlHash } from './ui.js';
 import { db } from './firebase-config.js';
 import { deleteDoc, doc, getDoc, getDocs, setDoc, collection } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { shareContent, showActionToast } from './content-actions.js';
@@ -51,6 +51,10 @@ const loadMoreBtn = document.getElementById('load-more-episodes-btn');
  */
 export async function openDetailsPage(item) {
   if (!item) return;
+
+  if (detailsPage && !detailsPage.classList.contains('active')) {
+    updateUrlHash('details-page');
+  }
 
   currentItem = item;
   visibleEpisodesCount = EPISODES_PER_PAGE;
@@ -412,12 +416,14 @@ function renderEpisodesOrChapters(items, unitName) {
 }
 
 export function closeDetailsPage() {
+  const shouldReturn = history.state?.route === 'details-page' || window.location.hash === '#details-page';
   if (detailsPage) {
     detailsPage.classList.remove('active', 'is-dragging');
     detailsPage.style.removeProperty('--details-y-offset');
     detailsPage.style.transition = '';
   }
   updateBottomNavVisibility();
+  if (shouldReturn && history.length > 1) history.back();
 }
 
 function favoriteRef(item) {

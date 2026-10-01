@@ -234,7 +234,7 @@ export function restoreLastPage() {
 
   try {
     if (targetPage === "details-page") {
-      switchPage("home");
+      switchPage(history.state?.pageId || savedPage || "home", { replaceHistory: true });
       const rawItem = localStorage.getItem("lastSelectedItem");
       const lastItem = rawItem ? JSON.parse(rawItem) : null;
       
@@ -242,17 +242,13 @@ export function restoreLastPage() {
         import("./player.js").then(module => module.openDetailsView(lastItem));
       }
     } else if (targetPage === "fullscreen-player") {
-      switchPage("home");
-      if (globalAudio && globalAudio.src) {
-        document.getElementById("fullscreen-player")?.classList.add("active");
-      }
-      updateBottomNavVisibility();
+      switchPage(history.state?.pageId || savedPage || "home", { replaceHistory: true });
     } else {
-      switchPage(targetPage);
+      switchPage(targetPage, { replaceHistory: true });
     }
   } catch (e) {
     console.warn("Feil ved gjenoppretting av side, går til forsiden:", e);
-    switchPage("home");
+    switchPage("home", { replaceHistory: true });
   }
 }
 

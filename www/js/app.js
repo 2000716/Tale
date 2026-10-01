@@ -1,8 +1,8 @@
 import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
-import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
+import { showView, switchPage, buildCoverMarkup } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
-import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl, getAudioUrl } from "./player.js";
+import { openDetailsView, openFullscreenPlayer, closeFullscreenPlayer, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl, getAudioUrl } from "./player.js";
 import { loadUserFavorites, removeUserFavorite } from "./details.js";
 import { collection, query, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -897,14 +897,6 @@ function setupEventListeners() {
       return;
     }
 
-    const closeDetails = e.target.closest("#details-close-btn");
-    if (closeDetails) {
-      document.getElementById("details-page")?.classList.remove("active");
-      const lastPage = localStorage.getItem("lastActivePage") || "home";
-      switchPage(lastPage !== "details-page" ? lastPage : "home");
-      return;
-    }
-
     if (e.target.closest("#mini-play-btn")) {
       e.stopPropagation();
       togglePlay();
@@ -925,19 +917,11 @@ function setupEventListeners() {
     }
 
     if (e.target.closest("#open-full-player")) {
-      const fullPlayer = document.getElementById("fullscreen-player");
-      if (fullPlayer) {
-        fullPlayer.style.setProperty('--y-offset', '0px');
-        fullPlayer.classList.add("active");
-      }
-      updateUrlHash("fullscreen-player");
-      updateBottomNavVisibility();
+      openFullscreenPlayer();
       return;
     }
     if (e.target.closest("#player-close-btn")) {
-      document.getElementById("fullscreen-player")?.classList.remove("active");
-      const lastPage = localStorage.getItem("lastActivePage") || "home";
-      switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
+      closeFullscreenPlayer();
       return;
     }
   });

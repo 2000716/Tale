@@ -323,11 +323,13 @@ export function playSpecificEpisode(epData, startPosition = 0) {
     fullCoverContainer.innerHTML = buildCoverMarkup(state.selectedItem.cover, state.selectedItem.title);
   }
 
-  document.getElementById("details-page")?.classList.remove("active");
-  openFullscreenPlayer();
+  const detailsPage = document.getElementById("details-page");
+  const returnRoute = detailsPage?.classList.contains("active") ? "details-page" : undefined;
+  detailsPage?.classList.remove("active");
+  openFullscreenPlayer({ returnRoute });
 }
 
-export function openFullscreenPlayer() {
+export function openFullscreenPlayer({ returnRoute } = {}) {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer) return;
 
@@ -336,29 +338,32 @@ export function openFullscreenPlayer() {
   fullPlayer.classList.remove('is-dragging');
   fullPlayer.classList.add('active');
   
-  updateUrlHash("fullscreen-player");
+  updateUrlHash("fullscreen-player", { returnRoute });
   updateBottomNavVisibility();
 }
 
 export function closeFullscreenPlayer({ restorePreviousPage = true } = {}) {
   const fullPlayer = document.getElementById("fullscreen-player");
   if (!fullPlayer) return;
+
+  const isPlayerRoute = history.state?.route === "fullscreen-player" || window.location.hash === "#fullscreen-player";
+  if (restorePreviousPage && isPlayerRoute && history.length > 1) {
+    history.back();
+    return;
+  }
   
   fullPlayer.classList.remove('is-dragging');
   fullPlayer.classList.remove('active');
   fullPlayer.style.removeProperty('--y-offset');
 
-  if (window.location.hash === "#fullscreen-player") {
-    history.replaceState(null, "", window.location.pathname + window.location.search);
+  if (isPlayerRoute) {
+    const returnPage = history.state?.pageId || localStorage.getItem("lastPlayerReturnPage") || "home";
+    updateUrlHash(returnPage, { replace: true });
   }
 
   if (restorePreviousPage) {
-    const returnPage = localStorage.getItem("lastPlayerReturnPage") || localStorage.getItem("lastActivePage") || "home";
-    if (returnPage && returnPage !== "fullscreen-player" && returnPage !== "details-page") {
-      switchPage(returnPage);
-    } else {
-      switchPage("home");
-    }
+    const returnPage = history.state?.pageId || localStorage.getItem("lastPlayerReturnPage") || localStorage.getItem("lastActivePage") || "home";
+    switchPage(returnPage, { replaceHistory: true });
   }
 
   updateBottomNavVisibility();
