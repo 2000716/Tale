@@ -23,7 +23,7 @@ let fetchedEpisodes = [];
 
 // DOM-elementer fra index.html
 const detailsPage = document.getElementById('details-page');
-const closeBtn = document.getElementById('details-close-btn');
+const dragHandle = document.getElementById('details-drag-handle');
 const coverContainer = document.getElementById('details-cover-container');
 const badgeType = document.getElementById('details-badge-type');
 const titleEl = document.getElementById('details-title');
@@ -412,7 +412,11 @@ function renderEpisodesOrChapters(items, unitName) {
 }
 
 export function closeDetailsPage() {
-  if (detailsPage) detailsPage.classList.remove('active');
+  if (detailsPage) {
+    detailsPage.classList.remove('active', 'is-dragging');
+    detailsPage.style.removeProperty('--details-y-offset');
+    detailsPage.style.transition = '';
+  }
   updateBottomNavVisibility();
 }
 
@@ -465,7 +469,66 @@ export async function removeUserFavorite(favoriteId) {
   await deleteDoc(doc(db, 'users', state.currentUser.uid, 'favorites', favoriteId));
 }
 
-if (closeBtn) closeBtn.addEventListener('click', closeDetailsPage);
+if (dragHandle && detailsPage) {
+  let startY = 0;
+  let currentY = 0;
+  let dragging = false;
+
+  const startDrag = clientY => {
+    if (!detailsPage.classList.contains('active')) return;
+    startY = clientY;
+    currentY = clientY;
+    dragging = true;
+    detailsPage.style.transition = 'none';
+  };
+
+  const moveDrag = clientY => {
+    if (!dragging) return;
+    currentY = clientY;
+    const offset = Math.max(0, currentY - startY);
+    detailsPage.classList.toggle('is-dragging', offset > 0);
+    detailsPage.style.setProperty('--details-y-offset', `${offset}px`);
+  };
+
+  const endDrag = () => {
+    if (!dragging) return;
+    dragging = false;
+    const offset = currentY - startY;
+    detailsPage.classList.remove('is-dragging');
+    detailsPage.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease';
+
+    if (offset > 100) {
+      closeDetailsPage();
+    } else {
+      detailsPage.style.setProperty('--details-y-offset', '0px');
+      window.setTimeout(() => {
+        if (detailsPage) detailsPage.style.transition = '';
+      }, 300);
+    }
+  };
+
+  dragHandle.addEventListener('touchstart', event => startDrag(event.touches[0].clientY), { passive: true });
+  dragHandle.addEventListener('touchmove', event => moveDrag(event.touches[0].clientY), { passive: true });
+  dragHandle.addEventListener('touchend', endDrag);
+  dragHandle.addEventListener('touchcancel', endDrag);
+  dragHandle.addEventListener('mousedown', event => {
+    startDrag(event.clientY);
+    const onMouseMove = moveEvent => moveDrag(moveEvent.clientY);
+    const onMouseUp = () => {
+      endDrag();
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  });
+  dragHandle.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      closeDetailsPage();
+    }
+  });
+}
 
 if (likeBtn) {
   likeBtn.addEventListener('click', async () => {

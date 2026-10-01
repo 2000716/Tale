@@ -207,8 +207,6 @@
               </li>
             </ul>
           </div>
-        </div>
-
         <section id="account-favorites-section" class="account-favorites" hidden>
           <div class="account-section-heading">
             <h3>Favorittene dine</h3>
@@ -224,8 +222,9 @@
     </main>
 
     <div id="details-page" class="modal">
-      <button id="details-close-btn" class="close-btn" aria-label="Lukk"><i class="fa-solid fa-xmark"></i></button>
-      
+      <div id="details-drag-handle" class="details-drag-handle" role="button" tabindex="0" aria-label="Dra ned for å lukke infosiden">
+        <span></span>
+      </div>
       <div class="details-content">
         <header class="details-hero">
           <div class="details-hero-backdrop" aria-hidden="true"></div>

@@ -26,7 +26,7 @@
   z-index: 999;
   overflow-y: auto;
   
-  padding: calc(1.25rem + env(safe-area-inset-top)) 1.25rem calc(env(safe-area-inset-bottom) + 1rem) 1.25rem;
+  padding: calc(3rem + env(safe-area-inset-top)) 0.5rem calc(env(safe-area-inset-bottom) + 1rem);
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 
@@ -41,10 +41,43 @@
 }
 
 #details-page.active {
-  transform: translate(-50%, 0);
+  transform: translate(-50%, var(--details-y-offset, 0px));
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+}
+
+#details-page.is-dragging {
+  transition: none !important;
+}
+
+#details-page .details-drag-handle {
+  position: absolute;
+  z-index: 11;
+  top: calc(8px + env(safe-area-inset-top));
+  left: 50%;
+  display: grid;
+  width: 64px;
+  height: 28px;
+  place-items: center;
+  transform: translateX(-50%);
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#details-page .details-drag-handle span {
+  display: block;
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+#details-page .details-drag-handle:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
 #details-page .details-content {
@@ -58,29 +91,6 @@
 }
 
 /* --- Lukk-knapp --- */
-#details-page .close-btn {
-  position: absolute;
-  top: calc(1rem + env(safe-area-inset-top));
-  right: 1.2rem;
-  background: var(--storytel-card);
-  border: 1px solid var(--storytel-border);
-  color: var(--storytel-text-main);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: background 0.2s ease, transform 0.1s ease;
-}
-
-#details-page .close-btn:hover {
-  background: #f0ece1;
-}
-
 /* --- Hero / Cover og Toppseksjon --- */
 #details-page .details-hero {
   position: relative;
@@ -102,11 +112,12 @@
 }
 
 #details-page .details-cover-container {
-  width: 192px;
-  height: 192px;
-  max-width: 192px;
-  max-height: 192px;
-  margin: 0 auto 0.5rem auto;
+  width: 100%;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto 0.5rem;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -701,11 +712,6 @@
 
 /* Tilpasning for mindre skjermer */
 @media (max-width: 360px) {
-  #details-page .details-cover-container {
-    width: 168px;
-    height: 168px;
-  }
-  
   #details-page .season-label { 
     display: none; 
   }
