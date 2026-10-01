@@ -1,15 +1,18 @@
 import { state } from "./state.js";
 
 export function updateBottomNavVisibility() {
+  const topBar = document.querySelector(".top-bar");
   const bottomNav = document.getElementById("bottom-nav") || document.querySelector(".bottom-bar");
   const detailsPage = document.getElementById("details-page");
   const fullPlayer = document.getElementById("fullscreen-player");
 
   const isDetailsActive = detailsPage?.classList.contains("active");
   const isFullPlayerActive = fullPlayer?.classList.contains("active");
+  const isOverlayActive = isDetailsActive || isFullPlayerActive;
 
+  if (topBar) topBar.style.display = isOverlayActive ? "none" : "flex";
   if (bottomNav) {
-    bottomNav.style.display = (isDetailsActive || isFullPlayerActive) ? "none" : "flex";
+    bottomNav.style.display = isOverlayActive ? "none" : "flex";
   }
 }
 

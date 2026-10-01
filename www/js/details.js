@@ -1,8 +1,9 @@
 import { playSpecificEpisode, getAudioUrl } from './player.js';
 import { state } from './state.js';
+import { updateBottomNavVisibility } from './ui.js';
 import { db } from './firebase-config.js';
 import { deleteDoc, doc, getDoc, getDocs, setDoc, collection } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { downloadContent, shareContent, showActionToast } from './content-actions.js';
+import { shareContent, showActionToast } from './content-actions.js';
 
 function escapeAttr(value) {
   return String(value || '')
@@ -31,7 +32,6 @@ const descEl = document.getElementById('details-desc');
 const readMoreBtn = document.getElementById('readMoreBtn');
 const startPlayBtn = document.getElementById('start-play-btn');
 const likeBtn = document.getElementById('details-like-btn');
-const downloadBtn = document.getElementById('details-download-btn');
 const shareBtn = document.getElementById('details-share-btn');
 const sourceLink = document.getElementById('details-source-link');
 const factsSection = document.getElementById('details-facts');
@@ -188,13 +188,10 @@ export async function openDetailsPage(item) {
   // 3. Konfigurer UI etter type
   setupContentTypeUI(item, contentType);
   renderRecommendations(item);
-  if (downloadBtn) {
-    downloadBtn.disabled = !getAvailableAudioUrl();
-    downloadBtn.title = downloadBtn.disabled ? 'Ingen nedlastbar lydfil tilgjengelig' : 'Last ned første lydfil';
-  }
 
   if (detailsPage) {
     detailsPage.classList.add('active');
+    updateBottomNavVisibility();
   }
 }
 
@@ -416,6 +413,7 @@ function renderEpisodesOrChapters(items, unitName) {
 
 export function closeDetailsPage() {
   if (detailsPage) detailsPage.classList.remove('active');
+  updateBottomNavVisibility();
 }
 
 function favoriteRef(item) {
@@ -467,10 +465,6 @@ export async function removeUserFavorite(favoriteId) {
   await deleteDoc(doc(db, 'users', state.currentUser.uid, 'favorites', favoriteId));
 }
 
-function getAvailableAudioUrl() {
-  return getAudioUrl(currentItem) || fetchedEpisodes.map(getAudioUrl).find(Boolean) || '';
-}
-
 if (closeBtn) closeBtn.addEventListener('click', closeDetailsPage);
 
 if (likeBtn) {
@@ -514,8 +508,6 @@ if (likeBtn) {
 }
 
 if (shareBtn) shareBtn.addEventListener('click', () => shareContent(currentItem));
-
-if (downloadBtn) downloadBtn.addEventListener('click', () => downloadContent(currentItem, getAvailableAudioUrl()));
 
 if (readMoreBtn && descEl) {
   readMoreBtn.addEventListener('click', () => {

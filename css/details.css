@@ -26,7 +26,7 @@
   z-index: 999;
   overflow-y: auto;
   
-  padding: calc(140px + env(safe-area-inset-top)) 1.25rem calc(env(safe-area-inset-bottom) + 1.25rem) 1.25rem;
+  padding: calc(1.25rem + env(safe-area-inset-top)) 1.25rem calc(env(safe-area-inset-bottom) + 1rem) 1.25rem;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 
@@ -52,7 +52,7 @@
   flex-direction: column;
   align-items: stretch;
   text-align: center;
-  padding-bottom: 2rem;
+  padding-bottom: 0.75rem;
   width: 100%;
   gap: 0;
 }
@@ -60,7 +60,7 @@
 /* --- Lukk-knapp --- */
 #details-page .close-btn {
   position: absolute;
-  top: calc(140px + env(safe-area-inset-top));
+  top: calc(1rem + env(safe-area-inset-top));
   right: 1.2rem;
   background: var(--storytel-card);
   border: 1px solid var(--storytel-border);
@@ -89,7 +89,7 @@
   align-items: center;
   width: 100%;
   margin-top: 0;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.35rem;
   background: transparent;
   isolation: isolate;
 }
@@ -102,11 +102,11 @@
 }
 
 #details-page .details-cover-container {
-  width: 156px;
-  height: 156px;
-  max-width: 156px;
-  max-height: 156px;
-  margin: 0 auto 0.75rem auto;
+  width: 192px;
+  height: 192px;
+  max-width: 192px;
+  max-height: 192px;
+  margin: 0 auto 0.5rem auto;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -144,7 +144,7 @@
 }
 
 #details-page .details-badges {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 /* --- Type Etiketter (Radio / Lydbok / Podkast) --- */
@@ -191,7 +191,7 @@
 
 #details-page .details-sub {
   color: var(--storytel-text-muted);
-  margin: 0 auto 0.5rem auto;
+  margin: 0 auto 0.35rem auto;
   font-size: 0.88rem;
   font-weight: 500;
   max-width: 280px;
@@ -200,6 +200,9 @@
 
 #details-page .details-body {
   width: 100%;
+  min-height: 0;
+  padding: 0;
+  flex: 0 0 auto;
 }
 
 /* --- Handlingsknapper (Spill av m.m.) --- */
@@ -208,8 +211,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
-  margin-bottom: 0.9rem;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
 }
 
 #details-page .btn-primary {
@@ -273,11 +276,6 @@
   transform: scale(0.95);
 }
 
-#details-page .btn-action-icon:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .action-toast {
   position: fixed;
   left: 50%;
@@ -308,8 +306,8 @@
   background-color: var(--storytel-card);
   border: 1px solid var(--storytel-border);
   border-radius: 16px;
-  padding: 1.25rem;
-  margin-bottom: 1.2rem;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
   text-align: left;
   font-size: 0.9rem;
   line-height: 1.6;
@@ -414,10 +412,10 @@
    ========================================== */
 #details-page .episode-list-container {
   width: 100%;
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
   text-align: left; 
   border-top: 1px solid var(--storytel-border);
-  padding-top: 1.2rem;
+  padding-top: 0.75rem;
   display: flex;
   flex-direction: column;
 }
@@ -431,7 +429,7 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.55rem;
   gap: 0.7rem;
 }
 
@@ -616,8 +614,8 @@
 /* --- Anbefalinger --- */
 #details-page .recommendations-container {
   width: 100%;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
   border-top: 1px solid var(--storytel-border);
   text-align: left;
 }
@@ -630,7 +628,7 @@
 }
 
 #details-page .recommendations-heading h3 { 
-  margin-bottom: 0.75rem; 
+  margin-bottom: 0.5rem; 
 }
 
 #details-page .recommendations-heading span {
@@ -704,8 +702,8 @@
 /* Tilpasning for mindre skjermer */
 @media (max-width: 360px) {
   #details-page .details-cover-container {
-    width: 140px;
-    height: 140px;
+    width: 168px;
+    height: 168px;
   }
   
   #details-page .season-label { 
