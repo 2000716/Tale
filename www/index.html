@@ -200,26 +200,22 @@
             <h3><i class="fa-solid fa-sliders"></i> Innstillinger & Aktivitet</h3>
             <ul class="account-menu-list">
               <li>
-                <button class="menu-item-btn">
+                <button id="account-favorites-toggle" class="menu-item-btn" type="button" aria-expanded="false" aria-controls="account-favorites-section">
                   <span><i class="fa-regular fa-heart"></i> Mine favoritter</span>
-                  <i class="fa-solid fa-chevron-right icon-arrow"></i>
-                </button>
-              </li>
-              <li>
-                <button class="menu-item-btn">
-                  <span><i class="fa-solid fa-arrow-down-to-line"></i> Nedlastet innhold</span>
-                  <i class="fa-solid fa-chevron-right icon-arrow"></i>
-                </button>
-              </li>
-              <li>
-                <button class="menu-item-btn">
-                  <span><i class="fa-solid fa-bell"></i> Varslinger</span>
                   <i class="fa-solid fa-chevron-right icon-arrow"></i>
                 </button>
               </li>
             </ul>
           </div>
         </div>
+
+        <section id="account-favorites-section" class="account-favorites" hidden>
+          <div class="account-section-heading">
+            <h3>Favorittene dine</h3>
+            <span id="account-favorites-count">0 titler</span>
+          </div>
+          <div id="account-favorites-list" class="account-favorites-list" aria-live="polite"></div>
+        </section>
 
         <div class="account-actions">
           <button id="logout-btn" class="btn-danger"><i class="fa-solid fa-right-from-bracket"></i> Logg ut</button>
@@ -253,8 +249,8 @@
             <button id="details-like-btn" class="btn-action-icon" title="Favoritt" aria-label="Legg til som favoritt">
               <i class="fa-regular fa-heart"></i>
             </button>
-            <button id="details-download-btn" class="btn-action-icon" title="Last ned for offline lytting" aria-label="Last ned for offline lytting">
-              <i class="fa-solid fa-arrow-down-to-line"></i>
+            <button id="details-download-btn" class="btn-action-icon" title="Last ned lydfil" aria-label="Last ned lydfil">
+              <i class="fa-solid fa-download"></i>
             </button>
             <button id="details-share-btn" class="btn-action-icon" title="Del" aria-label="Del innhold">
               <i class="fa-solid fa-share-nodes"></i>

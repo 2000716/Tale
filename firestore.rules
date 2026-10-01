@@ -38,6 +38,11 @@ service cloud.firestore {
         && request.auth.uid == userId;
     }
 
+    match /users/{userId}/favorites/{favoriteId} {
+      allow read, write: if signedIn()
+        && request.auth.uid == userId;
+    }
+
     match /employeeEmails/{emailId} {
       allow read, write: if isAdmin();
     }

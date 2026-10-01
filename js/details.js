@@ -1,4 +1,8 @@
 import { playSpecificEpisode, getAudioUrl } from './player.js';
+import { state } from './state.js';
+import { db } from './firebase-config.js';
+import { deleteDoc, doc, getDoc, getDocs, setDoc, collection } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { downloadContent, shareContent, showActionToast } from './content-actions.js';
 
 function escapeAttr(value) {
   return String(value || '')
@@ -26,6 +30,9 @@ const subEl = document.getElementById('details-sub');
 const descEl = document.getElementById('details-desc');
 const readMoreBtn = document.getElementById('readMoreBtn');
 const startPlayBtn = document.getElementById('start-play-btn');
+const likeBtn = document.getElementById('details-like-btn');
+const downloadBtn = document.getElementById('details-download-btn');
+const shareBtn = document.getElementById('details-share-btn');
 const sourceLink = document.getElementById('details-source-link');
 const factsSection = document.getElementById('details-facts');
 const factsGrid = document.getElementById('details-facts-grid');
@@ -48,6 +55,7 @@ export async function openDetailsPage(item) {
   currentItem = item;
   visibleEpisodesCount = EPISODES_PER_PAGE;
   fetchedEpisodes = [];
+  syncFavoriteButton(item);
 
   const contentType = item.type || (item.rssUrl || item.rss ? 'podcast' : 'audiobook');
 
@@ -180,6 +188,10 @@ export async function openDetailsPage(item) {
   // 3. Konfigurer UI etter type
   setupContentTypeUI(item, contentType);
   renderRecommendations(item);
+  if (downloadBtn) {
+    downloadBtn.disabled = !getAvailableAudioUrl();
+    downloadBtn.title = downloadBtn.disabled ? 'Ingen nedlastbar lydfil tilgjengelig' : 'Last ned første lydfil';
+  }
 
   if (detailsPage) {
     detailsPage.classList.add('active');
@@ -406,7 +418,104 @@ export function closeDetailsPage() {
   if (detailsPage) detailsPage.classList.remove('active');
 }
 
+function favoriteRef(item) {
+  if (!state.currentUser || !item) return null;
+  const sourceId = item.id || item.archiveIdentifier || item.title || item.name || 'untitled';
+  let hash = 2166136261;
+  for (const character of String(sourceId)) {
+    hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+  }
+  const favoriteId = (hash >>> 0).toString(36);
+  return doc(db, 'users', state.currentUser.uid, 'favorites', favoriteId);
+}
+
+function setFavoriteButton(isFavorite) {
+  if (!likeBtn) return;
+  const icon = likeBtn.querySelector('i');
+  likeBtn.classList.toggle('is-favorite', isFavorite);
+  likeBtn.setAttribute('aria-pressed', String(isFavorite));
+  likeBtn.setAttribute('aria-label', isFavorite ? 'Fjern fra favoritter' : 'Legg til som favoritt');
+  likeBtn.title = isFavorite ? 'Fjern fra favoritter' : 'Legg til som favoritt';
+  if (icon) icon.className = isFavorite ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+}
+
+async function syncFavoriteButton(item) {
+  if (!likeBtn) return;
+  likeBtn.disabled = !state.currentUser;
+  if (!state.currentUser) {
+    setFavoriteButton(false);
+    return;
+  }
+
+  try {
+    const favorite = await getDoc(favoriteRef(item));
+    if (currentItem === item) setFavoriteButton(favorite.exists());
+  } catch (error) {
+    console.error('Kunne ikke hente favorittstatus:', error);
+  }
+}
+
+export async function loadUserFavorites() {
+  if (!state.currentUser) return [];
+  const snapshot = await getDocs(collection(db, 'users', state.currentUser.uid, 'favorites'));
+  return snapshot.docs.map(favorite => ({ favoriteId: favorite.id, ...favorite.data() }))
+    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'no'));
+}
+
+export async function removeUserFavorite(favoriteId) {
+  if (!state.currentUser || !favoriteId) return;
+  await deleteDoc(doc(db, 'users', state.currentUser.uid, 'favorites', favoriteId));
+}
+
+function getAvailableAudioUrl() {
+  return getAudioUrl(currentItem) || fetchedEpisodes.map(getAudioUrl).find(Boolean) || '';
+}
+
 if (closeBtn) closeBtn.addEventListener('click', closeDetailsPage);
+
+if (likeBtn) {
+  likeBtn.addEventListener('click', async () => {
+    if (!state.currentUser) {
+      showActionToast('Logg inn for å lagre favoritter.');
+      return;
+    }
+
+    const reference = favoriteRef(currentItem);
+    if (!reference) return;
+    likeBtn.disabled = true;
+    try {
+      const favorite = await getDoc(reference);
+      if (favorite.exists()) {
+        await deleteDoc(reference);
+        setFavoriteButton(false);
+        showActionToast('Fjernet fra favoritter.');
+      } else {
+        await setDoc(reference, {
+          id: String(currentItem.id || currentItem.archiveIdentifier || currentItem.title || ''),
+          title: currentItem.title || currentItem.name || 'Uten tittel',
+          sub: currentItem.sub || currentItem.subtitle || currentItem.author || currentItem.publisher || '',
+          cover: currentItem.cover || currentItem.coverUrl || currentItem.image || currentItem.imageUrl || '',
+          desc: currentItem.desc || currentItem.description || currentItem.summary || '',
+          type: currentItem.type || (currentItem.rssUrl || currentItem.rss ? 'podcast' : 'audiobook'),
+          rssUrl: currentItem.rssUrl || currentItem.rss || '',
+          sourceUrl: currentItem.sourceUrl || currentItem.studioUrl || currentItem.website || '',
+          audioUrl: getAudioUrl(currentItem)
+        });
+        setFavoriteButton(true);
+        showActionToast('Lagt til i favoritter.');
+      }
+    } catch (error) {
+      console.error('Kunne ikke oppdatere favoritter:', error);
+      showActionToast('Favoritten kunne ikke lagres. Prøv igjen.');
+    } finally {
+      likeBtn.disabled = false;
+    }
+  });
+}
+
+if (shareBtn) shareBtn.addEventListener('click', () => shareContent(currentItem));
+
+if (downloadBtn) downloadBtn.addEventListener('click', () => downloadContent(currentItem, getAvailableAudioUrl()));
 
 if (readMoreBtn && descEl) {
   readMoreBtn.addEventListener('click', () => {

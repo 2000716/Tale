@@ -2,6 +2,7 @@ import { state, globalAudio } from "./state.js";
 import { buildCoverMarkup, updateUrlHash, updateBottomNavVisibility, formatTime, updatePlayIcons, switchPage, rememberPlayerReturnPage } from "./ui.js";
 import { saveProgressToFirestore, removeFromFirestoreHistory, updateDetailPlayButtonState } from "./history.js";
 import { openDetailsPage } from "./details.js";
+import { shareContent } from "./content-actions.js";
 
 const speeds = [1.0, 1.25, 1.5, 1.75, 2.0, 0.8];
 
@@ -192,19 +193,9 @@ export function setupExtraPlayerControls() {
   }
 
   if (optShareBtn) {
-    optShareBtn.onclick = async () => {
+    optShareBtn.onclick = () => {
       if (infoSheetOverlay) infoSheetOverlay.classList.remove("active");
-      if (navigator.share && state.selectedItem) {
-        try {
-          await navigator.share({
-            title: state.selectedItem.title || "Tale",
-            text: `Hør på ${state.selectedItem.title || "dette sporet"} på Tale!`,
-            url: window.location.href,
-          });
-        } catch (err) {
-          console.log("Deling avbrutt", err);
-        }
-      }
+      shareContent(state.selectedItem);
     };
   }
 }

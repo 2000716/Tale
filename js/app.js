@@ -3,11 +3,13 @@ import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl, getAudioUrl } from "./player.js";
+import { loadUserFavorites, removeUserFavorite } from "./details.js";
 import { collection, query, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Karusell-tilstand
 let currentSlideIndex = 0;
 let sectionsUnsubscribe = null;
+let accountFavorites = [];
 
 // Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
 function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0, isRadio = false) {
@@ -717,6 +719,48 @@ function extractCardItemData(card) {
 // ==========================================
 function setupEventListeners() {
   document.addEventListener("click", async (e) => {
+    const favoritesToggle = e.target.closest("#account-favorites-toggle");
+    if (favoritesToggle) {
+      const section = document.getElementById("account-favorites-section");
+      const list = document.getElementById("account-favorites-list");
+      if (!section || !list) return;
+
+      section.hidden = !section.hidden;
+      favoritesToggle.setAttribute("aria-expanded", String(!section.hidden));
+      if (!section.hidden) {
+        list.innerHTML = '<p class="account-empty">Henter favoritter...</p>';
+        try {
+          accountFavorites = await loadUserFavorites();
+          renderAccountFavorites();
+        } catch (error) {
+          console.error("Kunne ikke hente favoritter:", error);
+          list.innerHTML = '<p class="account-empty">Favorittene kunne ikke lastes.</p>';
+        }
+      }
+      return;
+    }
+
+    const favoriteOpen = e.target.closest("[data-favorite-open]");
+    if (favoriteOpen) {
+      const item = accountFavorites[Number(favoriteOpen.dataset.favoriteOpen)];
+      if (item) openDetailsView(item);
+      return;
+    }
+
+    const favoriteRemove = e.target.closest("[data-favorite-remove]");
+    if (favoriteRemove) {
+      favoriteRemove.disabled = true;
+      try {
+        await removeUserFavorite(favoriteRemove.dataset.favoriteRemove);
+        accountFavorites = await loadUserFavorites();
+        renderAccountFavorites();
+      } catch (error) {
+        console.error("Kunne ikke fjerne favoritt:", error);
+        favoriteRemove.disabled = false;
+      }
+      return;
+    }
+
     // 0. Karuseller og Hero Banners -> Direktespilling
     const slide = e.target.closest(".carousel-slide, .hero-banner-card, .featured-banner-card");
     if (slide) {
@@ -913,4 +957,29 @@ function setupEventListeners() {
       }
     }
   });
+}
+
+function renderAccountFavorites() {
+  const list = document.getElementById("account-favorites-list");
+  const count = document.getElementById("account-favorites-count");
+  if (!list) return;
+
+  if (count) count.textContent = `${accountFavorites.length} ${accountFavorites.length === 1 ? "tittel" : "titler"}`;
+  if (!accountFavorites.length) {
+    list.innerHTML = '<p class="account-empty">Du har ikke lagret noen favoritter ennå.</p>';
+    return;
+  }
+
+  list.innerHTML = accountFavorites.map((item, index) => `
+    <article class="account-favorite-row">
+      ${item.cover ? `<img class="account-favorite-cover" src="${escapeAttr(item.cover)}" alt="" loading="lazy">` : '<div class="account-favorite-cover" aria-hidden="true"></div>'}
+      <button type="button" class="account-favorite-open" data-favorite-open="${index}">
+        <strong>${escapeAttr(item.title || "Uten tittel")}</strong>
+        <span>${escapeAttr(item.sub || "Tale")}</span>
+      </button>
+      <button type="button" class="account-favorite-remove" data-favorite-remove="${escapeAttr(item.favoriteId)}" aria-label="Fjern ${escapeAttr(item.title || "favoritt")}" title="Fjern fra favoritter">
+        <i class="fa-solid fa-heart-crack" aria-hidden="true"></i>
+      </button>
+    </article>
+  `).join("");
 }
