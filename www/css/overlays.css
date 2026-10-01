@@ -119,6 +119,25 @@
   min-height: 48px;
 }
 
+.auth-card .btn-primary:disabled {
+  cursor: wait;
+  opacity: 0.8;
+  transform: none;
+}
+
+.auth-submit-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: authSpinner 0.7s linear infinite;
+}
+
+@keyframes authSpinner {
+  to { transform: rotate(360deg); }
+}
+
 .auth-footer {
   border-top: 1px solid rgba(255, 255, 255, 0.09);
   margin-top: 1.35rem;
@@ -144,6 +163,12 @@
 
   .auth-card {
     padding-top: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-submit-spinner {
+    animation: none;
   }
 }
 

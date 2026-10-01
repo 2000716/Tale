@@ -33,6 +33,19 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /users/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['email', 'displayName', 'role'])
+        && request.resource.data.keys().hasOnly(['email', 'displayName', 'role'])
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 120
+        && request.resource.data.role == 'user';
+      allow update, delete: if false;
+    }
+
     match /users/{userId}/history/{historyId} {
       allow read, write: if signedIn()
         && request.auth.uid == userId;
@@ -48,7 +61,9 @@ service cloud.firestore {
     }
 
     match /adminEmails/{emailId} {
-      allow read: if signedIn();
+      allow read: if signedIn()
+        && request.auth.token.email != null
+        && request.auth.token.email.lower() == emailId;
       allow write: if false;
     }
 
