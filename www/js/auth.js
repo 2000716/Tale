@@ -7,8 +7,7 @@ import {
   signInWithEmailAndPassword, 
   onAuthStateChanged, 
   signOut,
-  updateProfile,
-  sendEmailVerification
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 function showAuthStatus(message, type = "info") {
@@ -30,22 +29,6 @@ import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
 export function initAuth() {
   onAuthStateChanged(auth, async (user) => {
     state.currentUser = user;
-
-    const resendBtn = document.getElementById("auth-resend-verification-btn");
-    if (resendBtn) {
-      const shouldShowResend = !!user && !user.emailVerified;
-      resendBtn.classList.toggle("hidden", !shouldShowResend);
-    }
-
-    if (user && !user.emailVerified) {
-      showAuthStatus("Bekreft e-postadressen din for å få tilgang til Tale. Vi har sendt verifiseringsmailen til deg.", "info");
-      showView("auth-view");
-      state.isSignUp = false;
-      setAuthMode(false);
-      await signOut(auth);
-      state.currentUser = null;
-      return;
-    }
 
     if (user) {
       // 1. Sjekk om brukeren har admin-rolle i Firestore
@@ -157,7 +140,7 @@ export function setAuthMode(signUp) {
     ? "Har du allerede konto? Logg inn"
     : "Har du ikke konto? Registrer deg";
   if (subtitle) subtitle.innerText = state.isSignUp
-    ? "Opprett en konto og få en bekreftelseslenke på e-post."
+    ? "Opprett en konto og kom i gang med Tale."
     : "Velkommen tilbake. Fortsett lyttingen der du slapp.";
   if (passwordInput) passwordInput.autocomplete = state.isSignUp ? "new-password" : "current-password";
 
@@ -215,19 +198,6 @@ function setupAuthEventListeners() {
   const passwordInput = document.getElementById("auth-password");
   const accountDetailsForm = document.getElementById("account-details-form");
   const logoutBtn = document.getElementById("logout-btn");
-  const resendBtn = document.getElementById("auth-resend-verification-btn");
-
-  if (resendBtn) {
-    resendBtn.addEventListener("click", async () => {
-      if (!auth.currentUser || auth.currentUser.emailVerified) return;
-      try {
-        await sendEmailVerification(auth.currentUser);
-        showAuthStatus("Verifiseringsmail sendt på nytt. Sjekk innboksen din.", "success");
-      } catch (error) {
-        showAuthStatus(getAuthErrorMessage(error), "error");
-      }
-    });
-  }
 
   if (toggleBtn && passwordInput) {
     toggleBtn.addEventListener("click", () => {
@@ -267,7 +237,7 @@ function setupAuthEventListeners() {
       try {
         const result = await submitAuthForm(email, password, firstName, lastName);
         if (state.isSignUp && result?.user) {
-          showAuthStatus("Konto opprettet! Vi har sendt en verifiseringsmail til e-posten din.", "success");
+          showAuthStatus("Konto opprettet! Du er nå logget inn.", "success");
         }
       } catch (err) {
         if (errorEl) errorEl.innerText = getAuthErrorMessage(err);
@@ -305,23 +275,13 @@ export async function submitAuthForm(email, password, firstName = "", lastName =
       email: userCredential.user.email,
       displayName: displayName,
       role: "user",
-      emailVerified: false,
       createdAt: new Date().toISOString()
     });
 
-    await sendEmailVerification(userCredential.user);
     updateUserProfileUI(userCredential.user);
     return userCredential;
   } else {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-
-    if (userCredential?.user && !userCredential.user.emailVerified) {
-      await signOut(auth);
-      showAuthStatus("Bekreft e-postadressen din før du logger inn. Vi har sendt en ny verifiseringsmail.", "error");
-      throw new Error("EMAIL_NOT_VERIFIED");
-    }
-
-    return userCredential;
+    return signInWithEmailAndPassword(auth, email, password);
   }
 }
 
