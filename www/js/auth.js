@@ -27,16 +27,20 @@ function hideAuthStatus() {
 
 function triggerAuthStepReveal() {
   const emailInput = document.getElementById("auth-email");
+  const emailGroup = document.getElementById("auth-email-group");
   const passwordGroup = document.getElementById("auth-password-group");
   const nameFieldsGroup = document.getElementById("name-fields-group");
 
-  if (!emailInput || !passwordGroup) return;
+  if (emailGroup) {
+    emailGroup.classList.add("is-visible");
+  }
 
-  const hasEmail = emailInput.value.trim().length > 0;
-  passwordGroup.classList.toggle("is-visible", hasEmail);
+  if (passwordGroup) {
+    passwordGroup.classList.add("is-visible");
+  }
 
   if (state.isSignUp && nameFieldsGroup) {
-    const hasValidEmail = /.+@.+\..+/.test(emailInput.value.trim());
+    const hasValidEmail = !!emailInput && /.+@.+\..+/.test(emailInput.value.trim());
     nameFieldsGroup.classList.toggle("is-visible", hasValidEmail);
   }
 }
@@ -185,9 +189,13 @@ export function setAuthMode(signUp) {
     }
   }
 
+  const emailGroup = document.getElementById("auth-email-group");
   const passwordGroup = document.getElementById("auth-password-group");
+  if (emailGroup) {
+    emailGroup.classList.add("is-visible");
+  }
   if (passwordGroup) {
-    passwordGroup.classList.toggle("is-visible", !!(document.getElementById("auth-email")?.value || "").trim().length || !state.isSignUp);
+    passwordGroup.classList.add("is-visible");
   }
 
   ["auth-firstname", "auth-lastname"].forEach(id => {
