@@ -25,21 +25,6 @@ function hideAuthStatus() {
   showAuthStatus("", "info");
 }
 
-function triggerAuthStepReveal() {
-  const emailInput = document.getElementById("auth-email");
-  const passwordGroup = document.getElementById("auth-password-group");
-  const nameFieldsGroup = document.getElementById("name-fields-group");
-
-  if (!emailInput || !passwordGroup) return;
-
-  const hasEmail = emailInput.value.trim().length > 0;
-  passwordGroup.classList.toggle("is-visible", hasEmail);
-
-  if (state.isSignUp && nameFieldsGroup) {
-    const hasValidEmail = /.+@.+\..+/.test(emailInput.value.trim());
-    nameFieldsGroup.classList.toggle("is-visible", hasValidEmail);
-  }
-}
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"; // La til Firestore-funksjoner
 
 export function initAuth() {
@@ -159,6 +144,7 @@ export function setAuthMode(signUp) {
   const authTitle = document.getElementById("auth-title");
   const toggleAuthModeBtn = document.getElementById("toggle-auth-mode");
   const nameFieldsGroup = document.getElementById("name-fields-group");
+  const emailGroup = document.getElementById("auth-email-group");
   const submitBtn = document.getElementById("auth-submit-btn");
   const errorEl = document.getElementById("auth-error");
   const subtitle = document.querySelector(".auth-subtitle");
@@ -175,10 +161,12 @@ export function setAuthMode(signUp) {
     : "Velkommen tilbake. Fortsett lyttingen der du slapp.";
   if (passwordInput) passwordInput.autocomplete = state.isSignUp ? "new-password" : "current-password";
 
+  if (emailGroup) emailGroup.classList.add("is-visible");
+
   if (nameFieldsGroup) {
     if (state.isSignUp) {
       nameFieldsGroup.classList.remove("hidden");
-      nameFieldsGroup.classList.toggle("is-visible", /.+@.+\..+/.test((document.getElementById("auth-email")?.value || "").trim()));
+      nameFieldsGroup.classList.add("is-visible");
     } else {
       nameFieldsGroup.classList.add("hidden");
       nameFieldsGroup.classList.remove("is-visible");
@@ -186,9 +174,7 @@ export function setAuthMode(signUp) {
   }
 
   const passwordGroup = document.getElementById("auth-password-group");
-  if (passwordGroup) {
-    passwordGroup.classList.toggle("is-visible", !!(document.getElementById("auth-email")?.value || "").trim().length || !state.isSignUp);
-  }
+  if (passwordGroup) passwordGroup.classList.add("is-visible");
 
   ["auth-firstname", "auth-lastname"].forEach(id => {
     const input = document.getElementById(id);
@@ -227,16 +213,9 @@ function setupAuthEventListeners() {
   const authForm = document.getElementById("auth-form");
   const toggleBtn = document.getElementById("toggle-password-visibility");
   const passwordInput = document.getElementById("auth-password");
-  const emailInput = document.getElementById("auth-email");
   const accountDetailsForm = document.getElementById("account-details-form");
   const logoutBtn = document.getElementById("logout-btn");
   const resendBtn = document.getElementById("auth-resend-verification-btn");
-
-  if (emailInput) {
-    emailInput.addEventListener("input", () => {
-      triggerAuthStepReveal();
-    });
-  }
 
   if (resendBtn) {
     resendBtn.addEventListener("click", async () => {
@@ -254,6 +233,7 @@ function setupAuthEventListeners() {
     toggleBtn.addEventListener("click", () => {
       const isPassword = passwordInput.type === "password";
       passwordInput.type = isPassword ? "text" : "password";
+      toggleBtn.setAttribute("aria-label", isPassword ? "Skjul passord" : "Vis passord");
       const icon = toggleBtn.querySelector("i");
       if (icon) {
         icon.className = isPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";

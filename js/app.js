@@ -1,7 +1,7 @@
 import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup } from "./ui.js";
-import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
+import { initAuth, setAuthMode, handleLogout } from "./auth.js";
 import { openDetailsView, openFullscreenPlayer, closeFullscreenPlayer, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl, getAudioUrl } from "./player.js";
 import { loadUserFavorites, removeUserFavorite } from "./details.js";
 import { collection, query, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -1193,21 +1193,6 @@ function setupEventListeners() {
     }
   });
 
-  document.addEventListener("submit", async (e) => {
-    if (e.target?.id === "auth-form") {
-      e.preventDefault();
-      const email = document.getElementById("auth-email")?.value;
-      const password = document.getElementById("auth-password")?.value;
-      const errorMsg = document.getElementById("auth-error");
-      if (errorMsg) errorMsg.innerText = "";
-
-      try {
-        await submitAuthForm(email, password);
-      } catch (err) {
-        if (errorMsg) errorMsg.innerText = "Feil ved innlogging eller registrering.";
-      }
-    }
-  });
 }
 
 function renderAccountFavorites() {
