@@ -378,11 +378,38 @@ export function restoreLastPage() {
   }
 }
 
-export function handleLogout() {
+function clearTaleAppStorage() {
+  const keysToClear = [
+    "lastActivePage",
+    "lastPlayerReturnPage",
+    "lastSelectedItem",
+    "app_sections_cache",
+    "tale_weekly_podcasts_v3",
+    "tale_playback_rate"
+  ];
+
+  keysToClear.forEach((key) => localStorage.removeItem(key));
+}
+
+export async function handleLogout() {
   if (globalAudio) {
-    globalAudio.pause();
+    try {
+      globalAudio.pause();
+      globalAudio.currentTime = 0;
+    } catch (error) {
+      console.warn("Kunne ikke stoppe lytting ved utlogging:", error);
+    }
     globalAudio.src = "";
   }
-  localStorage.clear();
-  signOut(auth);
+
+  state.currentUser = null;
+  state.isAdmin = false;
+  state.userHistory = {};
+  clearTaleAppStorage();
+
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.warn("Utlogging feilet:", error);
+  }
 }
