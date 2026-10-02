@@ -26,6 +26,35 @@ function isDirectRadio(item) {
   ));
 }
 
+function persistHistoryLocally() {
+  if (!state.currentUser) return;
+  if (!state.userHistory) state.userHistory = {};
+
+  try {
+    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
+  } catch (error) {
+    console.warn("Kunne ikke lagre historikk lokalt:", error);
+  }
+}
+
+function mergeHistoryEntries(localEntries = {}, remoteEntries = {}) {
+  const merged = { ...localEntries };
+
+  Object.entries(remoteEntries).forEach(([id, item]) => {
+    if (!item || isDirectRadio(item)) return;
+
+    const localItem = merged[id];
+    const localUpdatedAt = localItem?.updatedAt ? new Date(localItem.updatedAt).getTime() : 0;
+    const remoteUpdatedAt = item?.updatedAt ? new Date(item.updatedAt).getTime() : 0;
+
+    if (!localItem || !localUpdatedAt || remoteUpdatedAt > localUpdatedAt) {
+      merged[id] = item;
+    }
+  });
+
+  return merged;
+}
+
 function removeRadioFromLocalHistory() {
   if (!state.userHistory) return;
 
@@ -34,40 +63,43 @@ function removeRadioFromLocalHistory() {
   );
 
   state.userHistory = filteredHistory;
-  if (state.currentUser) {
-    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(filteredHistory));
-  }
+  persistHistoryLocally();
 }
 
 export async function loadUserHistory() {
   if (!state.currentUser) return;
 
-  const cachedHistory = localStorage.getItem(`userHistory_${state.currentUser.uid}`);
-  if (cachedHistory) {
+  let cachedHistory = {};
+  const cachedHistoryRaw = localStorage.getItem(`userHistory_${state.currentUser.uid}`);
+  if (cachedHistoryRaw) {
     try {
-      state.userHistory = JSON.parse(cachedHistory);
+      cachedHistory = JSON.parse(cachedHistoryRaw) || {};
+      state.userHistory = cachedHistory;
       removeRadioFromLocalHistory();
       renderContinueListening();
       updateDetailPlayButtonState();
     } catch (e) {
       console.warn("Kunne ikke lese cached historikk:", e);
+      state.userHistory = {};
     }
   }
 
   try {
     const historyRef = collection(db, "users", state.currentUser.uid, "history");
     const snapshot = await getDocs(historyRef);
-    state.userHistory = {};
+    const remoteHistory = {};
     snapshot.forEach(docSnap => {
       const item = docSnap.data();
-      if (!isDirectRadio(item)) state.userHistory[docSnap.id] = item;
+      if (!isDirectRadio(item)) remoteHistory[docSnap.id] = item;
     });
 
-    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
+    state.userHistory = mergeHistoryEntries(state.userHistory, remoteHistory);
+    persistHistoryLocally();
     renderContinueListening();
     updateDetailPlayButtonState();
   } catch (err) {
     console.error("Kunne ikke laste brukerhistorikk:", err);
+    persistHistoryLocally();
   }
 }
 
@@ -102,8 +134,8 @@ export async function saveProgressToFirestore(itemId, data) {
 
     if (!state.userHistory) state.userHistory = {};
     state.userHistory[cleanId] = payload;
-    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
-    
+    persistHistoryLocally();
+
     renderContinueListening();
     updateDetailPlayButtonState();
 
@@ -111,6 +143,7 @@ export async function saveProgressToFirestore(itemId, data) {
     await setDoc(historyRef, payload, { merge: true });
   } catch (err) {
     console.error("Feil ved lagring av fremdrift:", err);
+    persistHistoryLocally();
   }
 }
 
@@ -119,12 +152,12 @@ export async function removeFromFirestoreHistory(itemId) {
   try {
     const cleanId = getItemKey(itemId);
     if (!cleanId) return;
-    
+
     if (state.userHistory && state.userHistory[cleanId]) {
       delete state.userHistory[cleanId];
-      localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
+      persistHistoryLocally();
     }
-    
+
     renderContinueListening();
     updateDetailPlayButtonState();
 
@@ -132,6 +165,7 @@ export async function removeFromFirestoreHistory(itemId) {
     await deleteDoc(historyRef);
   } catch (err) {
     console.error("Feil ved fjerning fra historikk:", err);
+    persistHistoryLocally();
   }
 }
 

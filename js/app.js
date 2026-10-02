@@ -34,6 +34,36 @@ const AUTOMATIC_PODCAST_SOURCES = [
 let automaticPodcastCategories = [];
 let latestSectionsList = [];
 
+const LOCAL_CACHE_TTL = {
+  weekly: 24 * 60 * 60 * 1000,
+  automaticCategories: 24 * 60 * 60 * 1000,
+  feed: 7 * 24 * 60 * 60 * 1000
+};
+
+function readLocalCache(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch (error) {
+    localStorage.removeItem(key);
+    return null;
+  }
+}
+
+function writeLocalCache(key, payload, ttlMs) {
+  try {
+    localStorage.setItem(key, JSON.stringify({
+      ...payload,
+      expiresAt: Date.now() + ttlMs
+    }));
+  } catch (error) {
+    console.warn(`Kunne ikke lagre cache for ${key}:`, error);
+  }
+}
+
 // Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
 function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0, isRadio = false) {
   if (!isPlayableAudioUrl(audioUrl)) {
@@ -149,38 +179,31 @@ function initHeroCarousel() {
 // ==========================================
 export async function loadWeeklyPodcasts() {
   let weeklyPodcasts = [];
-  const cachedWeekly = localStorage.getItem("tale_weekly_podcasts_v3");
+  const cachedWeekly = readLocalCache("tale_weekly_podcasts_v3");
 
-  if (cachedWeekly) {
-    try {
-      const cachedData = JSON.parse(cachedWeekly);
-      if (cachedData.expiresAt > Date.now()) weeklyPodcasts = cachedData.items || [];
-    } catch (e) {
-      localStorage.removeItem("tale_weekly_podcasts_v3");
-    }
+  if (cachedWeekly?.items?.length) {
+    weeklyPodcasts = cachedWeekly.items;
+    renderHeroBanners(weeklyPodcasts);
   }
 
-  renderHeroBanners(weeklyPodcasts);
-
-  if (weeklyPodcasts.length === 0) {
+  if (!cachedWeekly || cachedWeekly.expiresAt <= Date.now()) {
     try {
-        const response = await fetch("https://itunes.apple.com/no/rss/toppodcasts/limit=5/json");
+      const response = await fetch("https://itunes.apple.com/no/rss/toppodcasts/limit=5/json");
       if (!response.ok) throw new Error(`Apple Podcasts svarte med ${response.status}`);
       const data = await response.json();
-        weeklyPodcasts = (data.feed?.entry || []).map((podcast, index) => ({
-          id: `weekly_podcast_${podcast.id?.attributes?.['im:id'] || index}`,
-          appleId: podcast.id?.attributes?.['im:id'] || "",
-          title: podcast['im:name']?.label || "Ukens podkast",
-          subtitle: podcast['im:artist']?.label || "Populær podkast",
-          description: "En av ukens mest populære podkaster i Norge.",
-          imageUrl: ([...(podcast['im:image'] || [])].pop()?.label || "").replace(/\/\d+x\d+bb\./, "/600x600bb."),
-          rssUrl: "",
-          appleUrl: podcast.link?.attributes?.href || "",
-          badge: "Anbefalt denne uken!",
-          rank: index + 1
+      weeklyPodcasts = (data.feed?.entry || []).map((podcast, index) => ({
+        id: `weekly_podcast_${podcast.id?.attributes?.['im:id'] || index}`,
+        appleId: podcast.id?.attributes?.['im:id'] || "",
+        title: podcast['im:name']?.label || "Ukens podkast",
+        subtitle: podcast['im:artist']?.label || "Populær podkast",
+        description: "En av ukens mest populære podkaster i Norge.",
+        imageUrl: ([...(podcast['im:image'] || [])].pop()?.label || "").replace(/\/\d+x\d+bb\./, "/600x600bb."),
+        rssUrl: "",
+        appleUrl: podcast.link?.attributes?.href || "",
+        badge: "Anbefalt denne uken!",
+        rank: index + 1
       }));
 
-      // Render direkte fra topplisten. RSS-oppslag skal ikke kunne skjule banneret.
       renderHeroBanners(weeklyPodcasts);
 
       weeklyPodcasts = await Promise.all(weeklyPodcasts.map(async (podcast) => {
@@ -196,13 +219,13 @@ export async function loadWeeklyPodcasts() {
         return podcast;
       }));
 
-      localStorage.setItem("tale_weekly_podcasts_v3", JSON.stringify({
-        expiresAt: Date.now() + (6 * 60 * 60 * 1000),
-        items: weeklyPodcasts
-      }));
+      writeLocalCache("tale_weekly_podcasts_v3", { items: weeklyPodcasts }, LOCAL_CACHE_TTL.weekly);
       renderHeroBanners(weeklyPodcasts);
     } catch (err) {
       console.warn("Kunne ikke hente ukens populære podkaster:", err);
+      if (!weeklyPodcasts.length && cachedWeekly?.items?.length) {
+        renderHeroBanners(cachedWeekly.items);
+      }
     }
   }
 }
@@ -515,18 +538,17 @@ export async function loadContentFromFirestore() {
 
 async function loadAutomaticPodcastCatalog() {
   const cacheKey = "tale_automatic_podcasts_v1";
-  let cachedCategories = [];
-  try {
-    const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
-    cachedCategories = cached?.categories || [];
-    if (cached?.expiresAt > Date.now()) {
-      automaticPodcastCategories = cachedCategories;
-      renderAutomaticPodcastSections();
-      renderNewEpisodesGallery(latestSectionsList);
-      return;
-    }
-  } catch (error) {
-    localStorage.removeItem(cacheKey);
+  const cached = readLocalCache(cacheKey);
+  let cachedCategories = cached?.categories || [];
+
+  if (cachedCategories.length) {
+    automaticPodcastCategories = cachedCategories;
+    renderAutomaticPodcastSections();
+    renderNewEpisodesGallery(latestSectionsList);
+  }
+
+  if (cached?.expiresAt > Date.now()) {
+    return;
   }
 
   try {
@@ -586,10 +608,7 @@ async function loadAutomaticPodcastCatalog() {
 
     automaticPodcastCategories = categories;
     if (categories.some(category => category.items.length)) {
-      localStorage.setItem(cacheKey, JSON.stringify({
-        expiresAt: Date.now() + 6 * 60 * 60 * 1000,
-        categories
-      }));
+      writeLocalCache(cacheKey, { categories }, LOCAL_CACHE_TTL.automaticCategories);
     } else {
       automaticPodcastCategories = cachedCategories;
     }
@@ -667,24 +686,22 @@ async function renderNewEpisodesGallery(sectionsList) {
   const results = await mapWithConcurrency(feeds, 6, async (podcast) => {
     const rssUrl = podcast.rssUrl || podcast.rss;
     const cacheKey = `tale_feed_${encodeURIComponent(rssUrl)}`;
-    let feedItems = [];
-    try {
-      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-      if (cached?.expiresAt > Date.now()) feedItems = cached.items || [];
-    } catch (error) {
-      localStorage.removeItem(cacheKey);
+    const cached = readLocalCache(cacheKey);
+    let feedItems = cached?.items || [];
+
+    if (cached?.expiresAt <= Date.now()) {
+      feedItems = cached.items || [];
+    } else if (cached?.items?.length) {
+      feedItems = cached.items;
     }
 
-    if (!feedItems.length) {
+    if (!cached || cached.expiresAt <= Date.now()) {
       try {
         const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
         const data = await response.json();
         if (data.status === 'ok') {
           feedItems = data.items || [];
-          localStorage.setItem(cacheKey, JSON.stringify({
-            expiresAt: Date.now() + 6 * 60 * 60 * 1000,
-            items: feedItems
-          }));
+          writeLocalCache(cacheKey, { items: feedItems }, LOCAL_CACHE_TTL.feed);
         }
       } catch (error) {
         console.warn('Kunne ikke hente nye podkastepisoder:', error);

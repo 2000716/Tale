@@ -3,6 +3,7 @@ import { buildCoverMarkup, updateUrlHash, updateBottomNavVisibility, formatTime,
 import { saveProgressToFirestore, removeFromFirestoreHistory, updateDetailPlayButtonState } from "./history.js";
 import { openDetailsPage } from "./details.js";
 import { shareContent } from "./content-actions.js";
+import { readCachedAudioResponse, cacheAudioResponse, normalizeAudioUrl } from "./audio-cache.js";
 
 const speeds = [1.0, 1.25, 1.5, 1.75, 2.0, 0.8];
 
@@ -13,6 +14,35 @@ let currentSpeedIndex = speeds.indexOf(savedSpeed) !== -1 ? speeds.indexOf(saved
 let sleepTimeout = null;
 let sleepInterval = null;
 let targetTime = null;
+let cachedAudioBlobUrl = null;
+
+async function resolveAudioPlaybackSource(audioUrl) {
+  const normalizedUrl = normalizeAudioUrl(audioUrl);
+  if (!normalizedUrl || !("caches" in window)) return normalizedUrl;
+
+  try {
+    const cachedResponse = await readCachedAudioResponse(normalizedUrl);
+    if (cachedResponse) {
+      const blob = await cachedResponse.blob();
+      if (cachedAudioBlobUrl) URL.revokeObjectURL(cachedAudioBlobUrl);
+      cachedAudioBlobUrl = URL.createObjectURL(blob);
+      return cachedAudioBlobUrl;
+    }
+
+    const response = await fetch(normalizedUrl, { cache: "no-store" });
+    if (!response || !response.ok) return normalizedUrl;
+
+    await cacheAudioResponse(normalizedUrl, response);
+
+    const blob = await response.blob();
+    if (cachedAudioBlobUrl) URL.revokeObjectURL(cachedAudioBlobUrl);
+    cachedAudioBlobUrl = URL.createObjectURL(blob);
+    return cachedAudioBlobUrl;
+  } catch (error) {
+    console.warn("Kunne ikke bruke cache for lydfil:", error);
+    return normalizedUrl;
+  }
+}
 
 function updateSleepDisplay() {
   const sleepLabel = document.getElementById("sleep-label");
@@ -259,7 +289,7 @@ export function openDetailsView(item) {
   openDetailsPage(item);
 }
 
-export function playSpecificEpisode(epData, startPosition = 0) {
+export async function playSpecificEpisode(epData, startPosition = 0) {
   if (!epData || !epData.audioUrl || !isPlayableAudioUrl(epData.audioUrl)) {
     alert("Ingen gyldig lydkilde funnet for dette elementet.");
     return;
@@ -277,10 +307,14 @@ export function playSpecificEpisode(epData, startPosition = 0) {
   };
 
   const totalTimeSpan = document.getElementById("total-time");
+  const remoteAudioUrl = state.selectedItem.audioUrl;
+  const preferredAudioUrl = await resolveAudioPlaybackSource(remoteAudioUrl);
+  globalAudio.dataset.originalAudioUrl = remoteAudioUrl;
+  globalAudio.dataset.cachedAudioSource = preferredAudioUrl !== remoteAudioUrl ? preferredAudioUrl : "";
   globalAudio.autoplay = false;
   globalAudio.loop = false;
   globalAudio.dataset.retryCount = "0";
-  globalAudio.src = state.selectedItem.audioUrl;
+  globalAudio.src = preferredAudioUrl;
   globalAudio.load();
 
   globalAudio.onloadedmetadata = () => {
@@ -495,6 +529,8 @@ export function setupAudioListeners() {
 
   globalAudio.onerror = () => {
     const currentSrc = globalAudio.currentSrc || globalAudio.src;
+    const originalAudioUrl = globalAudio.dataset.originalAudioUrl || currentSrc;
+    const cachedAudioUrl = globalAudio.dataset.cachedAudioSource || "";
     const isLiveStream = !!(state.selectedItem?.isRadio || state.selectedItem?.type === "radio" || state.selectedItem?.isLive);
     const mediaError = globalAudio.error;
 
@@ -503,6 +539,13 @@ export function setupAudioListeners() {
     if (isLiveStream) {
       updatePlayIcons(false);
       updateContentPlayButtons();
+      return;
+    }
+
+    if (cachedAudioUrl && currentSrc !== originalAudioUrl) {
+      globalAudio.src = originalAudioUrl;
+      globalAudio.load();
+      globalAudio.play().catch(() => updatePlayIcons(false));
       return;
     }
 
