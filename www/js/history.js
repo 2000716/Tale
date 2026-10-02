@@ -26,35 +26,6 @@ function isDirectRadio(item) {
   ));
 }
 
-function persistHistoryLocally() {
-  if (!state.currentUser) return;
-  if (!state.userHistory) state.userHistory = {};
-
-  try {
-    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
-  } catch (error) {
-    console.warn("Kunne ikke lagre historikk lokalt:", error);
-  }
-}
-
-function mergeHistoryEntries(localEntries = {}, remoteEntries = {}) {
-  const merged = { ...localEntries };
-
-  Object.entries(remoteEntries).forEach(([id, item]) => {
-    if (!item || isDirectRadio(item)) return;
-
-    const localItem = merged[id];
-    const localUpdatedAt = localItem?.updatedAt ? new Date(localItem.updatedAt).getTime() : 0;
-    const remoteUpdatedAt = item?.updatedAt ? new Date(item.updatedAt).getTime() : 0;
-
-    if (!localItem || !localUpdatedAt || remoteUpdatedAt > localUpdatedAt) {
-      merged[id] = item;
-    }
-  });
-
-  return merged;
-}
-
 function removeRadioFromLocalHistory() {
   if (!state.userHistory) return;
 
@@ -63,43 +34,40 @@ function removeRadioFromLocalHistory() {
   );
 
   state.userHistory = filteredHistory;
-  persistHistoryLocally();
+  if (state.currentUser) {
+    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(filteredHistory));
+  }
 }
 
 export async function loadUserHistory() {
   if (!state.currentUser) return;
 
-  let cachedHistory = {};
-  const cachedHistoryRaw = localStorage.getItem(`userHistory_${state.currentUser.uid}`);
-  if (cachedHistoryRaw) {
+  const cachedHistory = localStorage.getItem(`userHistory_${state.currentUser.uid}`);
+  if (cachedHistory) {
     try {
-      cachedHistory = JSON.parse(cachedHistoryRaw) || {};
-      state.userHistory = cachedHistory;
+      state.userHistory = JSON.parse(cachedHistory);
       removeRadioFromLocalHistory();
       renderContinueListening();
       updateDetailPlayButtonState();
     } catch (e) {
       console.warn("Kunne ikke lese cached historikk:", e);
-      state.userHistory = {};
     }
   }
 
   try {
     const historyRef = collection(db, "users", state.currentUser.uid, "history");
     const snapshot = await getDocs(historyRef);
-    const remoteHistory = {};
+    state.userHistory = {};
     snapshot.forEach(docSnap => {
       const item = docSnap.data();
-      if (!isDirectRadio(item)) remoteHistory[docSnap.id] = item;
+      if (!isDirectRadio(item)) state.userHistory[docSnap.id] = item;
     });
 
-    state.userHistory = mergeHistoryEntries(state.userHistory, remoteHistory);
-    persistHistoryLocally();
+    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
     renderContinueListening();
     updateDetailPlayButtonState();
   } catch (err) {
     console.error("Kunne ikke laste brukerhistorikk:", err);
-    persistHistoryLocally();
   }
 }
 
@@ -134,7 +102,7 @@ export async function saveProgressToFirestore(itemId, data) {
 
     if (!state.userHistory) state.userHistory = {};
     state.userHistory[cleanId] = payload;
-    persistHistoryLocally();
+    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
 
     renderContinueListening();
     updateDetailPlayButtonState();
@@ -143,7 +111,6 @@ export async function saveProgressToFirestore(itemId, data) {
     await setDoc(historyRef, payload, { merge: true });
   } catch (err) {
     console.error("Feil ved lagring av fremdrift:", err);
-    persistHistoryLocally();
   }
 }
 
@@ -155,7 +122,7 @@ export async function removeFromFirestoreHistory(itemId) {
 
     if (state.userHistory && state.userHistory[cleanId]) {
       delete state.userHistory[cleanId];
-      persistHistoryLocally();
+      localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
     }
 
     renderContinueListening();
@@ -165,7 +132,6 @@ export async function removeFromFirestoreHistory(itemId) {
     await deleteDoc(historyRef);
   } catch (err) {
     console.error("Feil ved fjerning fra historikk:", err);
-    persistHistoryLocally();
   }
 }
 

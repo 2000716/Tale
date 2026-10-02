@@ -79,6 +79,7 @@
 
       <div id="auth-status-banner" class="auth-status-banner hidden" role="alert" aria-live="polite"></div>
       <p id="auth-error" class="error-msg" role="alert" aria-live="assertive"></p>
+      <button id="auth-resend-verification-btn" class="btn-link auth-resend-btn hidden" type="button">Send verifiseringsmail på nytt</button>
       
       <div class="auth-footer">
         <button id="toggle-auth-mode" class="btn-link">Har du ikke konto? Registrer deg</button>
@@ -316,14 +317,14 @@
 
         <div class="progress-container">
           <span id="current-time">0:00</span>
-          <input type="range" id="progress-bar" value="0" min="0" max="100" aria-label="Posisjon i avspillingen">
+          <input type="range" id="progress-bar" value="0" min="0" max="100">
           <span id="total-time">0:00</span>
         </div>
 
         <div class="full-controls">
-          <button id="skip-back-btn" class="skip-btn" title="-15 sekunder" aria-label="Spol 15 sekunder tilbake"><i class="fa-solid fa-rotate-left"></i> 15s</button>
-          <button id="full-play-btn" class="main-play-btn" aria-label="Spill innhold"><i class="fa-solid fa-play"></i></button>
-          <button id="skip-forward-btn" class="skip-btn" title="+15 sekunder" aria-label="Spol 15 sekunder frem">15s <i class="fa-solid fa-rotate-right"></i></button>
+          <button id="skip-back-btn" class="skip-btn" title="-15 sekunder"><i class="fa-solid fa-rotate-left"></i> 15s</button>
+          <button id="full-play-btn" class="main-play-btn"><i class="fa-solid fa-play"></i></button>
+          <button id="skip-forward-btn" class="skip-btn" title="+15 sekunder">15s <i class="fa-solid fa-rotate-right"></i></button>
         </div>
 
         <div class="extra-controls">
@@ -395,7 +396,7 @@
         </div>
       </div>
       <div class="player-controls">
-        <button id="mini-play-btn" class="icon-play-btn" aria-label="Spill innhold"><i class="fa-solid fa-play"></i></button>
+        <button id="mini-play-btn" class="icon-play-btn"><i class="fa-solid fa-play"></i></button>
       </div>
     </div>
 

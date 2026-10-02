@@ -1,7 +1,7 @@
 import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup } from "./ui.js";
-import { initAuth, setAuthMode, handleLogout } from "./auth.js";
+import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { openDetailsView, openFullscreenPlayer, closeFullscreenPlayer, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl, getAudioUrl } from "./player.js";
 import { loadUserFavorites, removeUserFavorite } from "./details.js";
 import { collection, query, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -10,7 +10,7 @@ import { collection, query, orderBy, onSnapshot, getDocs } from "https://www.gst
 let currentSlideIndex = 0;
 let sectionsUnsubscribe = null;
 let accountFavorites = [];
-let searchRequestId = 0;
+const NEW_EPISODE_DAYS = 14;
 const AUTOMATIC_PODCAST_SOURCES = [
   {
     title: "Norske barnepodkaster",
@@ -33,19 +33,6 @@ const AUTOMATIC_PODCAST_SOURCES = [
 ];
 let automaticPodcastCategories = [];
 let latestSectionsList = [];
-
-function clearCachedPodcastFeeds() {
-  try {
-    for (let index = localStorage.length - 1; index >= 0; index--) {
-      const key = localStorage.key(index);
-      if (key?.startsWith("tale_feed_") || key === "tale_weekly_podcasts_v3" || key === "tale_automatic_podcasts_v1" || key === "app_sections_cache") {
-        localStorage.removeItem(key);
-      }
-    }
-  } catch (error) {
-    console.warn("Kunne ikke fjerne tidligere lagrede podkast-feeder:", error);
-  }
-}
 
 // Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
 function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0, isRadio = false) {
@@ -76,7 +63,6 @@ function escapeAttr(str) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  clearCachedPodcastFeeds();
   initAuth();
   setupAudioListeners();
   loadWeeklyPodcasts();
@@ -162,11 +148,26 @@ function initHeroCarousel() {
 // 1. LASTE BANNERE (Hero Banners / Storytel-stil)
 // ==========================================
 export async function loadWeeklyPodcasts() {
-  try {
-    const response = await fetch("https://itunes.apple.com/no/rss/toppodcasts/limit=5/json", { cache: "no-store" });
-    if (!response.ok) throw new Error(`Apple Podcasts svarte med ${response.status}`);
-    const data = await response.json();
-    const weeklyPodcasts = (data.feed?.entry || []).map((podcast, index) => ({
+  let weeklyPodcasts = [];
+  const cachedWeekly = localStorage.getItem("tale_weekly_podcasts_v3");
+
+  if (cachedWeekly) {
+    try {
+      const cachedData = JSON.parse(cachedWeekly);
+      if (cachedData.expiresAt > Date.now()) weeklyPodcasts = cachedData.items || [];
+    } catch (e) {
+      localStorage.removeItem("tale_weekly_podcasts_v3");
+    }
+  }
+
+  renderHeroBanners(weeklyPodcasts);
+
+  if (weeklyPodcasts.length === 0) {
+    try {
+      const response = await fetch("https://itunes.apple.com/no/rss/toppodcasts/limit=5/json");
+      if (!response.ok) throw new Error(`Apple Podcasts svarte med ${response.status}`);
+      const data = await response.json();
+      weeklyPodcasts = (data.feed?.entry || []).map((podcast, index) => ({
         id: `weekly_podcast_${podcast.id?.attributes?.['im:id'] || index}`,
         appleId: podcast.id?.attributes?.['im:id'] || "",
         title: podcast['im:name']?.label || "Ukens podkast",
@@ -177,23 +178,32 @@ export async function loadWeeklyPodcasts() {
         appleUrl: podcast.link?.attributes?.href || "",
         badge: "Anbefalt denne uken!",
         rank: index + 1
-    }));
+      }));
 
-    const ids = weeklyPodcasts.map(podcast => podcast.appleId).filter(Boolean);
-    if (ids.length) {
-      const lookupResponse = await fetch(`https://itunes.apple.com/lookup?id=${ids.map(encodeURIComponent).join(",")}&entity=podcast&country=NO`, { cache: "no-store" });
-      if (!lookupResponse.ok) throw new Error(`Apple Podcasts svarte med ${lookupResponse.status}`);
-      const lookupData = await lookupResponse.json();
-      const lookupById = new Map((lookupData.results || []).map(item => [String(item.collectionId), item]));
-      weeklyPodcasts.forEach(podcast => {
-        const details = lookupById.get(String(podcast.appleId));
-        if (details) podcast.rssUrl = details.feedUrl || "";
-      });
+      // Render direkte fra topplisten. RSS-oppslag skal ikke kunne skjule banneret.
+      renderHeroBanners(weeklyPodcasts);
+
+      weeklyPodcasts = await Promise.all(weeklyPodcasts.map(async (podcast) => {
+        try {
+          const lookupResponse = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(podcast.appleId)}&entity=podcast&country=NO`);
+          if (lookupResponse.ok) {
+            const lookupData = await lookupResponse.json();
+            return { ...podcast, rssUrl: lookupData.results?.[0]?.feedUrl || "" };
+          }
+        } catch (lookupError) {
+          console.warn("Kunne ikke hente RSS-feed for ukens podkast:", podcast.title, lookupError);
+        }
+        return podcast;
+      }));
+
+      localStorage.setItem("tale_weekly_podcasts_v3", JSON.stringify({
+        expiresAt: Date.now() + (6 * 60 * 60 * 1000),
+        items: weeklyPodcasts
+      }));
+      renderHeroBanners(weeklyPodcasts);
+    } catch (err) {
+      console.warn("Kunne ikke hente ukens populære podkaster:", err);
     }
-
-    renderHeroBanners(weeklyPodcasts);
-  } catch (error) {
-    console.warn("Kunne ikke hente ukens populære podkaster:", error);
   }
 }
 
@@ -226,7 +236,6 @@ function renderHeroBanners(weeklyPodcasts = []) {
                data-sub="${escapeAttr(banner.subtitle || '')}" 
                data-cover="${escapeAttr(imgUrl)}"
                data-rss="${escapeAttr(banner.rssUrl || '')}"
-               data-apple-id="${escapeAttr(banner.appleId || '')}"
                data-apple-url="${escapeAttr(banner.appleUrl || '')}">
             <img src="${escapeAttr(imgUrl)}" alt="${escapeAttr(banner.title || 'Banner')}">
             <div class="slide-overlay">
@@ -420,8 +429,6 @@ export async function loadContentFromFirestore() {
 
             itemsHTML += `
               <div class="book-card${index >= maxItems ? ' section-item-overflow' : ''}" 
-                   role="button"
-                   tabindex="0"
                    id="${cardId}"
                    data-item-key="${itemKey}"
                    data-id="${escapeAttr(item.id || cardId)}"
@@ -441,6 +448,9 @@ export async function loadContentFromFirestore() {
               </div>
             `;
 
+            if (rssUrl && !manualCover) {
+              fetchRSSImageData(rssUrl, cardId, title);
+            }
           });
 
           sectionWrapper.innerHTML = `
@@ -475,7 +485,17 @@ export async function loadContentFromFirestore() {
 
     renderAutomaticPodcastSections();
     renderRadioBanner();
+    renderNewEpisodesGallery(sectionsList);
   };
+
+  const cachedSections = localStorage.getItem("app_sections_cache");
+  if (cachedSections) {
+    try {
+      renderSectionsData(JSON.parse(cachedSections));
+    } catch (e) {
+      console.warn("Kunne ikke lese seksjons-cache:", e);
+    }
+  }
 
   if (sectionsUnsubscribe) sectionsUnsubscribe();
 
@@ -486,6 +506,7 @@ export async function loadContentFromFirestore() {
       ...docSnap.data()
     }));
 
+    localStorage.setItem("app_sections_cache", JSON.stringify(sectionsData));
     renderSectionsData(sectionsData);
   }, (err) => {
     console.error("Sanntidslasting fra Firestore feilet:", err);
@@ -493,10 +514,25 @@ export async function loadContentFromFirestore() {
 }
 
 async function loadAutomaticPodcastCatalog() {
+  const cacheKey = "tale_automatic_podcasts_v1";
+  let cachedCategories = [];
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
+    cachedCategories = cached?.categories || [];
+    if (cached?.expiresAt > Date.now()) {
+      automaticPodcastCategories = cachedCategories;
+      renderAutomaticPodcastSections();
+      renderNewEpisodesGallery(latestSectionsList);
+      return;
+    }
+  } catch (error) {
+    localStorage.removeItem(cacheKey);
+  }
+
   try {
     const chartResults = await Promise.all(AUTOMATIC_PODCAST_SOURCES.map(async source => {
       try {
-        const response = await fetch(source.url, { cache: "no-store" });
+        const response = await fetch(source.url);
         if (!response.ok) throw new Error(`Apple Podcasts svarte med ${response.status}`);
         const data = await response.json();
         return { source, entries: data.feed?.entry || [] };
@@ -520,7 +556,7 @@ async function loadAutomaticPodcastCatalog() {
 
       try {
         const lookupUrl = `https://itunes.apple.com/lookup?id=${ids.map(encodeURIComponent).join(",")}&entity=podcast&country=${source.country.toUpperCase()}`;
-        const response = await fetch(lookupUrl, { cache: "no-store" });
+        const response = await fetch(lookupUrl);
         if (!response.ok) throw new Error(`Apple Podcasts svarte med ${response.status}`);
         const data = await response.json();
         const lookupById = new Map((data.results || []).map(item => [String(item.collectionId), item]));
@@ -549,12 +585,21 @@ async function loadAutomaticPodcastCatalog() {
     }));
 
     automaticPodcastCategories = categories;
+    if (categories.some(category => category.items.length)) {
+      localStorage.setItem(cacheKey, JSON.stringify({
+        expiresAt: Date.now() + 6 * 60 * 60 * 1000,
+        categories
+      }));
+    } else {
+      automaticPodcastCategories = cachedCategories;
+    }
   } catch (error) {
     console.warn("Kunne ikke oppdatere den automatiske podkastkatalogen:", error);
-    automaticPodcastCategories = [];
+    automaticPodcastCategories = cachedCategories;
   }
 
   renderAutomaticPodcastSections();
+  renderNewEpisodesGallery(latestSectionsList);
 }
 
 function renderAutomaticPodcastSections() {
@@ -569,7 +614,7 @@ function renderAutomaticPodcastSections() {
     const itemMarkup = category.items.map((item, index) => {
       const itemKey = `automatic_podcast_${categoryIndex}_${index}`;
       window[itemKey] = item;
-      return `<div class="book-card" role="button" tabindex="0" data-item-key="${itemKey}" data-title="${escapeAttr(item.title)}" data-rss="${escapeAttr(item.rssUrl)}" data-type="podcast">
+      return `<div class="book-card" data-item-key="${itemKey}" data-title="${escapeAttr(item.title)}" data-rss="${escapeAttr(item.rssUrl)}" data-type="podcast">
         <div class="book-cover">${buildCoverMarkup(item.cover, item.title)}</div>
         <div class="book-title">${escapeAttr(item.title)}</div>
         <div class="book-author">${escapeAttr(item.sub)}</div>
@@ -578,6 +623,117 @@ function renderAutomaticPodcastSections() {
     section.innerHTML = `<div class="section-header"><div><h3>${escapeAttr(category.title)}</h3></div></div><div class="horizontal-scroll">${itemMarkup}</div>`;
     container.appendChild(section);
   });
+}
+
+function isNewEpisode(pubDate) {
+  const timestamp = Date.parse(pubDate || '');
+  if (!Number.isFinite(timestamp)) return false;
+  const age = Date.now() - timestamp;
+  return age >= 0 && age <= NEW_EPISODE_DAYS * 24 * 60 * 60 * 1000;
+}
+
+async function mapWithConcurrency(items, concurrency, mapper) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex++;
+      results[index] = await mapper(items[index]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+async function renderNewEpisodesGallery(sectionsList) {
+  const section = document.getElementById('new-episodes-section');
+  const container = document.getElementById('new-episodes-container');
+  if (!section || !container) return;
+
+  const podcastItems = sectionsList
+    .filter(sectionData => sectionData.visible !== false)
+    .flatMap(sectionData => sectionData.items || [])
+    .filter(item => (item.type || 'podcast') === 'podcast' && (item.rssUrl || item.rss));
+  automaticPodcastCategories
+    .filter(category => category.includeInNewEpisodes)
+    .forEach(category => podcastItems.push(...(category.items || [])));
+  const feeds = [...new Map(podcastItems.map(item => [item.rssUrl || item.rss, item])).values()];
+
+  if (!feeds.length) {
+    section.hidden = true;
+    return;
+  }
+
+  const results = await mapWithConcurrency(feeds, 6, async (podcast) => {
+    const rssUrl = podcast.rssUrl || podcast.rss;
+    const cacheKey = `tale_feed_${encodeURIComponent(rssUrl)}`;
+    let feedItems = [];
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+      if (cached?.expiresAt > Date.now()) feedItems = cached.items || [];
+    } catch (error) {
+      localStorage.removeItem(cacheKey);
+    }
+
+    if (!feedItems.length) {
+      try {
+        const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+        const data = await response.json();
+        if (data.status === 'ok') {
+          feedItems = data.items || [];
+          localStorage.setItem(cacheKey, JSON.stringify({
+            expiresAt: Date.now() + 6 * 60 * 60 * 1000,
+            items: feedItems
+          }));
+        }
+      } catch (error) {
+        console.warn('Kunne ikke hente nye podkastepisoder:', error);
+      }
+    }
+
+    return feedItems.filter(episode => isNewEpisode(episode.pubDate)).map(episode => ({
+      ...episode,
+      podcastTitle: podcast.title || podcast.name || 'Podkast',
+      podcastSub: podcast.sub || podcast.author || podcast.publisher || '',
+      podcastCover: podcast.coverUrl || podcast.cover || podcast.image || ''
+    }));
+  });
+
+  const episodes = results.flat()
+    .sort((left, right) => Date.parse(right.pubDate || '') - Date.parse(left.pubDate || ''));
+
+  if (!episodes.length) {
+    section.hidden = true;
+    container.replaceChildren();
+    return;
+  }
+
+  container.innerHTML = episodes.map((episode, index) => {
+    const title = episode.title || 'Ny episode';
+    const cover = episode.thumbnail || episode.itunes?.image || episode.enclosure?.thumbnail || episode.podcastCover;
+    const audioUrl = episode.enclosure?.link || episode.link || '';
+    const itemKey = `new_episode_${index}_${Date.now()}`.replace(/[^a-zA-Z0-9_]/g, '_');
+    window[itemKey] = {
+      id: `new_${encodeURIComponent(episode.podcastTitle)}_${encodeURIComponent(title)}`,
+      title,
+      sub: episode.podcastTitle,
+      author: episode.podcastSub,
+      cover,
+      coverUrl: cover,
+      audioUrl,
+      pubDate: episode.pubDate,
+      type: 'podcast'
+    };
+    return `<div class="book-card new-episode-card" data-item-key="${itemKey}" data-title="${escapeAttr(title)}">
+      <div class="book-cover new-episode-cover">
+        ${buildCoverMarkup(cover, title)}
+        <span class="new-episode-badge">NY</span>
+      </div>
+      <div class="book-title">${escapeAttr(title)}</div>
+      <div class="book-author">${escapeAttr(episode.podcastTitle)}</div>
+    </div>`;
+  }).join('');
+  section.hidden = false;
 }
 
 function createCustomPageChrome(page) {
@@ -612,28 +768,29 @@ async function renderRadioBanner() {
   let bannerHeadline = "NRK P2 Nyheter";
 
   try {
-    const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/toppsaker.rss")}`);
-    if (!response.ok) throw new Error(`RSS-tjenesten svarte med ${response.status}`);
-    const data = await response.json();
-    if (data.status === 'ok' && data.items?.length > 0) {
-      const topItem = data.items[0];
-      if (topItem.title) bannerHeadline = topItem.title;
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/toppsaker.rss")}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'ok' && data.items?.length > 0) {
+        const topItem = data.items[0];
+        if (topItem.title) bannerHeadline = topItem.title;
 
-      let fetchedImg = topItem.media?.content?.url 
-        || topItem.media?.thumbnail?.url 
-        || topItem.thumbnail 
-        || topItem.enclosure?.link 
-        || topItem.enclosure?.thumbnail;
+        let fetchedImg = topItem.media?.content?.url 
+          || topItem.media?.thumbnail?.url 
+          || topItem.thumbnail 
+          || topItem.enclosure?.link 
+          || topItem.enclosure?.thumbnail;
 
-      if (!fetchedImg) {
-        const contentToSearch = topItem.content || topItem.description || '';
-        const imgMatch = contentToSearch.match(/<img[^>]+src=["']([^"']+)["']/i);
-        if (imgMatch && imgMatch[1]) {
-          fetchedImg = imgMatch[1];
+        if (!fetchedImg) {
+          const contentToSearch = topItem.content || topItem.description || '';
+          const imgMatch = contentToSearch.match(/<img[^>]+src=["']([^"']+)["']/i);
+          if (imgMatch && imgMatch[1]) {
+            fetchedImg = imgMatch[1];
+          }
         }
-      }
 
-      if (fetchedImg) bannerImage = fetchedImg;
+        if (fetchedImg) bannerImage = fetchedImg;
+      }
     }
   } catch (err) {
     console.warn("Kunne ikke hente NRK RSS for banner, bruker standardverdi.", err);
@@ -666,6 +823,25 @@ async function renderRadioBanner() {
   radioContainer.prepend(bannerWrapper);
 }
 
+async function fetchRSSImageData(rssUrl, cardId, title) {
+  try {
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.status === 'ok') {
+      const imageUrl = data.feed?.image || data.items?.[0]?.thumbnail || data.items?.[0]?.enclosure?.thumbnail || "";
+      if (imageUrl) {
+        const cardContainer = document.getElementById(cardId);
+        const coverContainer = document.getElementById(`cover-${cardId}`);
+        if (coverContainer) coverContainer.innerHTML = buildCoverMarkup(imageUrl, title);
+        if (cardContainer) cardContainer.dataset.cover = imageUrl;
+      }
+    }
+  } catch (err) {
+    console.warn("Kunne ikke hente RSS-bilde for:", rssUrl, err);
+  }
+}
+
 export function setupSearchListener() {
   const searchInput = document.getElementById("global-search-input");
   if (!searchInput || searchInput.dataset.bound === "true") return;
@@ -687,7 +863,6 @@ export function setupSearchListener() {
 }
 
 async function executeAppSearch(term) {
-  const requestId = ++searchRequestId;
   let resultsContainer = document.getElementById("search-results-page");
 
   if (!resultsContainer) {
@@ -702,107 +877,63 @@ async function executeAppSearch(term) {
 
   document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => sec.style.display = "none");
 
-  const normalizedTerm = term.toLocaleLowerCase("nb-NO");
-  const normalizeSearchText = value => String(value || "").toLocaleLowerCase("nb-NO");
-  const sectionItems = latestSectionsList
-    .filter(section => section.visible !== false)
-    .flatMap(section => {
-      const rawPages = section.targetPages || section.pages || section.page || "home";
-      const pageTargets = Array.isArray(rawPages) ? rawPages : [rawPages];
-      const defaultType = pageTargets.includes("audiobooks") ? "audiobook" : "podcast";
-      return (section.items || []).map(item => ({
-        ...item,
-        type: item.type || defaultType
-      }));
-    });
-  const localItems = [...new Map(
-    [...sectionItems, ...automaticPodcastCategories.flatMap(category => category.items || [])]
-      .filter(item => {
-        if (item.type === "radio") return false;
-        const searchableText = [
-          item.title,
-          item.name,
-          item.sub,
-          item.subtitle,
-          item.author,
-          item.publisher,
-          item.description,
-          item.desc
-        ].map(normalizeSearchText).join(" ");
-        return searchableText.includes(normalizedTerm);
-      })
-      .map(item => [
-        item.rssUrl || item.rss || item.id || `${item.type || ""}_${item.title || item.name || ""}_${item.sub || item.author || ""}`,
-        item
-      ])
-  ).values()];
-
-  let remoteError = null;
-  let remoteItems = [];
   try {
     const podcastRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`);
-    if (!podcastRes.ok) throw new Error(`Apple Podcasts svarte med ${podcastRes.status}`);
-    const data = await podcastRes.json();
-    remoteItems = (data.results || [])
-      .filter(item => {
-        const title = normalizeSearchText(item.trackName || item.collectionName);
-        const artist = normalizeSearchText(item.artistName);
-        return !title.includes("radio") && !artist.includes("radio");
-      })
-      .map(item => ({
-        id: `apple_${item.collectionId || item.trackId || item.trackName}`,
-        appleId: String(item.collectionId || item.trackId || ""),
-        title: item.trackName || item.collectionName || "Podkast",
-        sub: item.artistName || "Podkast",
-        cover: item.artworkUrl600 || item.artworkUrl100 || "",
-        rssUrl: item.feedUrl || "",
-        type: "podcast"
-      }));
+    let podcasts = [];
+    if (podcastRes.ok) {
+      const data = await podcastRes.json();
+      podcasts = data.results || [];
+    }
+
+    const filteredPodcasts = podcasts.filter(item => {
+      const title = (item.trackName || item.collectionName || '').toLowerCase();
+      const artist = (item.artistName || '').toLowerCase();
+      return !title.includes('radio') && !artist.includes('radio');
+    });
+
+    let htmlContent = "";
+
+    if (filteredPodcasts.length === 0) {
+      htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet for "${escapeAttr(term)}".</p>`;
+    } else {
+      let gridHTML = "";
+
+      filteredPodcasts.forEach((podcast, index) => {
+        const title = podcast.trackName || podcast.collectionName;
+        const sub = podcast.artistName || "Podkast";
+        const cover = podcast.artworkUrl600 || podcast.artworkUrl100;
+        const feedUrl = podcast.feedUrl || "";
+        const cardId = `search-podcast-card-${index}`;
+
+        gridHTML += `
+          <div class="book-card search-result-item" 
+               id="${cardId}"
+               data-id="${cardId}"
+               data-title="${escapeAttr(title)}" 
+               data-sub="${escapeAttr(sub)}" 
+               data-desc="Hentet via Apple Podcast API" 
+               data-cover="${escapeAttr(cover)}"
+               data-rss="${escapeAttr(feedUrl)}"
+               data-type="podcast"
+               data-audio="">
+            <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
+            <div class="book-title">${escapeAttr(title)}</div>
+            <div class="book-author">🎙️ ${escapeAttr(sub)}</div>
+          </div>
+        `;
+      });
+
+      htmlContent = `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${gridHTML}</div>`;
+    }
+
+    resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container">${htmlContent}</div>`;
   } catch (err) {
-    remoteError = err;
-    console.warn("Kunne ikke søke i Apple Podcasts:", err);
-  }
-
-  if (requestId !== searchRequestId || document.getElementById("global-search-input")?.value.trim() !== term) return;
-
-  const localKeys = new Set(localItems.flatMap(item => [
-    item.rssUrl || item.rss,
-    item.title && normalizeSearchText(item.title)
-  ].filter(Boolean)));
-  const results = [
-    ...localItems,
-    ...remoteItems.filter(item =>
-      !localKeys.has(item.rssUrl) && !localKeys.has(normalizeSearchText(item.title))
-    )
-  ];
-  const resultsMarkup = results.map((item, index) => {
-    const itemKey = `search_result_${requestId}_${index}`;
-    const title = item.title || item.name || "Innhold";
-    const sub = item.sub || item.subtitle || item.author || item.publisher || "";
-    const cover = item.cover || item.coverUrl || item.image || "";
-    window[itemKey] = item;
-    return `<div class="book-card search-result-item" role="button" tabindex="0" data-item-key="${itemKey}" data-title="${escapeAttr(title)}" data-type="${escapeAttr(item.type || "podcast")}">
-      <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
-      <div class="book-title">${escapeAttr(title)}</div>
-      <div class="book-author">${escapeAttr(sub)}</div>
-    </div>`;
-  }).join("");
-  const message = remoteError
-    ? `<p class="loading-episodes">Kunne ikke hente flere treff fra Apple Podcasts. Viser tilgjengelig innhold fra Tale.</p>`
-    : "";
-  const emptyMessage = results.length ? "" : `<p class="loading-episodes">Ingen treff funnet for «${escapeAttr(term)}».</p>`;
-
-  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2>${message}<div class="dynamic-container">${results.length ? `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${resultsMarkup}</div>` : emptyMessage}</div>`;
-  if (remoteError && results.length === 0) {
-    resultsContainer.querySelector(".dynamic-container")?.insertAdjacentHTML(
-      "beforeend",
-      '<p class="loading-episodes">Søk i eksterne podkaster er midlertidig utilgjengelig.</p>'
-    );
+    console.error("Feil under søk:", err);
+    resultsContainer.innerHTML = `<h2>Søk</h2><p style="padding:20px; color:red;">Kunne ikke utføre søk akkurat nå.</p>`;
   }
 }
 
 export function removeSearchResultsView() {
-  searchRequestId += 1;
   const resultsContainer = document.getElementById("search-results-page");
   if (resultsContainer) resultsContainer.remove();
   document.querySelectorAll("main > section").forEach(sec => sec.style.display = "");
@@ -837,14 +968,6 @@ function extractCardItemData(card) {
 // EVENTS / LYSNERE
 // ==========================================
 function setupEventListeners() {
-  document.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    const card = event.target.closest?.('.book-card[role="button"]');
-    if (!card || event.target !== card) return;
-    event.preventDefault();
-    card.click();
-  });
-
   document.addEventListener("click", async (e) => {
     const favoritesToggle = e.target.closest("#account-favorites-toggle");
     if (favoritesToggle) {
@@ -910,7 +1033,6 @@ function setupEventListeners() {
           cover,
           coverUrl: cover,
           rssUrl,
-          appleId: slide.dataset.appleId || "",
           appleUrl: slide.dataset.appleUrl || "",
           type: "podcast",
           description: "En av ukens mest populære podkaster i Norge."
@@ -1054,6 +1176,21 @@ function setupEventListeners() {
     }
   });
 
+  document.addEventListener("submit", async (e) => {
+    if (e.target?.id === "auth-form") {
+      e.preventDefault();
+      const email = document.getElementById("auth-email")?.value;
+      const password = document.getElementById("auth-password")?.value;
+      const errorMsg = document.getElementById("auth-error");
+      if (errorMsg) errorMsg.innerText = "";
+
+      try {
+        await submitAuthForm(email, password);
+      } catch (err) {
+        if (errorMsg) errorMsg.innerText = "Feil ved innlogging eller registrering.";
+      }
+    }
+  });
 }
 
 function renderAccountFavorites() {

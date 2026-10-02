@@ -91,43 +91,6 @@
   gap: 0.35rem;
 }
 
-.auth-card .input-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.auth-card .input-icon {
-  position: absolute;
-  top: 50%;
-  left: 1rem;
-  z-index: 1;
-  color: var(--text-muted, #94a3b8);
-  pointer-events: none;
-  transform: translateY(-50%);
-}
-
-.auth-card .input-row {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.auth-card .toggle-password-btn {
-  position: absolute;
-  top: 50%;
-  right: 0.85rem;
-  z-index: 1;
-  padding: 0.35rem;
-  color: var(--text-muted, #94a3b8);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  transform: translateY(-50%);
-}
-
-.auth-card #auth-password {
-  padding-right: 3rem;
-}
-
 .auth-step-field,
 .field-group-animated {
   opacity: 0;
