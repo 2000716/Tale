@@ -150,9 +150,9 @@ export async function openDetailsPage(item) {
     // RSS-feed (Podkast)
     if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Henter episoder og informasjon...</div>`;
     try {
-      const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
-      if (!res.ok) throw new Error(`RSS-tjenesten svarte med HTTP ${res.status}.`);
-      const data = await res.json();
+      const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+      if (!response.ok) throw new Error(`RSS-tjenesten svarte med HTTP ${response.status}.`);
+      const data = await response.json();
       if (data.status !== 'ok') {
         throw new Error(data.message || 'RSS-tjenesten kunne ikke lese denne feeden.');
       }

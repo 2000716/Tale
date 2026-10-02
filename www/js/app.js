@@ -37,8 +37,7 @@ let latestSectionsList = [];
 
 const LOCAL_CACHE_TTL = {
   weekly: 24 * 60 * 60 * 1000,
-  automaticCategories: 24 * 60 * 60 * 1000,
-  feed: 7 * 24 * 60 * 60 * 1000
+  automaticCategories: 24 * 60 * 60 * 1000
 };
 
 function readLocalCache(key) {
@@ -62,6 +61,17 @@ function writeLocalCache(key, payload, ttlMs) {
     }));
   } catch (error) {
     console.warn(`Kunne ikke lagre cache for ${key}:`, error);
+  }
+}
+
+function clearCachedPodcastFeeds() {
+  try {
+    for (let index = localStorage.length - 1; index >= 0; index--) {
+      const key = localStorage.key(index);
+      if (key?.startsWith("tale_feed_")) localStorage.removeItem(key);
+    }
+  } catch (error) {
+    console.warn("Kunne ikke fjerne tidligere lagrede podkast-feeder:", error);
   }
 }
 
@@ -94,6 +104,7 @@ function escapeAttr(str) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  clearCachedPodcastFeeds();
   initAuth();
   setupAudioListeners();
   loadWeeklyPodcasts();
@@ -688,27 +699,17 @@ async function renderNewEpisodesGallery(sectionsList) {
 
   const results = await mapWithConcurrency(feeds, 6, async (podcast) => {
     const rssUrl = podcast.rssUrl || podcast.rss;
-    const cacheKey = `tale_feed_${encodeURIComponent(rssUrl)}`;
-    const cached = readLocalCache(cacheKey);
-    let feedItems = cached?.items || [];
-
-    if (cached?.expiresAt <= Date.now()) {
-      feedItems = cached.items || [];
-    } else if (cached?.items?.length) {
-      feedItems = cached.items;
-    }
-
-    if (!cached || cached.expiresAt <= Date.now()) {
-      try {
-        const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
-        const data = await response.json();
-        if (data.status === 'ok') {
-          feedItems = data.items || [];
-          writeLocalCache(cacheKey, { items: feedItems }, LOCAL_CACHE_TTL.feed);
-        }
-      } catch (error) {
-        console.warn('Kunne ikke hente nye podkastepisoder:', error);
+    let feedItems = [];
+    try {
+      const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+      if (!response.ok) throw new Error(`RSS-tjenesten svarte med HTTP ${response.status}.`);
+      const data = await response.json();
+      if (data.status !== 'ok') {
+        throw new Error(data.message || 'RSS-tjenesten kunne ikke lese denne feeden.');
       }
+      feedItems = data.items || [];
+    } catch (error) {
+      console.warn('Kunne ikke hente nye podkastepisoder:', error);
     }
 
     return feedItems.filter(episode => isNewEpisode(episode.pubDate)).map(episode => ({
@@ -788,29 +789,28 @@ async function renderRadioBanner() {
   let bannerHeadline = "NRK P2 Nyheter";
 
   try {
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/toppsaker.rss")}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.status === 'ok' && data.items?.length > 0) {
-        const topItem = data.items[0];
-        if (topItem.title) bannerHeadline = topItem.title;
+    const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/toppsaker.rss")}`);
+    if (!response.ok) throw new Error(`RSS-tjenesten svarte med ${response.status}`);
+    const data = await response.json();
+    if (data.status === 'ok' && data.items?.length > 0) {
+      const topItem = data.items[0];
+      if (topItem.title) bannerHeadline = topItem.title;
 
-        let fetchedImg = topItem.media?.content?.url 
-          || topItem.media?.thumbnail?.url 
-          || topItem.thumbnail 
-          || topItem.enclosure?.link 
-          || topItem.enclosure?.thumbnail;
+      let fetchedImg = topItem.media?.content?.url 
+        || topItem.media?.thumbnail?.url 
+        || topItem.thumbnail 
+        || topItem.enclosure?.link 
+        || topItem.enclosure?.thumbnail;
 
-        if (!fetchedImg) {
-          const contentToSearch = topItem.content || topItem.description || '';
-          const imgMatch = contentToSearch.match(/<img[^>]+src=["']([^"']+)["']/i);
-          if (imgMatch && imgMatch[1]) {
-            fetchedImg = imgMatch[1];
-          }
+      if (!fetchedImg) {
+        const contentToSearch = topItem.content || topItem.description || '';
+        const imgMatch = contentToSearch.match(/<img[^>]+src=["']([^"']+)["']/i);
+        if (imgMatch && imgMatch[1]) {
+          fetchedImg = imgMatch[1];
         }
-
-        if (fetchedImg) bannerImage = fetchedImg;
       }
+
+      if (fetchedImg) bannerImage = fetchedImg;
     }
   } catch (err) {
     console.warn("Kunne ikke hente NRK RSS for banner, bruker standardverdi.", err);
@@ -845,9 +845,9 @@ async function renderRadioBanner() {
 
 async function fetchRSSImageData(rssUrl, cardId, title) {
   try {
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
-    if (!res.ok) return;
-    const data = await res.json();
+    const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+    if (!response.ok) return;
+    const data = await response.json();
     if (data.status === 'ok') {
       const imageUrl = data.feed?.image || data.items?.[0]?.thumbnail || data.items?.[0]?.enclosure?.thumbnail || "";
       if (imageUrl) {

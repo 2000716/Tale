@@ -88,8 +88,9 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
   try {
     // Riktig direkte-adresse til NRKs toppsaker
     const rssUrl = encodeURIComponent('https://www.nrk.no/toppsaker.rss');
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
-    const data = await res.json();
+    const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
+    if (!response.ok) throw new Error(`RSS-tjenesten svarte med HTTP ${response.status}.`);
+    const data = await response.json();
 
     if (data.status === 'ok' && data.items && data.items.length > 0) {
       const topStory = data.items[0];
