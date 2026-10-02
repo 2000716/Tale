@@ -274,8 +274,7 @@ export async function submitAuthForm(email, password, firstName = "", lastName =
     await setDoc(doc(db, "users", userCredential.user.uid), {
       email: userCredential.user.email,
       displayName: displayName,
-      role: "user",
-      createdAt: new Date().toISOString()
+      role: "user"
     });
 
     updateUserProfileUI(userCredential.user);
