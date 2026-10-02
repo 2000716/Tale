@@ -61,12 +61,12 @@
           </div>
         </div>
 
-        <div class="input-wrapper">
+        <div class="input-wrapper auth-step-field" id="auth-email-group">
           <i class="fa-regular fa-envelope input-icon"></i>
           <input type="email" id="auth-email" placeholder="E-post" required autocomplete="email" autocapitalize="none" spellcheck="false">
         </div>
 
-        <div class="input-wrapper">
+        <div class="input-wrapper auth-step-field" id="auth-password-group">
           <i class="fa-solid fa-lock input-icon"></i>
           <input type="password" id="auth-password" placeholder="Passord" required autocomplete="current-password">
           <button type="button" id="toggle-password-visibility" class="toggle-password-btn" aria-label="Vis passord">
@@ -77,7 +77,9 @@
         <button type="submit" id="auth-submit-btn" class="btn-primary btn-bounce">Logg inn</button>
       </form>
 
+      <div id="auth-status-banner" class="auth-status-banner hidden" role="alert" aria-live="polite"></div>
       <p id="auth-error" class="error-msg" role="alert" aria-live="assertive"></p>
+      <button id="auth-resend-verification-btn" class="btn-link auth-resend-btn hidden" type="button">Send verifiseringsmail på nytt</button>
       
       <div class="auth-footer">
         <button id="toggle-auth-mode" class="btn-link">Har du ikke konto? Registrer deg</button>
