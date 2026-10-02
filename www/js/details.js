@@ -21,6 +21,7 @@ let currentItem = null;
 let currentSeason = 1;
 let visibleEpisodesCount = EPISODES_PER_PAGE;
 let fetchedEpisodes = [];
+let episodeLoadError = '';
 
 // DOM-elementer fra index.html
 const detailsPage = document.getElementById('details-page');
@@ -60,6 +61,7 @@ export async function openDetailsPage(item) {
   currentItem = item;
   visibleEpisodesCount = EPISODES_PER_PAGE;
   fetchedEpisodes = [];
+  episodeLoadError = '';
   syncFavoriteButton(item);
 
   const contentType = item.type || (item.rssUrl || item.rss ? 'podcast' : 'audiobook');
@@ -149,44 +151,46 @@ export async function openDetailsPage(item) {
     if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Henter episoder og informasjon...</div>`;
     try {
       const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+      if (!res.ok) throw new Error(`RSS-tjenesten svarte med HTTP ${res.status}.`);
       const data = await res.json();
-      if (data.status === 'ok') {
-
-        // OPPVIKTIG: Oppdaterer hovedbeskrivelsen direkte med den fulle beskrivelsen fra RSS-feeden
-        const rssFeedDescription = data.feed?.description || data.feed?.summary || '';
-        if (rssFeedDescription && descEl) {
-          descEl.innerHTML = cleanHTML(rssFeedDescription);
-        }
-
-        const sourceUrl = item.sourceUrl || item.studioUrl || item.website || data.feed?.link || '';
-        if (sourceUrl && sourceLink) {
-          sourceLink.href = sourceUrl;
-          sourceLink.hidden = false;
-        }
-
-        renderFacts({
-          reader: item.reader || item.narrator || item.readBy || item.author || '',
-          studio: item.studio || item.publisher || data.feed?.author || data.feed?.owner || '',
-          category: item.category || (Array.isArray(item.genres) ? item.genres.join(', ') : '') || data.feed?.category || ''
-        });
-
-        fetchedEpisodes = (data.items || []).map(ep => ({
-          title: ep.title || 'Uten tittel',
-          audioUrl: ep.enclosure?.link || ep.link || '',
-          cover: ep.thumbnail || ep.itunes?.image || ep.enclosure?.thumbnail || imageUrl,
-          duration: ep.enclosure?.duration || ep.duration || '',
-          pubDate: ep.pubDate || '',
-          description: ep.description || ep.summary || ep.content || '',
-          season: ep.itunes?.season || ep.season || '',
-          episode: ep.itunes?.episode || ep.episode || ''
-        }));
-
-        const rssSeasons = [...new Set(fetchedEpisodes.map(ep => Number(ep.season)).filter(Number.isFinite))].sort((a, b) => a - b);
-        if (rssSeasons.length > 1) currentItem.seasons = rssSeasons;
+      if (data.status !== 'ok') {
+        throw new Error(data.message || 'RSS-tjenesten kunne ikke lese denne feeden.');
       }
+
+      // OPPVIKTIG: Oppdaterer hovedbeskrivelsen direkte med den fulle beskrivelsen fra RSS-feeden
+      const rssFeedDescription = data.feed?.description || data.feed?.summary || '';
+      if (rssFeedDescription && descEl) {
+        descEl.innerHTML = cleanHTML(rssFeedDescription);
+      }
+
+      const sourceUrl = item.sourceUrl || item.studioUrl || item.website || data.feed?.link || '';
+      if (sourceUrl && sourceLink) {
+        sourceLink.href = sourceUrl;
+        sourceLink.hidden = false;
+      }
+
+      renderFacts({
+        reader: item.reader || item.narrator || item.readBy || item.author || '',
+        studio: item.studio || item.publisher || data.feed?.author || data.feed?.owner || '',
+        category: item.category || (Array.isArray(item.genres) ? item.genres.join(', ') : '') || data.feed?.category || ''
+      });
+
+      fetchedEpisodes = (data.items || []).map(ep => ({
+        title: ep.title || 'Uten tittel',
+        audioUrl: ep.enclosure?.link || ep.link || '',
+        cover: ep.thumbnail || ep.itunes?.image || ep.enclosure?.thumbnail || imageUrl,
+        duration: ep.enclosure?.duration || ep.duration || '',
+        pubDate: ep.pubDate || '',
+        description: ep.description || ep.summary || ep.content || '',
+        season: ep.itunes?.season || ep.season || '',
+        episode: ep.itunes?.episode || ep.episode || ''
+      }));
+
+      const rssSeasons = [...new Set(fetchedEpisodes.map(ep => Number(ep.season)).filter(Number.isFinite))].sort((a, b) => a - b);
+      if (rssSeasons.length > 1) currentItem.seasons = rssSeasons;
     } catch (err) {
       console.error("Kunne ikke hente RSS:", err);
-      if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Kunne ikke laste episoder fra RSS.</div>`;
+      episodeLoadError = err instanceof Error ? err.message : 'Ukjent feil ved henting av RSS.';
     }
   }
 
@@ -346,8 +350,10 @@ function renderEpisodesOrChapters(items, unitName) {
   if (!episodeList) return;
 
   if (!items || items.length === 0) {
-    episodeList.innerHTML = `<div class="loading-episodes">Ingen ${unitName} tilgjengelig.</div>`;
-    if (badgeEpisodes) badgeEpisodes.textContent = `0 ${unitName}`;
+    episodeList.innerHTML = episodeLoadError
+      ? `<div class="loading-episodes">Kunne ikke laste episoder: ${escapeHtml(episodeLoadError)}</div>`
+      : `<div class="loading-episodes">Ingen ${unitName} tilgjengelig.</div>`;
+    if (badgeEpisodes) badgeEpisodes.textContent = episodeLoadError ? 'Kunne ikke laste' : `0 ${unitName}`;
     if (loadMoreBtn) loadMoreBtn.style.display = 'none';
     return;
   }

@@ -101,10 +101,18 @@ export function formatTime(seconds) {
 
 export function updatePlayIcons(isPlaying) {
   const iconClass = isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
+  const action = isPlaying ? "Pause" : "Spill";
+  const title = state.selectedItem?.title || "innhold";
   const miniPlayBtn = document.getElementById("mini-play-btn");
   const fullPlayBtn = document.getElementById("full-play-btn");
-  if (miniPlayBtn) miniPlayBtn.innerHTML = `<i class="${iconClass}"></i>`;
-  if (fullPlayBtn) fullPlayBtn.innerHTML = `<i class="${iconClass}"></i>`;
+  if (miniPlayBtn) {
+    miniPlayBtn.innerHTML = `<i class="${iconClass}"></i>`;
+    miniPlayBtn.setAttribute("aria-label", `${action} ${title}`);
+  }
+  if (fullPlayBtn) {
+    fullPlayBtn.innerHTML = `<i class="${iconClass}"></i>`;
+    fullPlayBtn.setAttribute("aria-label", `${action} ${title}`);
+  }
 }
 
 window.toggleReadMore = function() {

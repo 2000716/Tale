@@ -2,8 +2,8 @@ import { state, globalAudio } from "./state.js";
 import { buildCoverMarkup, updateUrlHash, updateBottomNavVisibility, formatTime, updatePlayIcons, switchPage, rememberPlayerReturnPage } from "./ui.js";
 import { saveProgressToFirestore, removeFromFirestoreHistory, updateDetailPlayButtonState } from "./history.js";
 import { openDetailsPage } from "./details.js";
-import { shareContent } from "./content-actions.js";
-import { readCachedAudioResponse, cacheAudioResponse, normalizeAudioUrl } from "./audio-cache.js";
+import { shareContent, showActionToast } from "./content-actions.js";
+import { readCachedAudioResponse, normalizeAudioUrl } from "./audio-cache.js";
 
 const speeds = [1.0, 1.25, 1.5, 1.75, 2.0, 0.8];
 
@@ -15,8 +15,9 @@ let sleepTimeout = null;
 let sleepInterval = null;
 let targetTime = null;
 let cachedAudioBlobUrl = null;
+let playbackRequestId = 0;
 
-async function resolveAudioPlaybackSource(audioUrl) {
+async function resolveAudioPlaybackSource(audioUrl, requestId) {
   const normalizedUrl = normalizeAudioUrl(audioUrl);
   if (!normalizedUrl || !("caches" in window)) return normalizedUrl;
 
@@ -24,24 +25,16 @@ async function resolveAudioPlaybackSource(audioUrl) {
     const cachedResponse = await readCachedAudioResponse(normalizedUrl);
     if (cachedResponse) {
       const blob = await cachedResponse.blob();
+      if (requestId !== playbackRequestId) return normalizedUrl;
       if (cachedAudioBlobUrl) URL.revokeObjectURL(cachedAudioBlobUrl);
       cachedAudioBlobUrl = URL.createObjectURL(blob);
       return cachedAudioBlobUrl;
     }
-
-    const response = await fetch(normalizedUrl, { cache: "no-store" });
-    if (!response || !response.ok) return normalizedUrl;
-
-    await cacheAudioResponse(normalizedUrl, response);
-
-    const blob = await response.blob();
-    if (cachedAudioBlobUrl) URL.revokeObjectURL(cachedAudioBlobUrl);
-    cachedAudioBlobUrl = URL.createObjectURL(blob);
-    return cachedAudioBlobUrl;
   } catch (error) {
     console.warn("Kunne ikke bruke cache for lydfil:", error);
-    return normalizedUrl;
   }
+
+  return normalizedUrl;
 }
 
 function updateSleepDisplay() {
@@ -291,10 +284,11 @@ export function openDetailsView(item) {
 
 export async function playSpecificEpisode(epData, startPosition = 0) {
   if (!epData || !epData.audioUrl || !isPlayableAudioUrl(epData.audioUrl)) {
-    alert("Ingen gyldig lydkilde funnet for dette elementet.");
+    showActionToast("Fant ingen gyldig lydkilde for dette innholdet.");
     return;
   }
 
+  const requestId = ++playbackRequestId;
   globalAudio.pause();
   state.selectedItem = {
     id: epData.id || epData.title,
@@ -308,7 +302,8 @@ export async function playSpecificEpisode(epData, startPosition = 0) {
 
   const totalTimeSpan = document.getElementById("total-time");
   const remoteAudioUrl = state.selectedItem.audioUrl;
-  const preferredAudioUrl = await resolveAudioPlaybackSource(remoteAudioUrl);
+  const preferredAudioUrl = await resolveAudioPlaybackSource(remoteAudioUrl, requestId);
+  if (requestId !== playbackRequestId) return;
   globalAudio.dataset.originalAudioUrl = remoteAudioUrl;
   globalAudio.dataset.cachedAudioSource = preferredAudioUrl !== remoteAudioUrl ? preferredAudioUrl : "";
   globalAudio.autoplay = false;
@@ -326,7 +321,12 @@ export async function playSpecificEpisode(epData, startPosition = 0) {
     globalAudio.play().then(() => {
       updatePlayIcons(true);
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "playing";
-    }).catch(e => console.log("Auto-play hindret:", e));
+    }).catch(error => {
+      if (error.name !== "AbortError") {
+        console.warn("Avspillingen kunne ikke startes:", error);
+        showActionToast("Kunne ikke starte avspillingen. Trykk på spill av for å prøve igjen.");
+      }
+    });
 
     if (totalTimeSpan && globalAudio.duration) {
       totalTimeSpan.innerText = formatTime(globalAudio.duration);
@@ -539,6 +539,7 @@ export function setupAudioListeners() {
     if (isLiveStream) {
       updatePlayIcons(false);
       updateContentPlayButtons();
+      showActionToast("Kunne ikke koble til radiosendingen. Prøv igjen om litt.");
       return;
     }
 
@@ -552,6 +553,7 @@ export function setupAudioListeners() {
     if (!currentSrc || !navigator.onLine) {
       updatePlayIcons(false);
       updateContentPlayButtons();
+      showActionToast("Kontroller internettilkoblingen og prøv å spille av igjen.");
       return;
     }
 
@@ -559,6 +561,7 @@ export function setupAudioListeners() {
       console.warn("Stopper gjentatte forsøk på ugyldig lydkilde.");
       updatePlayIcons(false);
       updateContentPlayButtons();
+      showActionToast("Kunne ikke spille av dette lydsporet. Prøv en annen episode.");
       return;
     }
 

@@ -10,6 +10,7 @@ import { collection, query, orderBy, onSnapshot, getDocs } from "https://www.gst
 let currentSlideIndex = 0;
 let sectionsUnsubscribe = null;
 let accountFavorites = [];
+let searchRequestId = 0;
 const NEW_EPISODE_DAYS = 14;
 const AUTOMATIC_PODCAST_SOURCES = [
   {
@@ -452,6 +453,8 @@ export async function loadContentFromFirestore() {
 
             itemsHTML += `
               <div class="book-card${index >= maxItems ? ' section-item-overflow' : ''}" 
+                   role="button"
+                   tabindex="0"
                    id="${cardId}"
                    data-item-key="${itemKey}"
                    data-id="${escapeAttr(item.id || cardId)}"
@@ -633,7 +636,7 @@ function renderAutomaticPodcastSections() {
     const itemMarkup = category.items.map((item, index) => {
       const itemKey = `automatic_podcast_${categoryIndex}_${index}`;
       window[itemKey] = item;
-      return `<div class="book-card" data-item-key="${itemKey}" data-title="${escapeAttr(item.title)}" data-rss="${escapeAttr(item.rssUrl)}" data-type="podcast">
+      return `<div class="book-card" role="button" tabindex="0" data-item-key="${itemKey}" data-title="${escapeAttr(item.title)}" data-rss="${escapeAttr(item.rssUrl)}" data-type="podcast">
         <div class="book-cover">${buildCoverMarkup(item.cover, item.title)}</div>
         <div class="book-title">${escapeAttr(item.title)}</div>
         <div class="book-author">${escapeAttr(item.sub)}</div>
@@ -741,7 +744,7 @@ async function renderNewEpisodesGallery(sectionsList) {
       pubDate: episode.pubDate,
       type: 'podcast'
     };
-    return `<div class="book-card new-episode-card" data-item-key="${itemKey}" data-title="${escapeAttr(title)}">
+    return `<div class="book-card new-episode-card" role="button" tabindex="0" data-item-key="${itemKey}" data-title="${escapeAttr(title)}">
       <div class="book-cover new-episode-cover">
         ${buildCoverMarkup(cover, title)}
         <span class="new-episode-badge">NY</span>
@@ -880,6 +883,7 @@ export function setupSearchListener() {
 }
 
 async function executeAppSearch(term) {
+  const requestId = ++searchRequestId;
   let resultsContainer = document.getElementById("search-results-page");
 
   if (!resultsContainer) {
@@ -894,63 +898,106 @@ async function executeAppSearch(term) {
 
   document.querySelectorAll("main > section:not(#search-results-page)").forEach(sec => sec.style.display = "none");
 
+  const normalizedTerm = term.toLocaleLowerCase("nb-NO");
+  const normalizeSearchText = value => String(value || "").toLocaleLowerCase("nb-NO");
+  const sectionItems = latestSectionsList
+    .filter(section => section.visible !== false)
+    .flatMap(section => {
+      const rawPages = section.targetPages || section.pages || section.page || "home";
+      const pageTargets = Array.isArray(rawPages) ? rawPages : [rawPages];
+      const defaultType = pageTargets.includes("audiobooks") ? "audiobook" : "podcast";
+      return (section.items || []).map(item => ({
+        ...item,
+        type: item.type || defaultType
+      }));
+    });
+  const localItems = [...new Map(
+    [...sectionItems, ...automaticPodcastCategories.flatMap(category => category.items || [])]
+      .filter(item => {
+        if (item.type === "radio") return false;
+        const searchableText = [
+          item.title,
+          item.name,
+          item.sub,
+          item.subtitle,
+          item.author,
+          item.publisher,
+          item.description,
+          item.desc
+        ].map(normalizeSearchText).join(" ");
+        return searchableText.includes(normalizedTerm);
+      })
+      .map(item => [
+        item.rssUrl || item.rss || item.id || `${item.type || ""}_${item.title || item.name || ""}_${item.sub || item.author || ""}`,
+        item
+      ])
+  ).values()];
+
+  let remoteError = null;
+  let remoteItems = [];
   try {
     const podcastRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&country=NO&limit=20`);
-    let podcasts = [];
-    if (podcastRes.ok) {
-      const data = await podcastRes.json();
-      podcasts = data.results || [];
-    }
-
-    const filteredPodcasts = podcasts.filter(item => {
-      const title = (item.trackName || item.collectionName || '').toLowerCase();
-      const artist = (item.artistName || '').toLowerCase();
-      return !title.includes('radio') && !artist.includes('radio');
-    });
-
-    let htmlContent = "";
-
-    if (filteredPodcasts.length === 0) {
-      htmlContent = `<p style="padding: 20px; color: #888;">Ingen treff funnet for "${escapeAttr(term)}".</p>`;
-    } else {
-      let gridHTML = "";
-
-      filteredPodcasts.forEach((podcast, index) => {
-        const title = podcast.trackName || podcast.collectionName;
-        const sub = podcast.artistName || "Podkast";
-        const cover = podcast.artworkUrl600 || podcast.artworkUrl100;
-        const feedUrl = podcast.feedUrl || "";
-        const cardId = `search-podcast-card-${index}`;
-
-        gridHTML += `
-          <div class="book-card search-result-item" 
-               id="${cardId}"
-               data-id="${cardId}"
-               data-title="${escapeAttr(title)}" 
-               data-sub="${escapeAttr(sub)}" 
-               data-desc="Hentet via Apple Podcast API" 
-               data-cover="${escapeAttr(cover)}"
-               data-rss="${escapeAttr(feedUrl)}"
-               data-type="podcast"
-               data-audio="">
-            <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
-            <div class="book-title">${escapeAttr(title)}</div>
-            <div class="book-author">🎙️ ${escapeAttr(sub)}</div>
-          </div>
-        `;
-      });
-
-      htmlContent = `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${gridHTML}</div>`;
-    }
-
-    resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2><div class="dynamic-container">${htmlContent}</div>`;
+    if (!podcastRes.ok) throw new Error(`Apple Podcasts svarte med ${podcastRes.status}`);
+    const data = await podcastRes.json();
+    remoteItems = (data.results || [])
+      .filter(item => {
+        const title = normalizeSearchText(item.trackName || item.collectionName);
+        const artist = normalizeSearchText(item.artistName);
+        return !title.includes("radio") && !artist.includes("radio");
+      })
+      .map(item => ({
+        id: `apple_${item.collectionId || item.trackId || item.trackName}`,
+        title: item.trackName || item.collectionName || "Podkast",
+        sub: item.artistName || "Podkast",
+        cover: item.artworkUrl600 || item.artworkUrl100 || "",
+        rssUrl: item.feedUrl || "",
+        type: "podcast"
+      }));
   } catch (err) {
-    console.error("Feil under søk:", err);
-    resultsContainer.innerHTML = `<h2>Søk</h2><p style="padding:20px; color:red;">Kunne ikke utføre søk akkurat nå.</p>`;
+    remoteError = err;
+    console.warn("Kunne ikke søke i Apple Podcasts:", err);
+  }
+
+  if (requestId !== searchRequestId || document.getElementById("global-search-input")?.value.trim() !== term) return;
+
+  const localKeys = new Set(localItems.flatMap(item => [
+    item.rssUrl || item.rss,
+    item.title && normalizeSearchText(item.title)
+  ].filter(Boolean)));
+  const results = [
+    ...localItems,
+    ...remoteItems.filter(item =>
+      !localKeys.has(item.rssUrl) && !localKeys.has(normalizeSearchText(item.title))
+    )
+  ];
+  const resultsMarkup = results.map((item, index) => {
+    const itemKey = `search_result_${requestId}_${index}`;
+    const title = item.title || item.name || "Innhold";
+    const sub = item.sub || item.subtitle || item.author || item.publisher || "";
+    const cover = item.cover || item.coverUrl || item.image || "";
+    window[itemKey] = item;
+    return `<div class="book-card search-result-item" role="button" tabindex="0" data-item-key="${itemKey}" data-title="${escapeAttr(title)}" data-type="${escapeAttr(item.type || "podcast")}">
+      <div class="book-cover">${buildCoverMarkup(cover, title)}</div>
+      <div class="book-title">${escapeAttr(title)}</div>
+      <div class="book-author">${escapeAttr(sub)}</div>
+    </div>`;
+  }).join("");
+  const message = remoteError
+    ? `<p class="loading-episodes">Kunne ikke hente flere treff fra Apple Podcasts. Viser tilgjengelig innhold fra Tale.</p>`
+    : "";
+  const emptyMessage = results.length ? "" : `<p class="loading-episodes">Ingen treff funnet for «${escapeAttr(term)}».</p>`;
+
+  resultsContainer.innerHTML = `<h2>Søkeresultater for "${escapeAttr(term)}"</h2>${message}<div class="dynamic-container">${results.length ? `<div class="horizontal-scroll" style="flex-wrap: wrap; gap: 15px;">${resultsMarkup}</div>` : emptyMessage}</div>`;
+  if (remoteError && results.length === 0) {
+    resultsContainer.querySelector(".dynamic-container")?.insertAdjacentHTML(
+      "beforeend",
+      '<p class="loading-episodes">Søk i eksterne podkaster er midlertidig utilgjengelig.</p>'
+    );
   }
 }
 
 export function removeSearchResultsView() {
+  searchRequestId += 1;
   const resultsContainer = document.getElementById("search-results-page");
   if (resultsContainer) resultsContainer.remove();
   document.querySelectorAll("main > section").forEach(sec => sec.style.display = "");
@@ -985,6 +1032,14 @@ function extractCardItemData(card) {
 // EVENTS / LYSNERE
 // ==========================================
 function setupEventListeners() {
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const card = event.target.closest?.('.book-card[role="button"]');
+    if (!card || event.target !== card) return;
+    event.preventDefault();
+    card.click();
+  });
+
   document.addEventListener("click", async (e) => {
     const favoritesToggle = e.target.closest("#account-favorites-toggle");
     if (favoritesToggle) {
