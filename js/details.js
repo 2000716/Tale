@@ -22,6 +22,7 @@ let currentSeason = 1;
 let visibleEpisodesCount = EPISODES_PER_PAGE;
 let fetchedEpisodes = [];
 let episodeLoadError = '';
+let detailsRequestId = 0;
 
 // DOM-elementer fra index.html
 const detailsPage = document.getElementById('details-page');
@@ -81,8 +82,13 @@ async function fetchApplePodcastMetadata(item) {
 export async function openDetailsPage(item) {
   if (!item) return;
 
+  const requestId = ++detailsRequestId;
   if (detailsPage && !detailsPage.classList.contains('active')) {
     updateUrlHash('details-page');
+  }
+  if (detailsPage) {
+    detailsPage.classList.add('active');
+    updateBottomNavVisibility();
   }
 
   currentItem = item;
@@ -91,83 +97,34 @@ export async function openDetailsPage(item) {
   episodeLoadError = '';
 
   const contentType = item.type || (item.rssUrl || item.rss ? 'podcast' : 'audiobook');
+  if (detailsPage) detailsPage.setAttribute('data-type', contentType);
+  if (episodeListContainer) episodeListContainer.style.display = contentType === 'radio' ? 'none' : 'flex';
+  if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Henter episoder og informasjon...</div>`;
+  if (badgeEpisodes) badgeEpisodes.textContent = 'Henter episoder...';
+  renderItemMetadata(item);
+
+  let appleMetadataPromise = null;
+  let rssFeedDescription = '';
+  let rssFeedFacts = null;
+  let rssSourceUrl = '';
   if (contentType === 'podcast') {
-    try {
-      const appleDetails = await fetchApplePodcastMetadata(item);
-      if (appleDetails) {
-        const genres = Array.isArray(appleDetails.genres) ? appleDetails.genres : item.genres;
-        item = {
-          ...item,
-          appleId: appleDetails.collectionId || item.appleId,
-          title: appleDetails.collectionName || item.title,
-          sub: appleDetails.artistName || item.sub || item.author || '',
-          author: appleDetails.artistName || item.author || '',
-          cover: appleDetails.artworkUrl600 || appleDetails.artworkUrl100 || item.cover,
-          coverUrl: appleDetails.artworkUrl600 || appleDetails.artworkUrl100 || item.coverUrl,
-          imageUrl: appleDetails.artworkUrl600 || appleDetails.artworkUrl100 || item.imageUrl,
-          rssUrl: appleDetails.feedUrl || item.rssUrl || item.rss,
-          appleUrl: appleDetails.collectionViewUrl || item.appleUrl,
-          category: appleDetails.primaryGenreName || item.category,
-          genres,
-          description: appleDetails.description || item.description
-        };
+    appleMetadataPromise = fetchApplePodcastMetadata(item).catch(error => {
+      if (requestId === detailsRequestId) {
+        console.warn('Kunne ikke hente podkastmetadata fra Apple:', error);
       }
-    } catch (error) {
-      console.warn('Kunne ikke hente podkastmetadata fra Apple:', error);
+      return null;
+    });
+    if (!item.rssUrl && !item.rss) {
+      const appleDetails = await appleMetadataPromise;
+      if (requestId !== detailsRequestId) return;
+      item = mergeApplePodcastMetadata(item, appleDetails);
     }
   }
+  if (requestId !== detailsRequestId) return;
   currentItem = item;
   syncFavoriteButton(item);
-
-  if (detailsPage) {
-    detailsPage.setAttribute('data-type', contentType);
-  }
-
-  // 1. Fleksibel innhenting av tittel, undertittel, beskrivelse og cover
-  const itemTitle = item.title || item.name || 'Uten tittel';
-  const itemSub = item.sub || item.subtitle || item.author || item.publisher || item.host || '';
-  
-  // Filtrer ut generiske Apple API-meldinger dersom de har kommet inn som desc
-  let rawDesc = item.desc || item.description || item.summary || item.about || '';
-  if (rawDesc.includes('Hentet via Apple Podcast API')) {
-    rawDesc = '';
-  }
-
+  renderItemMetadata(item);
   const imageUrl = item.cover || item.coverUrl || item.image || item.imageUrl || '';
-
-  if (sourceLink) {
-    const itemSourceUrl = item.sourceUrl || item.studioUrl || item.website || '';
-    sourceLink.hidden = !itemSourceUrl;
-    if (itemSourceUrl) sourceLink.href = itemSourceUrl;
-    else sourceLink.removeAttribute('href');
-  }
-  if (factsSection) factsSection.hidden = true;
-  if (recommendationsContainer) recommendationsContainer.hidden = true;
-
-  renderFacts({
-    reader: item.reader || item.narrator || item.readBy || '',
-    studio: item.studio || item.publisher || '',
-    category: item.category || (Array.isArray(item.genres) ? item.genres.join(', ') : '')
-  });
-
-  if (titleEl) titleEl.textContent = itemTitle;
-  if (subEl) subEl.textContent = itemSub;
-  if (descEl) descEl.innerHTML = cleanHTML(rawDesc || 'Ingen beskrivelse tilgjengelig.');
-
-  if (coverContainer) {
-    if (imageUrl) {
-      coverContainer.innerHTML = `<img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(itemTitle)}" class="details-cover-img" onerror="this.style.display='none'">`;
-    } else {
-      coverContainer.innerHTML = `<div class="details-cover-fallback"><i class="fa-solid fa-headphones"></i></div>`;
-    }
-  }
-
-  // Tilbakestill beskrivelsesboks og les mer-knapp
-  if (descEl && readMoreBtn) {
-    descEl.style.maxHeight = '80px';
-    readMoreBtn.style.display = 'block';
-    readMoreBtn.textContent = 'Se mer';
-  }
 
   // 2. Håndtering basert på type (Radio vs RSS vs Lokale episoder)
   const rssUrl = item.rssUrl || item.rss;
@@ -183,6 +140,7 @@ export async function openDetailsPage(item) {
         const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(item.archiveIdentifier)}`);
         if (!res.ok) throw new Error(`Internet Archive svarte med ${res.status}`);
         const data = await res.json();
+        if (requestId !== detailsRequestId) return;
         const files = (data.files || [])
           .filter(file => /\.(mp3|m4b)$/i.test(file.name || ''))
           .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
@@ -194,6 +152,7 @@ export async function openDetailsPage(item) {
           duration: file.length || ''
         }));
       } catch (err) {
+        if (requestId !== detailsRequestId) return;
         console.error('Kunne ikke hente lydbok fra Internet Archive:', err);
       }
     } else {
@@ -206,27 +165,29 @@ export async function openDetailsPage(item) {
       const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`, { cache: 'no-store' });
       if (!response.ok) throw new Error(`RSS-tjenesten svarte med HTTP ${response.status}.`);
       const data = await response.json();
+      if (requestId !== detailsRequestId) return;
       if (data.status !== 'ok') {
         throw new Error(data.message || 'RSS-tjenesten kunne ikke lese denne feeden.');
       }
 
       // OPPVIKTIG: Oppdaterer hovedbeskrivelsen direkte med den fulle beskrivelsen fra RSS-feeden
-      const rssFeedDescription = data.feed?.description || data.feed?.summary || '';
+      rssFeedDescription = data.feed?.description || data.feed?.summary || '';
       if (rssFeedDescription && descEl) {
         descEl.innerHTML = cleanHTML(rssFeedDescription);
       }
 
-      const sourceUrl = item.sourceUrl || item.studioUrl || item.website || data.feed?.link || '';
-      if (sourceUrl && sourceLink) {
-        sourceLink.href = sourceUrl;
+      rssSourceUrl = item.sourceUrl || item.studioUrl || item.website || data.feed?.link || '';
+      if (rssSourceUrl && sourceLink) {
+        sourceLink.href = rssSourceUrl;
         sourceLink.hidden = false;
       }
 
-      renderFacts({
+      rssFeedFacts = {
         reader: item.reader || item.narrator || item.readBy || item.author || '',
         studio: item.studio || item.publisher || data.feed?.author || data.feed?.owner || '',
         category: item.category || (Array.isArray(item.genres) ? item.genres.join(', ') : '') || data.feed?.category || ''
-      });
+      };
+      renderFacts(rssFeedFacts);
 
       fetchedEpisodes = (data.items || []).map(ep => ({
         title: ep.title || 'Uten tittel',
@@ -242,14 +203,32 @@ export async function openDetailsPage(item) {
       const rssSeasons = [...new Set(fetchedEpisodes.map(ep => Number(ep.season)).filter(Number.isFinite))].sort((a, b) => a - b);
       if (rssSeasons.length > 1) currentItem.seasons = rssSeasons;
     } catch (err) {
+      if (requestId !== detailsRequestId) return;
       console.error("Kunne ikke hente RSS:", err);
       episodeLoadError = err instanceof Error ? err.message : 'Ukjent feil ved henting av RSS.';
     }
   }
+  if (requestId !== detailsRequestId) return;
 
   // 3. Konfigurer UI etter type
   setupContentTypeUI(item, contentType);
   renderRecommendations(item);
+
+  if (appleMetadataPromise && rssUrl) {
+    appleMetadataPromise.then(appleDetails => {
+      if (!appleDetails || requestId !== detailsRequestId) return;
+      item = mergeApplePodcastMetadata(item, appleDetails);
+      currentItem = item;
+      syncFavoriteButton(item);
+      renderItemMetadata(item);
+      if (rssFeedDescription && descEl) descEl.innerHTML = cleanHTML(rssFeedDescription);
+      if (rssFeedFacts) renderFacts(rssFeedFacts);
+      if (rssSourceUrl && sourceLink) {
+        sourceLink.href = rssSourceUrl;
+        sourceLink.hidden = false;
+      }
+    });
+  }
 
   if (detailsPage) {
     detailsPage.classList.add('active');
@@ -257,8 +236,68 @@ export async function openDetailsPage(item) {
   }
 }
 
+function mergeApplePodcastMetadata(item, appleDetails) {
+  if (!appleDetails) return item;
+  const genres = Array.isArray(appleDetails.genres) ? appleDetails.genres : item.genres;
+  return {
+    ...item,
+    appleId: appleDetails.collectionId || item.appleId,
+    title: appleDetails.collectionName || item.title,
+    sub: appleDetails.artistName || item.sub || item.author || '',
+    author: appleDetails.artistName || item.author || '',
+    cover: appleDetails.artworkUrl600 || appleDetails.artworkUrl100 || item.cover,
+    coverUrl: appleDetails.artworkUrl600 || appleDetails.artworkUrl100 || item.coverUrl,
+    imageUrl: appleDetails.artworkUrl600 || appleDetails.artworkUrl100 || item.imageUrl,
+    rssUrl: appleDetails.feedUrl || item.rssUrl || item.rss,
+    appleUrl: appleDetails.collectionViewUrl || item.appleUrl,
+    category: appleDetails.primaryGenreName || item.category,
+    genres,
+    description: appleDetails.description || item.description
+  };
+}
+
+function renderItemMetadata(item) {
+  const itemTitle = item.title || item.name || 'Uten tittel';
+  const itemSub = item.sub || item.subtitle || item.author || item.publisher || item.host || '';
+  let rawDesc = item.desc || item.description || item.summary || item.about || '';
+  if (typeof rawDesc !== 'string') rawDesc = '';
+  if (rawDesc.includes('Hentet via Apple Podcast API')) rawDesc = '';
+  const imageUrl = item.cover || item.coverUrl || item.image || item.imageUrl || '';
+
+  if (sourceLink) {
+    const itemSourceUrl = item.sourceUrl || item.studioUrl || item.website || '';
+    sourceLink.hidden = !itemSourceUrl;
+    if (itemSourceUrl) sourceLink.href = itemSourceUrl;
+    else sourceLink.removeAttribute('href');
+  }
+  if (recommendationsContainer) recommendationsContainer.hidden = true;
+  if (factsSection) factsSection.hidden = true;
+  renderFacts({
+    reader: item.reader || item.narrator || item.readBy || '',
+    studio: item.studio || item.publisher || '',
+    category: item.category || (Array.isArray(item.genres) ? item.genres.join(', ') : '')
+  });
+
+  if (titleEl) titleEl.textContent = itemTitle;
+  if (subEl) subEl.textContent = itemSub;
+  if (descEl) {
+    descEl.innerHTML = cleanHTML(rawDesc || 'Ingen beskrivelse tilgjengelig.');
+    descEl.style.maxHeight = '80px';
+  }
+  if (readMoreBtn) {
+    readMoreBtn.style.display = 'block';
+    readMoreBtn.textContent = 'Se mer';
+  }
+  if (coverContainer) {
+    coverContainer.innerHTML = imageUrl
+      ? `<img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(itemTitle)}" class="details-cover-img" onerror="this.style.display='none'">`
+      : `<div class="details-cover-fallback"><i class="fa-solid fa-headphones"></i></div>`;
+  }
+}
+
 function renderFacts(facts) {
   if (!factsSection || !factsGrid) return;
+  factsGrid.innerHTML = '';
   const rows = [
     ['Leser', facts.reader],
     ['Studio', facts.studio],
