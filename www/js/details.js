@@ -48,6 +48,33 @@ const seasonWrapper = document.getElementById('season-select-wrapper');
 const seasonSelect = document.getElementById('season-select');
 const loadMoreBtn = document.getElementById('load-more-episodes-btn');
 
+async function fetchApplePodcastMetadata(item) {
+  const appleId = item.appleId || item.collectionId;
+  let results = [];
+
+  if (appleId) {
+    const response = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(appleId)}&entity=podcast&country=NO`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Apple Podcasts svarte med HTTP ${response.status}.`);
+    const data = await response.json();
+    results = data.results || [];
+  }
+
+  if (!results.length && (item.title || item.name)) {
+    const title = item.title || item.name;
+    const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(title)}&media=podcast&country=NO&limit=10`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Apple Podcasts svarte med HTTP ${response.status}.`);
+    const data = await response.json();
+    results = data.results || [];
+  }
+
+  const rssUrl = item.rssUrl || item.rss || '';
+  const normalizedTitle = (item.title || item.name || '').trim().toLocaleLowerCase();
+  return results.find(result => rssUrl && result.feedUrl === rssUrl)
+    || results.find(result => (result.collectionName || '').trim().toLocaleLowerCase() === normalizedTitle)
+    || (appleId ? results[0] : null)
+    || null;
+}
+
 /**
  * Åpner detaljsiden og tilpasser grensesnittet
  */
@@ -62,9 +89,35 @@ export async function openDetailsPage(item) {
   visibleEpisodesCount = EPISODES_PER_PAGE;
   fetchedEpisodes = [];
   episodeLoadError = '';
-  syncFavoriteButton(item);
 
   const contentType = item.type || (item.rssUrl || item.rss ? 'podcast' : 'audiobook');
+  if (contentType === 'podcast') {
+    try {
+      const appleDetails = await fetchApplePodcastMetadata(item);
+      if (appleDetails) {
+        const genres = Array.isArray(appleDetails.genres) ? appleDetails.genres : item.genres;
+        item = {
+          ...item,
+          appleId: appleDetails.collectionId || item.appleId,
+          title: appleDetails.collectionName || item.title,
+          sub: appleDetails.artistName || item.sub || item.author || '',
+          author: appleDetails.artistName || item.author || '',
+          cover: appleDetails.artworkUrl600 || appleDetails.artworkUrl100 || item.cover,
+          coverUrl: appleDetails.artworkUrl600 || appleDetails.artworkUrl100 || item.coverUrl,
+          imageUrl: appleDetails.artworkUrl600 || appleDetails.artworkUrl100 || item.imageUrl,
+          rssUrl: appleDetails.feedUrl || item.rssUrl || item.rss,
+          appleUrl: appleDetails.collectionViewUrl || item.appleUrl,
+          category: appleDetails.primaryGenreName || item.category,
+          genres,
+          description: appleDetails.description || item.description
+        };
+      }
+    } catch (error) {
+      console.warn('Kunne ikke hente podkastmetadata fra Apple:', error);
+    }
+  }
+  currentItem = item;
+  syncFavoriteButton(item);
 
   if (detailsPage) {
     detailsPage.setAttribute('data-type', contentType);
@@ -150,7 +203,7 @@ export async function openDetailsPage(item) {
     // RSS-feed (Podkast)
     if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Henter episoder og informasjon...</div>`;
     try {
-      const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+      const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`, { cache: 'no-store' });
       if (!response.ok) throw new Error(`RSS-tjenesten svarte med HTTP ${response.status}.`);
       const data = await response.json();
       if (data.status !== 'ok') {

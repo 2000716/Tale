@@ -976,6 +976,7 @@ function renderApiResults(items, type) {
       const newItem = {
         id: itemId,
         title,
+        appleId: type === "podcast" ? String(item.collectionId || item.trackId || "") : "",
         subtitle,
         author: subtitle,
         cover,
