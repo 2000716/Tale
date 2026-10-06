@@ -1,7 +1,22 @@
-import { playSpecificEpisode } from './player.js';
+import { playSpecificEpisode, getAudioUrl } from './player.js';
+import { state } from './state.js';
+import { updateBottomNavVisibility, updateUrlHash } from './ui.js';
+import { db } from './firebase-config.js';
+import { deleteDoc, doc, getDoc, getDocs, setDoc, collection } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { shareContent, showActionToast } from './content-actions.js';
+
+function escapeAttr(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 // Konfigurasjon og tilstand
 const EPISODES_PER_PAGE = 10;
+const NEW_EPISODE_DAYS = 14;
 let currentItem = null;
 let currentSeason = 1;
 let visibleEpisodesCount = EPISODES_PER_PAGE;
@@ -9,7 +24,7 @@ let fetchedEpisodes = [];
 
 // DOM-elementer fra index.html
 const detailsPage = document.getElementById('details-page');
-const closeBtn = document.getElementById('details-close-btn');
+const dragHandle = document.getElementById('details-drag-handle');
 const coverContainer = document.getElementById('details-cover-container');
 const badgeType = document.getElementById('details-badge-type');
 const titleEl = document.getElementById('details-title');
@@ -17,6 +32,13 @@ const subEl = document.getElementById('details-sub');
 const descEl = document.getElementById('details-desc');
 const readMoreBtn = document.getElementById('readMoreBtn');
 const startPlayBtn = document.getElementById('start-play-btn');
+const likeBtn = document.getElementById('details-like-btn');
+const shareBtn = document.getElementById('details-share-btn');
+const sourceLink = document.getElementById('details-source-link');
+const factsSection = document.getElementById('details-facts');
+const factsGrid = document.getElementById('details-facts-grid');
+const recommendationsList = document.getElementById('recommendations-list');
+const recommendationsContainer = document.querySelector('.recommendations-container');
 
 const episodeListContainer = document.querySelector('.episode-list-container');
 const episodeList = document.getElementById('episode-list');
@@ -31,9 +53,14 @@ const loadMoreBtn = document.getElementById('load-more-episodes-btn');
 export async function openDetailsPage(item) {
   if (!item) return;
 
+  if (detailsPage && !detailsPage.classList.contains('active')) {
+    updateUrlHash('details-page');
+  }
+
   currentItem = item;
   visibleEpisodesCount = EPISODES_PER_PAGE;
   fetchedEpisodes = [];
+  syncFavoriteButton(item);
 
   const contentType = item.type || (item.rssUrl || item.rss ? 'podcast' : 'audiobook');
 
@@ -53,13 +80,28 @@ export async function openDetailsPage(item) {
 
   const imageUrl = item.cover || item.coverUrl || item.image || item.imageUrl || '';
 
+  if (sourceLink) {
+    const itemSourceUrl = item.sourceUrl || item.studioUrl || item.website || '';
+    sourceLink.hidden = !itemSourceUrl;
+    if (itemSourceUrl) sourceLink.href = itemSourceUrl;
+    else sourceLink.removeAttribute('href');
+  }
+  if (factsSection) factsSection.hidden = true;
+  if (recommendationsContainer) recommendationsContainer.hidden = true;
+
+  renderFacts({
+    reader: item.reader || item.narrator || item.readBy || '',
+    studio: item.studio || item.publisher || '',
+    category: item.category || (Array.isArray(item.genres) ? item.genres.join(', ') : '')
+  });
+
   if (titleEl) titleEl.textContent = itemTitle;
   if (subEl) subEl.textContent = itemSub;
   if (descEl) descEl.innerHTML = cleanHTML(rawDesc || 'Ingen beskrivelse tilgjengelig.');
 
   if (coverContainer) {
     if (imageUrl) {
-      coverContainer.innerHTML = `<img src="${imageUrl}" alt="${itemTitle}" class="details-cover-img" onerror="this.style.display='none'">`;
+      coverContainer.innerHTML = `<img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(itemTitle)}" class="details-cover-img" onerror="this.style.display='none'">`;
     } else {
       coverContainer.innerHTML = `<div class="details-cover-fallback"><i class="fa-solid fa-headphones"></i></div>`;
     }
@@ -81,6 +123,24 @@ export async function openDetailsPage(item) {
       fetchedEpisodes = item.episodes;
     } else if (item.chapters && Array.isArray(item.chapters)) {
       fetchedEpisodes = item.chapters;
+    } else if (contentType === 'audiobook' && item.archiveIdentifier) {
+      try {
+        const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(item.archiveIdentifier)}`);
+        if (!res.ok) throw new Error(`Internet Archive svarte med ${res.status}`);
+        const data = await res.json();
+        const files = (data.files || [])
+          .filter(file => /\.(mp3|m4b)$/i.test(file.name || ''))
+          .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+
+        fetchedEpisodes = files.map((file, index) => ({
+          title: file.name.replace(/\.(mp3|m4b)$/i, '').replace(/[_-]+/g, ' ') || `Kapittel ${index + 1}`,
+          audioUrl: `https://archive.org/download/${encodeURIComponent(item.archiveIdentifier)}/${file.name.split('/').map(encodeURIComponent).join('/')}`,
+          cover: imageUrl,
+          duration: file.length || ''
+        }));
+      } catch (err) {
+        console.error('Kunne ikke hente lydbok fra Internet Archive:', err);
+      }
     } else {
       fetchedEpisodes = [];
     }
@@ -98,14 +158,31 @@ export async function openDetailsPage(item) {
           descEl.innerHTML = cleanHTML(rssFeedDescription);
         }
 
+        const sourceUrl = item.sourceUrl || item.studioUrl || item.website || data.feed?.link || '';
+        if (sourceUrl && sourceLink) {
+          sourceLink.href = sourceUrl;
+          sourceLink.hidden = false;
+        }
+
+        renderFacts({
+          reader: item.reader || item.narrator || item.readBy || item.author || '',
+          studio: item.studio || item.publisher || data.feed?.author || data.feed?.owner || '',
+          category: item.category || (Array.isArray(item.genres) ? item.genres.join(', ') : '') || data.feed?.category || ''
+        });
+
         fetchedEpisodes = (data.items || []).map(ep => ({
           title: ep.title || 'Uten tittel',
           audioUrl: ep.enclosure?.link || ep.link || '',
           cover: ep.thumbnail || ep.itunes?.image || ep.enclosure?.thumbnail || imageUrl,
           duration: ep.enclosure?.duration || ep.duration || '',
           pubDate: ep.pubDate || '',
-          description: ep.description || ep.summary || ep.content || ''
+          description: ep.description || ep.summary || ep.content || '',
+          season: ep.itunes?.season || ep.season || '',
+          episode: ep.itunes?.episode || ep.episode || ''
         }));
+
+        const rssSeasons = [...new Set(fetchedEpisodes.map(ep => Number(ep.season)).filter(Number.isFinite))].sort((a, b) => a - b);
+        if (rssSeasons.length > 1) currentItem.seasons = rssSeasons;
       }
     } catch (err) {
       console.error("Kunne ikke hente RSS:", err);
@@ -115,17 +192,69 @@ export async function openDetailsPage(item) {
 
   // 3. Konfigurer UI etter type
   setupContentTypeUI(item, contentType);
+  renderRecommendations(item);
 
   if (detailsPage) {
     detailsPage.classList.add('active');
+    updateBottomNavVisibility();
   }
+}
+
+function renderFacts(facts) {
+  if (!factsSection || !factsGrid) return;
+  const rows = [
+    ['Leser', facts.reader],
+    ['Studio', facts.studio],
+    ['Kategori', facts.category]
+  ].filter(([, value]) => value);
+
+  if (!rows.length) return;
+  factsGrid.innerHTML = rows.map(([label, value]) => `
+    <div class="details-fact">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </div>
+  `).join('');
+  factsSection.hidden = false;
+}
+
+function renderRecommendations(item) {
+  if (!recommendationsList || !recommendationsContainer) return;
+
+  const explicit = Array.isArray(item.recommendations) ? item.recommendations : [];
+  const related = [...document.querySelectorAll('.book-card[data-item-key]')]
+    .map(card => window[card.dataset.itemKey])
+    .filter(candidate => candidate && candidate.title !== item.title && (candidate.type || 'podcast') === (item.type || 'podcast'));
+  const candidates = [...explicit, ...related]
+    .map(candidate => typeof candidate === 'string' ? { title: candidate } : candidate)
+    .filter((candidate, index, list) =>
+      candidate?.title && list.findIndex(other => other.title === candidate.title) === index
+    )
+    .slice(0, 6);
+
+  if (!candidates.length) return;
+  recommendationsList.innerHTML = candidates.map(candidate => {
+    const cover = candidate.cover || candidate.coverUrl || candidate.image || '';
+    return `<button class="recommendation-card" type="button" data-recommendation-title="${escapeAttr(candidate.title)}">
+      <span class="recommendation-cover">${cover ? `<img src="${escapeAttr(cover)}" alt="">` : '<i class="fa-solid fa-headphones"></i>'}</span>
+      <strong>${escapeHtml(candidate.title)}</strong>
+      <span>${escapeHtml(candidate.sub || candidate.author || candidate.publisher || '')}</span>
+    </button>`;
+  }).join('');
+  recommendationsList.querySelectorAll('[data-recommendation-title]').forEach(button => {
+    button.addEventListener('click', () => {
+      const next = candidates.find(candidate => candidate.title === button.dataset.recommendationTitle);
+      if (next) openDetailsPage(next);
+    });
+  });
+  recommendationsContainer.hidden = false;
 }
 
 // Alias for bakoverkompatibilitet
 export const openDetailsView = openDetailsPage;
 
 function setupContentTypeUI(item, type) {
-  const audioUrl = item.audioUrl || item.streamUrl || item.audio || item.url || '';
+  const audioUrl = getAudioUrl(item);
 
   if (type === 'radio') {
     if (badgeType) badgeType.textContent = 'Direkte Radio';
@@ -234,23 +363,24 @@ function renderEpisodesOrChapters(items, unitName) {
     const durationText = ep.duration ? parseDuration(ep.duration) : '';
     const descText = cleanHTML(ep.description || ep.summary || '');
     const epCover = ep.cover || fallbackCover;
+    const isNew = unitName === 'episoder' && isNewEpisode(ep.pubDate);
 
     return `
-      <div class="episode-item" data-index="${index}">
+      <div class="episode-item${isNew ? ' is-new' : ''}" data-index="${index}">
         <div class="episode-thumb">
           ${epCover 
             ? `<img src="${epCover}" alt="${ep.title}" onerror="this.parentElement.innerHTML='<i class=\\'fa-solid fa-podcast\\'></i>'">` 
             : '<i class="fa-solid fa-podcast"></i>'}
         </div>
         <div class="episode-info">
-          <div class="episode-title">${ep.title || `Episode ${index + 1}`}</div>
+          <div class="episode-title">${ep.title || `Episode ${index + 1}`} ${isNew ? '<span class="episode-new-badge">NY</span>' : ''}</div>
           ${descText ? `<div class="ep-desc">${descText}</div>` : ''}
           <div class="episode-footer-meta">
             ${durationText ? `<span><i class="fa-regular fa-clock"></i> ${durationText}</span>` : ''}
             ${ep.pubDate ? `<span>${formatDate(ep.pubDate)}</span>` : ''}
           </div>
         </div>
-        <button class="btn-play-sm" aria-label="Spill av">
+        <button class="btn-play-sm" data-audio="${escapeAttr(ep.audioUrl || ep.url || '')}" data-title="${escapeAttr(ep.title || '')}" aria-label="Spill av">
           <i class="fa-solid fa-play"></i>
         </button>
       </div>
@@ -267,7 +397,7 @@ function renderEpisodesOrChapters(items, unitName) {
         playSpecificEpisode({
           title: selected.title || currentItem.title,
           sub: currentItem.sub || currentItem.author || '',
-          audioUrl: selected.audioUrl || selected.url || currentItem.audioUrl,
+          audioUrl: getAudioUrl(selected) || getAudioUrl(currentItem),
           cover: selected.cover || fallbackCover
         }, 0);
       }
@@ -287,11 +417,175 @@ function renderEpisodesOrChapters(items, unitName) {
   }
 }
 
-export function closeDetailsPage() {
-  if (detailsPage) detailsPage.classList.remove('active');
+function isNewEpisode(pubDate) {
+  const timestamp = Date.parse(pubDate || '');
+  if (!Number.isFinite(timestamp)) return false;
+  const age = Date.now() - timestamp;
+  return age >= 0 && age <= NEW_EPISODE_DAYS * 24 * 60 * 60 * 1000;
 }
 
-if (closeBtn) closeBtn.addEventListener('click', closeDetailsPage);
+export function closeDetailsPage() {
+  const shouldReturn = history.state?.route === 'details-page' || window.location.hash === '#details-page';
+  if (detailsPage) {
+    detailsPage.classList.remove('active', 'is-dragging');
+    detailsPage.style.removeProperty('--details-y-offset');
+    detailsPage.style.transition = '';
+  }
+  updateBottomNavVisibility();
+  if (shouldReturn && history.length > 1) history.back();
+}
+
+function favoriteRef(item) {
+  if (!state.currentUser || !item) return null;
+  const sourceId = item.id || item.archiveIdentifier || item.title || item.name || 'untitled';
+  let hash = 2166136261;
+  for (const character of String(sourceId)) {
+    hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+  }
+  const favoriteId = (hash >>> 0).toString(36);
+  return doc(db, 'users', state.currentUser.uid, 'favorites', favoriteId);
+}
+
+function setFavoriteButton(isFavorite) {
+  if (!likeBtn) return;
+  const icon = likeBtn.querySelector('i');
+  likeBtn.classList.toggle('is-favorite', isFavorite);
+  likeBtn.setAttribute('aria-pressed', String(isFavorite));
+  likeBtn.setAttribute('aria-label', isFavorite ? 'Fjern fra favoritter' : 'Legg til som favoritt');
+  likeBtn.title = isFavorite ? 'Fjern fra favoritter' : 'Legg til som favoritt';
+  if (icon) icon.className = isFavorite ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+}
+
+async function syncFavoriteButton(item) {
+  if (!likeBtn) return;
+  likeBtn.disabled = !state.currentUser;
+  if (!state.currentUser) {
+    setFavoriteButton(false);
+    return;
+  }
+
+  try {
+    const favorite = await getDoc(favoriteRef(item));
+    if (currentItem === item) setFavoriteButton(favorite.exists());
+  } catch (error) {
+    console.error('Kunne ikke hente favorittstatus:', error);
+  }
+}
+
+export async function loadUserFavorites() {
+  if (!state.currentUser) return [];
+  const snapshot = await getDocs(collection(db, 'users', state.currentUser.uid, 'favorites'));
+  return snapshot.docs.map(favorite => ({ favoriteId: favorite.id, ...favorite.data() }))
+    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'no'));
+}
+
+export async function removeUserFavorite(favoriteId) {
+  if (!state.currentUser || !favoriteId) return;
+  await deleteDoc(doc(db, 'users', state.currentUser.uid, 'favorites', favoriteId));
+}
+
+if (dragHandle && detailsPage) {
+  let startY = 0;
+  let currentY = 0;
+  let dragging = false;
+
+  const startDrag = clientY => {
+    if (!detailsPage.classList.contains('active')) return;
+    startY = clientY;
+    currentY = clientY;
+    dragging = true;
+    detailsPage.style.transition = 'none';
+  };
+
+  const moveDrag = clientY => {
+    if (!dragging) return;
+    currentY = clientY;
+    const offset = Math.max(0, currentY - startY);
+    detailsPage.classList.toggle('is-dragging', offset > 0);
+    detailsPage.style.setProperty('--details-y-offset', `${offset}px`);
+  };
+
+  const endDrag = () => {
+    if (!dragging) return;
+    dragging = false;
+    const offset = currentY - startY;
+    detailsPage.classList.remove('is-dragging');
+    detailsPage.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease';
+
+    if (offset > 100) {
+      closeDetailsPage();
+    } else {
+      detailsPage.style.setProperty('--details-y-offset', '0px');
+      window.setTimeout(() => {
+        if (detailsPage) detailsPage.style.transition = '';
+      }, 300);
+    }
+  };
+
+  dragHandle.addEventListener('touchstart', event => startDrag(event.touches[0].clientY), { passive: true });
+  dragHandle.addEventListener('touchmove', event => moveDrag(event.touches[0].clientY), { passive: true });
+  dragHandle.addEventListener('touchend', endDrag);
+  dragHandle.addEventListener('touchcancel', endDrag);
+  dragHandle.addEventListener('mousedown', event => {
+    startDrag(event.clientY);
+    const onMouseMove = moveEvent => moveDrag(moveEvent.clientY);
+    const onMouseUp = () => {
+      endDrag();
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  });
+  dragHandle.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      closeDetailsPage();
+    }
+  });
+}
+
+if (likeBtn) {
+  likeBtn.addEventListener('click', async () => {
+    if (!state.currentUser) {
+      showActionToast('Logg inn for å lagre favoritter.');
+      return;
+    }
+
+    const reference = favoriteRef(currentItem);
+    if (!reference) return;
+    likeBtn.disabled = true;
+    try {
+      const favorite = await getDoc(reference);
+      if (favorite.exists()) {
+        await deleteDoc(reference);
+        setFavoriteButton(false);
+        showActionToast('Fjernet fra favoritter.');
+      } else {
+        await setDoc(reference, {
+          id: String(currentItem.id || currentItem.archiveIdentifier || currentItem.title || ''),
+          title: currentItem.title || currentItem.name || 'Uten tittel',
+          sub: currentItem.sub || currentItem.subtitle || currentItem.author || currentItem.publisher || '',
+          cover: currentItem.cover || currentItem.coverUrl || currentItem.image || currentItem.imageUrl || '',
+          desc: currentItem.desc || currentItem.description || currentItem.summary || '',
+          type: currentItem.type || (currentItem.rssUrl || currentItem.rss ? 'podcast' : 'audiobook'),
+          rssUrl: currentItem.rssUrl || currentItem.rss || '',
+          sourceUrl: currentItem.sourceUrl || currentItem.studioUrl || currentItem.website || '',
+          audioUrl: getAudioUrl(currentItem)
+        });
+        setFavoriteButton(true);
+        showActionToast('Lagt til i favoritter.');
+      }
+    } catch (error) {
+      console.error('Kunne ikke oppdatere favoritter:', error);
+      showActionToast('Favoritten kunne ikke lagres. Prøv igjen.');
+    } finally {
+      likeBtn.disabled = false;
+    }
+  });
+}
+
+if (shareBtn) shareBtn.addEventListener('click', () => shareContent(currentItem));
 
 if (readMoreBtn && descEl) {
   readMoreBtn.addEventListener('click', () => {
@@ -310,6 +604,15 @@ function cleanHTML(str) {
   const temp = document.createElement('div');
   temp.innerHTML = str;
   return temp.textContent || temp.innerText || '';
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function formatDate(dateString) {

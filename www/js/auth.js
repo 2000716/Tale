@@ -1,4 +1,4 @@
-import { auth } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js"; // La til db her
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, updateBottomNavVisibility } from "./ui.js";
 import { loadUserHistory } from "./history.js";
@@ -9,13 +9,36 @@ import {
   signOut,
   updateProfile
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"; // La til Firestore-funksjoner
 
 export function initAuth() {
   onAuthStateChanged(auth, async (user) => {
     state.currentUser = user;
 
     if (user) {
-      showView("app-view");
+      // 1. Sjekk om brukeren har admin-rolle i Firestore
+      let isAdmin = false;
+      try {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          isAdmin = userData.role === "admin" || userData.isAdmin === true;
+        }
+      } catch (err) {
+        console.error("Kunne ikke hente brukerrolle:", err);
+      }
+
+      state.isAdmin = isAdmin; // Lagre admin-status i state
+
+      // 2. Vis riktig visning basert på rolle
+      if (isAdmin) {
+        showView("admin-view"); // Åpne admin-panelet hvis brukeren er admin
+      } else {
+        showView("app-view"); // Vanlig app-visning
+      }
+
       updateUserProfileUI(user);
 
       try {
@@ -27,10 +50,11 @@ export function initAuth() {
       }
 
       loadUserHistory();
-      restoreLastPage();
+      if (!isAdmin) restoreLastPage();
     } else {
       showView("landing-view");
       state.currentUser = null;
+      state.isAdmin = false;
       state.userHistory = {};
 
       document.getElementById("fullscreen-player")?.classList.remove("active");
@@ -145,7 +169,6 @@ function setupAuthEventListeners() {
 
       if (errorEl) errorEl.innerText = "";
 
-      // Obligatorisk navn ved registrering
       if (state.isSignUp && (!firstName || !lastName)) {
         if (errorEl) errorEl.innerText = "Vennligst oppgi både fornavn og etternavn.";
         return;
@@ -182,6 +205,13 @@ export async function submitAuthForm(email, password, firstName = "", lastName =
       await updateProfile(userCredential.user, { displayName });
     }
 
+    // Lagre standard brukerrolle som "user" i Firestore
+    await setDoc(doc(db, "users", userCredential.user.uid), {
+      email: email,
+      displayName: displayName,
+      role: "user"
+    });
+
     updateUserProfileUI(userCredential.user);
     return userCredential;
   } else {
@@ -204,7 +234,7 @@ export function restoreLastPage() {
 
   try {
     if (targetPage === "details-page") {
-      switchPage("home");
+      switchPage(history.state?.pageId || savedPage || "home", { replaceHistory: true });
       const rawItem = localStorage.getItem("lastSelectedItem");
       const lastItem = rawItem ? JSON.parse(rawItem) : null;
       
@@ -212,17 +242,13 @@ export function restoreLastPage() {
         import("./player.js").then(module => module.openDetailsView(lastItem));
       }
     } else if (targetPage === "fullscreen-player") {
-      switchPage("home");
-      if (globalAudio && globalAudio.src) {
-        document.getElementById("fullscreen-player")?.classList.add("active");
-      }
-      updateBottomNavVisibility();
+      switchPage(history.state?.pageId || savedPage || "home", { replaceHistory: true });
     } else {
-      switchPage(targetPage);
+      switchPage(targetPage, { replaceHistory: true });
     }
   } catch (e) {
     console.warn("Feil ved gjenoppretting av side, går til forsiden:", e);
-    switchPage("home");
+    switchPage("home", { replaceHistory: true });
   }
 }
 
