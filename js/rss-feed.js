@@ -1,33 +1,30 @@
 const RSS_PROXY_URL = 'https://api.allorigins.win/get?url=';
+const feedRequests = new Map();
 
 function compactText(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
-function getTextContent(node, selectors = []) {
-  if (!node) return '';
-  for (const selector of selectors) {
-    const match = node.querySelector(selector);
-    if (match && match.textContent) {
-      return compactText(match.textContent);
-    }
-  }
-  return '';
+function getElementsByLocalName(node, names) {
+  if (!node) return [];
+  const localNames = new Set(names.map(name => name.toLowerCase()));
+  return Array.from(node.getElementsByTagName('*')).filter(element =>
+    localNames.has((element.localName || element.tagName.split(':').pop()).toLowerCase())
+  );
 }
 
-function getAttribute(node, selector, attributeName) {
-  if (!node) return '';
-  const match = node.querySelector(selector);
-  if (!match) return '';
-  return compactText(match.getAttribute(attributeName) || '');
+function getFirstElement(node, names) {
+  return getElementsByLocalName(node, names)[0] || null;
 }
 
-function readFirstAttribute(node, selectors, attribute) {
-  for (const selector of selectors) {
-    const match = node.querySelector(selector);
-    if (match && match.getAttribute(attribute)) {
-      return compactText(match.getAttribute(attribute));
-    }
+function getTextContent(node, names = []) {
+  return compactText(getFirstElement(node, names)?.textContent || '');
+}
+
+function readFirstAttribute(node, names, attribute) {
+  for (const element of getElementsByLocalName(node, names)) {
+    const value = element.getAttribute(attribute);
+    if (value) return compactText(value);
   }
   return '';
 }
@@ -40,10 +37,10 @@ function parseContentValue(rawValue) {
 }
 
 function toFeedItem(entry, fallbackImage = '') {
-  const enclosure = entry.querySelector('enclosure');
-  const mediaContent = entry.querySelector('media\:content') || entry.querySelector('media\:thumbnail') || entry.querySelector('media\:group');
-  const imageNode = entry.querySelector('itunes\:image') || entry.querySelector('image');
-  const descriptionNode = entry.querySelector('description') || entry.querySelector('summary') || entry.querySelector('content') || entry.querySelector('content\:encoded');
+  const enclosure = getFirstElement(entry, ['enclosure']);
+  const mediaContent = getFirstElement(entry, ['content', 'thumbnail']);
+  const imageNode = getFirstElement(entry, ['image']);
+  const descriptionNode = getFirstElement(entry, ['description', 'summary', 'encoded', 'content']);
   const audioUrl = enclosure?.getAttribute('url') || enclosure?.getAttribute('href') || '';
   const thumbnail = mediaContent?.getAttribute('url') || mediaContent?.getAttribute('href') || imageNode?.getAttribute('href') || imageNode?.getAttribute('url') || '';
   const title = getTextContent(entry, ['title']) || 'Uten tittel';
@@ -84,24 +81,24 @@ function parseFeedDocument(xmlText) {
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, 'text/xml');
-  const parseError = doc.querySelector('parsererror');
-  if (parseError) {
+  if (doc.getElementsByTagName('parsererror').length) {
     return { feed: null, items: [] };
   }
 
   const feedRoot = doc.documentElement?.tagName?.toLowerCase() || '';
   const isAtom = feedRoot === 'feed';
-  const channel = doc.querySelector('channel');
+  const channel = getFirstElement(doc, ['channel']);
   const channelTitle = getTextContent(channel, ['title']) || getTextContent(doc, ['title']);
   const channelDescription = getTextContent(channel, ['description', 'subtitle']) || getTextContent(doc, ['subtitle']);
-  const channelLink = getTextContent(channel, ['link']) || doc.querySelector('link')?.getAttribute('href') || '';
+  const channelLinkNode = getFirstElement(channel, ['link']) || getFirstElement(doc, ['link']);
+  const channelLink = channelLinkNode?.getAttribute('href') || compactText(channelLinkNode?.textContent || '');
 
-  const firstEntries = isAtom ? Array.from(doc.querySelectorAll('entry')) : Array.from((channel || doc).querySelectorAll('item'));
+  const firstEntries = getElementsByLocalName(isAtom ? doc : (channel || doc), [isAtom ? 'entry' : 'item']);
   const items = firstEntries.map(entry => {
     if (isAtom) {
-      const alternateLink = Array.from(entry.querySelectorAll('link')).find(linkNode => !linkNode.getAttribute('rel') || linkNode.getAttribute('rel') === 'alternate');
-      const entryImage = readFirstAttribute(entry, ['media:thumbnail', 'media:content', 'image', 'itunes:image'], 'url') || readFirstAttribute(entry, ['media:thumbnail', 'media:content', 'image', 'itunes:image'], 'href') || '';
-      const contentText = getTextContent(entry, ['content', 'summary', 'description']) || '';
+      const alternateLink = getElementsByLocalName(entry, ['link']).find(linkNode => !linkNode.getAttribute('rel') || linkNode.getAttribute('rel') === 'alternate');
+      const entryImage = readFirstAttribute(entry, ['thumbnail', 'content', 'image'], 'url') || readFirstAttribute(entry, ['thumbnail', 'content', 'image'], 'href') || '';
+      const contentText = getTextContent(entry, ['content', 'summary', 'description']);
       const title = getTextContent(entry, ['title']) || 'Uten tittel';
       return {
         title,
@@ -135,7 +132,8 @@ function parseFeedDocument(xmlText) {
       link: channelLink || '',
       author: getTextContent(channel, ['author', 'managingEditor']) || '',
       category: getTextContent(channel, ['category']) || '',
-      language: getTextContent(channel, ['language']) || ''
+      language: getTextContent(channel, ['language']) || '',
+      image: getTextContent(getFirstElement(channel, ['image']), ['url'])
     },
     items
   };
@@ -147,18 +145,20 @@ export async function fetchRssFeed(rssUrl) {
   }
 
   const rawUrl = String(rssUrl).trim();
-  const candidates = [rawUrl];
-  try {
-    const proxiedUrl = `${RSS_PROXY_URL}${encodeURIComponent(rawUrl)}`;
-    candidates.push(proxiedUrl);
-  } catch (error) {
-    // Ignore URL encoding issues and continue with the original feed.
-  }
+  const existingRequest = feedRequests.get(rawUrl);
+  if (existingRequest) return existingRequest;
 
+  const request = loadRssFeed(rawUrl);
+  feedRequests.set(rawUrl, request);
+  return request;
+}
+
+async function loadRssFeed(rawUrl) {
   let lastError = null;
+  const candidates = [rawUrl, `${RSS_PROXY_URL}${encodeURIComponent(rawUrl)}`];
   for (const url of candidates) {
     try {
-      const response = await fetch(url, { cache: 'no-store' });
+      const response = await fetch(url);
       if (!response.ok) {
         lastError = new Error(`RSS-tjenesten svarte med HTTP ${response.status}.`);
         continue;
@@ -182,6 +182,7 @@ export async function fetchRssFeed(rssUrl) {
       if (parsed.items.length || parsed.feed?.title || parsed.feed?.description) {
         return parsed;
       }
+      lastError = new Error('RSS-feeden inneholder ikke lesbare metadata eller episoder.');
     } catch (error) {
       lastError = error;
     }
