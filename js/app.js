@@ -1,55 +1,21 @@
 import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
-import { showView, switchPage, buildCoverMarkup } from "./ui.js";
+import { showView, switchPage, buildCoverMarkup, updateUrlHash, updateBottomNavVisibility } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
-import { openDetailsView, openFullscreenPlayer, closeFullscreenPlayer, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl, getAudioUrl } from "./player.js";
-import { loadUserFavorites, removeUserFavorite } from "./details.js";
-import { fetchRssFeed } from "./rss-feed.js";
-import { collection, query, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { openDetailsView, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime } from "./player.js";
+import { collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Karusell-tilstand
 let currentSlideIndex = 0;
-let sectionsUnsubscribe = null;
-let accountFavorites = [];
-const NEW_EPISODE_DAYS = 14;
-const AUTOMATIC_PODCAST_SOURCES = [
-  {
-    title: "Norske barnepodkaster",
-    country: "no",
-    includeInNewEpisodes: true,
-    url: "https://itunes.apple.com/no/rss/toppodcasts/genre=1305/limit=25/json"
-  },
-  {
-    title: "Norske podkaster",
-    country: "no",
-    includeInNewEpisodes: true,
-    url: "https://itunes.apple.com/no/rss/toppodcasts/limit=25/json"
-  },
-  {
-    title: "Engelske podkaster",
-    country: "gb",
-    includeInNewEpisodes: false,
-    url: "https://itunes.apple.com/gb/rss/toppodcasts/limit=25/json"
-  }
-];
-let automaticPodcastCategories = [];
-let latestSectionsList = [];
 
 // Hjelpefunksjon for å kalle avspilling direkte med enkle parametere
-function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0, isRadio = false) {
-  if (!isPlayableAudioUrl(audioUrl)) {
-    console.warn("Ignorerer ugyldig audio-URL:", audioUrl);
-    return;
-  }
-
+function playAudioTrack(audioUrl, title, sub, cover, currentTime = 0) {
   playSpecificEpisode({
     audioUrl: audioUrl,
     title: title,
     sub: sub,
     cover: cover,
-    currentTime: currentTime,
-    type: isRadio ? "radio" : undefined,
-    isRadio
+    currentTime: currentTime
   });
 }
 
@@ -66,24 +32,37 @@ function escapeAttr(str) {
 document.addEventListener("DOMContentLoaded", () => {
   initAuth();
   setupAudioListeners();
-  loadWeeklyPodcasts();
-  loadAutomaticPodcastCatalog();
+  loadContentFromFirestore();
+  loadBannersFromFirestore();
+  setupSearchListener();
   setupEventListeners();
   initHeroCarousel();
   setupTouchGuards(); // Sikrer at pinch-zoom og dobbelttrykk-zoom er deaktivert
 });
 
 // ==========================================
-// TOUCH & ZOOM GUARDS (Kun pinch-zoom blokkeres; normal tap og swipe skal føles som native apps)
+// TOUCH & ZOOM GUARDS (Forhindrer iOS/Android Zoom)
 // ==========================================
 function setupTouchGuards() {
+  // Hindre pinch-to-zoom (to fingre)
   document.addEventListener("touchmove", (e) => {
-    const isInteractiveElement = e.target.closest("button, input, textarea, a, select, label, [contenteditable='true']");
-
-    if (e.touches.length > 1 && !isInteractiveElement) {
+    if (e.touches.length > 1) {
       e.preventDefault();
     }
   }, { passive: false });
+
+  // Hindre dobbelttrykk for å zoome
+  let lastTouchEnd = 0;
+  document.addEventListener("touchend", (e) => {
+    // Ikke blokker interaksjon med knapper/inputs
+    if (e.target.closest("button, input, textarea, a")) return;
+
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, false);
 }
 
 // ==========================================
@@ -102,13 +81,10 @@ function initHeroCarousel() {
 
     slides.forEach((slide, i) => {
       slide.classList.toggle("active", i === index);
-      slide.style.transition = "transform 0.38s ease, opacity 0.38s ease";
     });
     dots.forEach((dot, i) => {
       dot.classList.toggle("active", i === index);
-      dot.setAttribute("aria-label", `Vis banner ${i + 1} av ${slides.length}`);
     });
-
     currentSlideIndex = index;
   };
 
@@ -133,7 +109,7 @@ function initHeroCarousel() {
     }, { passive: true });
 
     const handleSwipe = () => {
-      const swipeThreshold = 58;
+      const swipeThreshold = 40;
       if (touchEndX < touchStartX - swipeThreshold) {
         showSlide(currentSlideIndex + 1);
       } else if (touchEndX > touchStartX + swipeThreshold) {
@@ -148,73 +124,36 @@ function initHeroCarousel() {
 // ==========================================
 // 1. LASTE BANNERE (Hero Banners / Storytel-stil)
 // ==========================================
-export async function loadWeeklyPodcasts() {
-  let weeklyPodcasts = [];
-  const cachedWeekly = localStorage.getItem("tale_weekly_podcasts_v3");
-
-  if (cachedWeekly) {
+export async function loadBannersFromFirestore() {
+  const cachedBanners = localStorage.getItem("app_banners_cache");
+  if (cachedBanners) {
     try {
-      const cachedData = JSON.parse(cachedWeekly);
-      if (cachedData.expiresAt > Date.now()) weeklyPodcasts = cachedData.items || [];
+      renderHeroBanners(JSON.parse(cachedBanners));
     } catch (e) {
-      localStorage.removeItem("tale_weekly_podcasts_v3");
+      console.warn("Kunne ikke lese banner-cache:", e);
     }
   }
 
-  renderHeroBanners(weeklyPodcasts);
+  try {
+    const q = query(collection(db, "banners"));
+    const snapshot = await getDocs(q);
+    const bannersData = [];
+    
+    snapshot.forEach((docSnap) => {
+      bannersData.push({ id: docSnap.id, ...docSnap.data() });
+    });
 
-  if (weeklyPodcasts.length === 0) {
-    try {
-      const response = await fetch("https://itunes.apple.com/no/rss/toppodcasts/limit=5/json");
-      if (!response.ok) throw new Error(`Apple Podcasts svarte med ${response.status}`);
-      const data = await response.json();
-      weeklyPodcasts = (data.feed?.entry || []).map((podcast, index) => ({
-        id: `weekly_podcast_${podcast.id?.attributes?.['im:id'] || index}`,
-        appleId: podcast.id?.attributes?.['im:id'] || "",
-        title: podcast['im:name']?.label || "Ukens podkast",
-        subtitle: podcast['im:artist']?.label || "Populær podkast",
-        description: "En av ukens mest populære podkaster i Norge.",
-        imageUrl: ([...(podcast['im:image'] || [])].pop()?.label || "").replace(/\/\d+x\d+bb\./, "/600x600bb."),
-        rssUrl: "",
-        appleUrl: podcast.link?.attributes?.href || "",
-        badge: "Anbefalt denne uken!",
-        rank: index + 1
-      }));
-
-      // Render direkte fra topplisten. RSS-oppslag skal ikke kunne skjule banneret.
-      renderHeroBanners(weeklyPodcasts);
-
-      weeklyPodcasts = await Promise.all(weeklyPodcasts.map(async (podcast) => {
-        try {
-          const lookupResponse = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(podcast.appleId)}&entity=podcast&country=NO`);
-          if (lookupResponse.ok) {
-            const lookupData = await lookupResponse.json();
-            return { ...podcast, rssUrl: lookupData.results?.[0]?.feedUrl || "" };
-          }
-        } catch (lookupError) {
-          console.warn("Kunne ikke hente RSS-feed for ukens podkast:", podcast.title, lookupError);
-        }
-        return podcast;
-      }));
-
-      localStorage.setItem("tale_weekly_podcasts_v3", JSON.stringify({
-        expiresAt: Date.now() + (6 * 60 * 60 * 1000),
-        items: weeklyPodcasts
-      }));
-      renderHeroBanners(weeklyPodcasts);
-    } catch (err) {
-      console.warn("Kunne ikke hente ukens populære podkaster:", err);
-    }
+    localStorage.setItem("app_banners_cache", JSON.stringify(bannersData));
+    renderHeroBanners(bannersData);
+  } catch (err) {
+    console.warn("Lasting av bannere feilet:", err);
   }
 }
 
-function renderHeroBanners(weeklyPodcasts = []) {
-  const weeklyBanners = weeklyPodcasts.map(podcast => ({
-    ...podcast,
-    targetPage: "home",
-    type: "carousel"
-  }));
-  const homeBanners = weeklyBanners;
+function renderHeroBanners(banners) {
+  const pages = ["home", "audiobooks", "podcasts"];
+
+  const homeBanners = banners.filter(b => (b.targetPage === "home" || b.page === "home") && (b.type === "carousel" || !b.type));
   const heroWrapper = document.getElementById("hero-banner-wrapper");
   const carouselContainer = document.getElementById("hero-banner-carousel");
   const dotsContainer = document.getElementById("carousel-dots");
@@ -226,18 +165,15 @@ function renderHeroBanners(weeklyPodcasts = []) {
 
       homeBanners.forEach((banner, idx) => {
         const isActive = idx === 0 ? "active" : "";
-        const badge = `<span class="slide-badge">${escapeAttr(banner.badge || "Anbefalt denne uken!")}</span>`;
+        const badge = banner.badge ? `<span class="slide-badge">${escapeAttr(banner.badge)}</span>` : '';
         const imgUrl = banner.imageUrl || banner.coverUrl || banner.cover || '';
 
         slidesHTML += `
           <div class="carousel-slide ${isActive}" 
-            data-id="${escapeAttr(banner.id || '')}"
                data-audio="${escapeAttr(banner.audioUrl || '')}" 
                data-title="${escapeAttr(banner.title || '')}" 
                data-sub="${escapeAttr(banner.subtitle || '')}" 
-               data-cover="${escapeAttr(imgUrl)}"
-               data-rss="${escapeAttr(banner.rssUrl || '')}"
-               data-apple-url="${escapeAttr(banner.appleUrl || '')}">
+               data-cover="${escapeAttr(imgUrl)}">
             <img src="${escapeAttr(imgUrl)}" alt="${escapeAttr(banner.title || 'Banner')}">
             <div class="slide-overlay">
               ${badge}
@@ -247,7 +183,7 @@ function renderHeroBanners(weeklyPodcasts = []) {
           </div>
         `;
 
-          dotsHTML += `<span class="dot ${isActive}" data-index="${idx}" aria-label="Vis banner ${idx + 1} av ${homeBanners.length}"></span>`;
+        dotsHTML += `<span class="dot ${isActive}" data-index="${idx}"></span>`;
       });
 
       carouselContainer.innerHTML = slidesHTML;
@@ -256,6 +192,34 @@ function renderHeroBanners(weeklyPodcasts = []) {
       const existingNav = heroWrapper.querySelector(".carousel-nav");
       if (existingNav) existingNav.remove();
 
+      if (homeBanners.length > 1) {
+        const navContainer = document.createElement("div");
+        navContainer.className = "carousel-nav";
+        navContainer.innerHTML = `
+          <button class="carousel-btn prev-btn" aria-label="Forrige slide"><i class="fa-solid fa-chevron-left"></i></button>
+          <button class="carousel-btn next-btn" aria-label="Neste slide"><i class="fa-solid fa-chevron-right"></i></button>
+        `;
+        heroWrapper.appendChild(navContainer);
+
+        heroWrapper.querySelector(".prev-btn")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const slides = document.querySelectorAll("#hero-banner-carousel .carousel-slide");
+          const dots = document.querySelectorAll("#carousel-dots .dot");
+          currentSlideIndex = (currentSlideIndex - 1 + slides.length) % slides.length;
+          slides.forEach((s, i) => s.classList.toggle("active", i === currentSlideIndex));
+          dots.forEach((d, i) => d.classList.toggle("active", i === currentSlideIndex));
+        });
+
+        heroWrapper.querySelector(".next-btn")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const slides = document.querySelectorAll("#hero-banner-carousel .carousel-slide");
+          const dots = document.querySelectorAll("#carousel-dots .dot");
+          currentSlideIndex = (currentSlideIndex + 1) % slides.length;
+          slides.forEach((s, i) => s.classList.toggle("active", i === currentSlideIndex));
+          dots.forEach((d, i) => d.classList.toggle("active", i === currentSlideIndex));
+        });
+      }
+
       heroWrapper.style.display = "block";
       initHeroCarousel();
     } else {
@@ -263,6 +227,43 @@ function renderHeroBanners(weeklyPodcasts = []) {
     }
   }
 
+  pages.forEach(page => {
+    const pageBanners = banners.filter(b => (b.targetPage === page || b.page === page) && b.type === "widget");
+    if (pageBanners.length === 0) return;
+
+    const pageContainer = document.getElementById(`${page}-sections`);
+    if (!pageContainer) return;
+
+    pageContainer.querySelectorAll(".hero-banner-widget").forEach(el => el.remove());
+
+    pageBanners.forEach(banner => {
+      const bannerEl = document.createElement("div");
+      bannerEl.className = "hero-banner-widget";
+      const badge = banner.badge ? `<span class="hero-badge">${escapeAttr(banner.badge)}</span>` : '';
+
+      bannerEl.innerHTML = `
+        <div class="hero-banner-card" 
+             data-audio="${escapeAttr(banner.audioUrl || '')}" 
+             data-title="${escapeAttr(banner.title || '')}"
+             data-sub="${escapeAttr(banner.subtitle || '')}"
+             data-cover="${escapeAttr(banner.imageUrl || '')}">
+          <div class="hero-bg" style="background-image: url('${escapeAttr(banner.imageUrl || '')}');"></div>
+          <div class="hero-overlay"></div>
+          <div class="hero-content">
+            ${badge}
+            <h2 class="hero-title">${escapeAttr(banner.title || '')}</h2>
+            <p class="hero-subtitle">${escapeAttr(banner.subtitle || '')}</p>
+            <p class="hero-desc">${escapeAttr(banner.description || '')}</p>
+            <button class="hero-play-btn" type="button">
+              <i class="fa-solid fa-play"></i> Spill nå
+            </button>
+          </div>
+        </div>
+      `;
+
+      pageContainer.prepend(bannerEl);
+    });
+  });
 }
 
 // ==========================================
@@ -270,59 +271,18 @@ function renderHeroBanners(weeklyPodcasts = []) {
 // ==========================================
 export async function loadContentFromFirestore() {
   const pages = ["home", "audiobooks", "podcasts", "radio"];
-  try {
-    const customPages = (await getDocs(collection(db, "pages"))).docs
-      .map(pageDoc => ({ id: pageDoc.id, ...pageDoc.data() }))
-      .filter(page => page.visible !== false && page.slug);
-    customPages.forEach(page => {
-      if (pages.includes(page.slug)) return;
-      pages.push(page.slug);
-      createCustomPageChrome(page);
-    });
-  } catch (error) {
-    console.warn("Kunne ikke hente egendefinerte sider:", error);
-  }
-
-  const updateCatalogCount = (page, count) => {
-    const countEl = document.querySelector(`[data-catalog-toolbar="${page}"] [data-catalog-count]`);
-    if (countEl) countEl.textContent = `${count} ${page === "radio" ? "kanaler" : "titler"}`;
-  };
-
-  const setupCatalogToolbar = (page, container) => {
-    const toolbar = document.querySelector(`[data-catalog-toolbar="${page}"]`);
-    const sortSelect = toolbar?.querySelector(".catalog-sort");
-    if (!sortSelect || sortSelect.dataset.bound === "true") return;
-    sortSelect.dataset.bound = "true";
-    sortSelect.addEventListener("change", () => {
-      const sections = [...container.querySelectorAll(".dynamic-section")];
-      sections.forEach(section => {
-        const cards = [...section.querySelectorAll(".book-card, .radio-card-horizontal")];
-        cards.sort((left, right) => {
-          if (sortSelect.value === "title") {
-            return (left.dataset.title || "").localeCompare(right.dataset.title || "", "nb");
-          }
-          return Number(left.dataset.position || 0) - Number(right.dataset.position || 0);
-        }).forEach(card => card.parentElement.appendChild(card));
-      });
-    });
-  };
 
   const renderSectionsData = (sectionsList) => {
-    latestSectionsList = sectionsList;
     pages.forEach(p => {
       const container = document.getElementById(`${p}-sections`);
       if (container) {
         const existingBanners = container.querySelectorAll(".hero-banner-widget");
         container.innerHTML = "";
         existingBanners.forEach(b => container.appendChild(b));
-        setupCatalogToolbar(p, container);
       }
     });
 
-    const visibleSections = sectionsList.filter(sec => sec.visible !== false);
-    const pageItemCounts = Object.fromEntries(pages.map(page => [page, 0]));
-
-    visibleSections.forEach((sec) => {
+    sectionsList.forEach((sec) => {
       const rawPages = sec.targetPages || sec.pages || sec.page || "home";
       const pagesArray = Array.isArray(rawPages) ? rawPages : [rawPages];
 
@@ -330,28 +290,23 @@ export async function loadContentFromFirestore() {
         const targetContainer = document.getElementById(`${pageTarget}-sections`);
         if (!targetContainer) return;
 
-        pageItemCounts[pageTarget] = (pageItemCounts[pageTarget] || 0) + (sec.items || []).length;
-
         const sectionWrapper = document.createElement("div");
         sectionWrapper.className = "dynamic-section";
 
         let itemsHTML = "";
 
-        if (sec.layout === "radio-list" || sec.layout === "radio-grid-3" || sec.layout === "radio-scroll" || sec.type === "radio-list") {
-          const maxItems = Number(sec.maxItems) > 0 ? Number(sec.maxItems) : (sec.items || []).length;
-          (sec.items || []).slice(0, maxItems).forEach((item, index) => {
+        if (pageTarget === "radio" || sec.layout === "radio-list" || sec.type === "radio-list") {
+          (sec.items || []).forEach((item, index) => {
             const title = item.title || 'Radiokanal';
             const sub = item.sub || item.description || 'Direktesending';
             const manualCover = item.coverUrl || item.cover || item.image || '';
-            const rawAudioUrl = getAudioUrl(item);
-            const audioUrl = isPlayableAudioUrl(rawAudioUrl) ? rawAudioUrl : '';
+            const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
             const cardId = `radio-card-${sec.id || index}-${index}`;
 
             itemsHTML += `
               <div class="radio-card-horizontal" 
                    id="${cardId}"
                    data-id="${escapeAttr(item.id || cardId)}"
-                   data-position="${index}"
                    data-title="${escapeAttr(title)}" 
                    data-sub="${escapeAttr(sub)}" 
                    data-cover="${escapeAttr(manualCover)}"
@@ -368,15 +323,11 @@ export async function loadContentFromFirestore() {
             `;
           });
 
-          const radioLayoutClass = sec.layout === "radio-grid-3"
-            ? "radio-channels-grid-3"
-            : (sec.layout === "radio-scroll" ? "radio-channels-scroll" : "radio-channels-list");
-
           sectionWrapper.innerHTML = `
             <div class="radio-channels-header">
               <h3>${escapeAttr(sec.title || 'Kanaler')}</h3>
             </div>
-            <div class="${radioLayoutClass}">${itemsHTML}</div>
+            <div class="radio-channels-list">${itemsHTML}</div>
           `;
         } 
         else if (sec.layout === "featured-banner") {
@@ -400,40 +351,25 @@ export async function loadContentFromFirestore() {
           sectionWrapper.innerHTML = itemsHTML;
         } 
         else {
-          const layoutClassMap = {
-            'grid': 'layout-grid-2',
-            'grid-2': 'layout-grid-2',
-            'grid-3': 'layout-grid-3',
-            'grid-4': 'layout-grid-4',
-            'horizontal-scroll': 'horizontal-scroll'
-          };
-          const containerClass = layoutClassMap[sec.layout] || 'horizontal-scroll';
-          const sectionItems = sec.items || [];
-          const maxItems = Number(sec.maxItems) > 0 ? Number(sec.maxItems) : sectionItems.length;
+          const containerClass = sec.layout === 'grid' ? 'grid-layout' : 'horizontal-scroll';
 
-          sectionItems.forEach((item, index) => {
+          (sec.items || []).forEach((item, index) => {
             const title = item.title || 'Innhold';
             const sub = item.sub || item.author || item.publisher || '';
             const rssUrl = item.rssUrl || item.rss || '';
             const manualCover = item.coverUrl || item.cover || item.image || '';
-            const rawAudioUrl = getAudioUrl(item);
-            const audioUrl = isPlayableAudioUrl(rawAudioUrl) ? rawAudioUrl : '';
+            const audioUrl = item.audioUrl || item.audio || item.streamUrl || '';
             const type = item.type || (pageTarget === 'audiobooks' ? 'audiobook' : 'podcast');
             const cardId = `card-${sec.id || index}-${index}-${pageTarget}`;
 
             const itemKey = `item_data_${cardId.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            const normalizedItem = { ...item, audioUrl };
-            if (!audioUrl && !rssUrl && (type === 'podcast' || type === 'audiobook') && rawAudioUrl) {
-              normalizedItem.rssUrl = rawAudioUrl;
-            }
-            window[itemKey] = normalizedItem;
+            window[itemKey] = item;
 
             itemsHTML += `
-              <div class="book-card${index >= maxItems ? ' section-item-overflow' : ''}" 
+              <div class="book-card" 
                    id="${cardId}"
                    data-item-key="${itemKey}"
                    data-id="${escapeAttr(item.id || cardId)}"
-                   data-position="${index}"
                    data-title="${escapeAttr(title)}" 
                    data-sub="${escapeAttr(sub)}" 
                    data-desc="${escapeAttr(item.desc || item.description || '')}" 
@@ -455,38 +391,16 @@ export async function loadContentFromFirestore() {
           });
 
           sectionWrapper.innerHTML = `
-            <div class="section-header">
-              <div>
-                <h3>${escapeAttr(sec.title || '')}</h3>
-                ${sec.subtitle ? `<p>${escapeAttr(sec.subtitle)}</p>` : ''}
-              </div>
-              ${sectionItems.length > maxItems ? '<button class="section-more-btn" type="button" aria-expanded="false">Se alle</button>' : ''}
-            </div>
+            <div class="section-header"><h3>${escapeAttr(sec.title || '')}</h3></div>
             <div class="${containerClass}">${itemsHTML}</div>
           `;
-
-          const moreButton = sectionWrapper.querySelector('.section-more-btn');
-          if (moreButton) {
-            moreButton.addEventListener('click', () => {
-              const expanded = moreButton.getAttribute('aria-expanded') === 'true';
-              sectionWrapper.querySelectorAll('.section-item-overflow').forEach(item => {
-                item.hidden = expanded;
-              });
-              moreButton.setAttribute('aria-expanded', String(!expanded));
-              moreButton.textContent = expanded ? 'Se alle' : 'Vis mindre';
-            });
-          }
         }
 
         targetContainer.appendChild(sectionWrapper);
       });
     });
 
-    pages.forEach(page => updateCatalogCount(page, pageItemCounts[page] || 0));
-
-    renderAutomaticPodcastSections();
     renderRadioBanner();
-    renderNewEpisodesGallery(sectionsList);
   };
 
   const cachedSections = localStorage.getItem("app_sections_cache");
@@ -498,261 +412,19 @@ export async function loadContentFromFirestore() {
     }
   }
 
-  if (sectionsUnsubscribe) sectionsUnsubscribe();
-
-  const sectionsQuery = query(collection(db, "sections"), orderBy("order", "asc"));
-  sectionsUnsubscribe = onSnapshot(sectionsQuery, (snapshot) => {
-    const sectionsData = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
+  try {
+    const q = query(collection(db, "sections"), orderBy("order", "asc"));
+    const snapshot = await getDocs(q);
+    const sectionsData = [];
+    
+    snapshot.forEach((docSnap) => {
+      sectionsData.push({ id: docSnap.id, ...docSnap.data() });
+    });
 
     localStorage.setItem("app_sections_cache", JSON.stringify(sectionsData));
     renderSectionsData(sectionsData);
-  }, (err) => {
-    console.error("Sanntidslasting fra Firestore feilet:", err);
-  });
-}
-
-async function loadAutomaticPodcastCatalog() {
-  const cacheKey = "tale_automatic_podcasts_v1";
-  let cachedCategories = [];
-  try {
-    const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
-    cachedCategories = cached?.categories || [];
-    if (cached?.expiresAt > Date.now()) {
-      automaticPodcastCategories = cachedCategories;
-      renderAutomaticPodcastSections();
-      renderNewEpisodesGallery(latestSectionsList);
-      return;
-    }
-  } catch (error) {
-    localStorage.removeItem(cacheKey);
-  }
-
-  try {
-    const chartResults = await Promise.all(AUTOMATIC_PODCAST_SOURCES.map(async source => {
-      try {
-        const response = await fetch(source.url);
-        if (!response.ok) throw new Error(`Apple Podcasts svarte med ${response.status}`);
-        const data = await response.json();
-        return { source, entries: data.feed?.entry || [] };
-      } catch (error) {
-        console.warn(`Kunne ikke hente ${source.title}:`, error);
-        return { source, entries: [] };
-      }
-    }));
-
-    const categories = await Promise.all(chartResults.map(async ({ source, entries }) => {
-      const chartItems = entries.map(entry => ({
-        appleId: entry.id?.attributes?.["im:id"] || "",
-        title: entry["im:name"]?.label || "Podkast",
-        artist: entry["im:artist"]?.label || "",
-        cover: ([...(entry["im:image"] || [])].pop()?.label || "").replace(/\/\d+x\d+bb\./, "/600x600bb."),
-        appleUrl: entry.link?.attributes?.href || ""
-      })).filter(item => item.appleId);
-
-      const ids = chartItems.map(item => item.appleId);
-      if (!ids.length) return { ...source, items: [] };
-
-      try {
-        const lookupUrl = `https://itunes.apple.com/lookup?id=${ids.map(encodeURIComponent).join(",")}&entity=podcast&country=${source.country.toUpperCase()}`;
-        const response = await fetch(lookupUrl);
-        if (!response.ok) throw new Error(`Apple Podcasts svarte med ${response.status}`);
-        const data = await response.json();
-        const lookupById = new Map((data.results || []).map(item => [String(item.collectionId), item]));
-        const items = chartItems.map(item => {
-          const details = lookupById.get(String(item.appleId));
-          if (!details?.feedUrl) return null;
-          const cover = details.artworkUrl600 || item.cover;
-          return {
-            id: `automatic_${item.appleId}`,
-            appleId: item.appleId,
-            title: details.collectionName || item.title,
-            sub: details.artistName || item.artist,
-            author: details.artistName || item.artist,
-            cover,
-            coverUrl: cover,
-            rssUrl: details.feedUrl,
-            appleUrl: details.collectionViewUrl || item.appleUrl,
-            type: "podcast"
-          };
-        }).filter(Boolean);
-        return { ...source, items };
-      } catch (error) {
-        console.warn(`Kunne ikke hente RSS-adresser for ${source.title}:`, error);
-        return { ...source, items: [] };
-      }
-    }));
-
-    automaticPodcastCategories = categories;
-    if (categories.some(category => category.items.length)) {
-      localStorage.setItem(cacheKey, JSON.stringify({
-        expiresAt: Date.now() + 6 * 60 * 60 * 1000,
-        categories
-      }));
-    } else {
-      automaticPodcastCategories = cachedCategories;
-    }
-  } catch (error) {
-    console.warn("Kunne ikke oppdatere den automatiske podkastkatalogen:", error);
-    automaticPodcastCategories = cachedCategories;
-  }
-
-  renderAutomaticPodcastSections();
-  renderNewEpisodesGallery(latestSectionsList);
-}
-
-function renderAutomaticPodcastSections() {
-  const container = document.getElementById("podcasts-sections");
-  if (!container) return;
-  container.querySelectorAll(".automatic-podcast-section").forEach(section => section.remove());
-
-  automaticPodcastCategories.forEach((category, categoryIndex) => {
-    if (!category.items?.length) return;
-    const section = document.createElement("div");
-    section.className = "dynamic-section automatic-podcast-section";
-    const itemMarkup = category.items.map((item, index) => {
-      const itemKey = `automatic_podcast_${categoryIndex}_${index}`;
-      window[itemKey] = item;
-      return `<div class="book-card" data-item-key="${itemKey}" data-title="${escapeAttr(item.title)}" data-rss="${escapeAttr(item.rssUrl)}" data-type="podcast">
-        <div class="book-cover">${buildCoverMarkup(item.cover, item.title)}</div>
-        <div class="book-title">${escapeAttr(item.title)}</div>
-        <div class="book-author">${escapeAttr(item.sub)}</div>
-      </div>`;
-    }).join("");
-    section.innerHTML = `<div class="section-header"><div><h3>${escapeAttr(category.title)}</h3></div></div><div class="horizontal-scroll">${itemMarkup}</div>`;
-    container.appendChild(section);
-  });
-}
-
-function isNewEpisode(pubDate) {
-  const timestamp = Date.parse(pubDate || '');
-  if (!Number.isFinite(timestamp)) return false;
-  const age = Date.now() - timestamp;
-  return age >= 0 && age <= NEW_EPISODE_DAYS * 24 * 60 * 60 * 1000;
-}
-
-async function mapWithConcurrency(items, concurrency, mapper) {
-  const results = new Array(items.length);
-  let nextIndex = 0;
-  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-    while (nextIndex < items.length) {
-      const index = nextIndex++;
-      results[index] = await mapper(items[index]);
-    }
-  });
-  await Promise.all(workers);
-  return results;
-}
-
-async function renderNewEpisodesGallery(sectionsList) {
-  const section = document.getElementById('new-episodes-section');
-  const container = document.getElementById('new-episodes-container');
-  if (!section || !container) return;
-
-  const podcastItems = sectionsList
-    .filter(sectionData => sectionData.visible !== false)
-    .flatMap(sectionData => sectionData.items || [])
-    .filter(item => (item.type || 'podcast') === 'podcast' && (item.rssUrl || item.rss));
-  automaticPodcastCategories
-    .filter(category => category.includeInNewEpisodes)
-    .forEach(category => podcastItems.push(...(category.items || [])));
-  const feeds = [...new Map(podcastItems.map(item => [item.rssUrl || item.rss, item])).values()];
-
-  if (!feeds.length) {
-    section.hidden = true;
-    return;
-  }
-
-  const results = await mapWithConcurrency(feeds, 6, async (podcast) => {
-    const rssUrl = podcast.rssUrl || podcast.rss;
-    const cacheKey = `tale_feed_${encodeURIComponent(rssUrl)}`;
-    let feedItems = [];
-    try {
-      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-      if (cached?.expiresAt > Date.now()) feedItems = cached.items || [];
-    } catch (error) {
-      localStorage.removeItem(cacheKey);
-    }
-
-    if (!feedItems.length) {
-      try {
-        const data = await fetchRssFeed(rssUrl);
-        if (data.items?.length) {
-          feedItems = data.items || [];
-          localStorage.setItem(cacheKey, JSON.stringify({
-            expiresAt: Date.now() + 6 * 60 * 60 * 1000,
-            items: feedItems
-          }));
-        }
-      } catch (error) {
-        console.warn('Kunne ikke hente nye podkastepisoder:', error);
-      }
-    }
-
-    return feedItems.filter(episode => isNewEpisode(episode.pubDate)).map(episode => ({
-      ...episode,
-      podcastTitle: podcast.title || podcast.name || 'Podkast',
-      podcastSub: podcast.sub || podcast.author || podcast.publisher || '',
-      podcastCover: podcast.coverUrl || podcast.cover || podcast.image || ''
-    }));
-  });
-
-  const episodes = results.flat()
-    .sort((left, right) => Date.parse(right.pubDate || '') - Date.parse(left.pubDate || ''));
-
-  if (!episodes.length) {
-    section.hidden = true;
-    container.replaceChildren();
-    return;
-  }
-
-  container.innerHTML = episodes.map((episode, index) => {
-    const title = episode.title || 'Ny episode';
-    const cover = episode.thumbnail || episode.itunes?.image || episode.enclosure?.thumbnail || episode.podcastCover;
-    const audioUrl = episode.enclosure?.link || episode.link || '';
-    const itemKey = `new_episode_${index}_${Date.now()}`.replace(/[^a-zA-Z0-9_]/g, '_');
-    window[itemKey] = {
-      id: `new_${encodeURIComponent(episode.podcastTitle)}_${encodeURIComponent(title)}`,
-      title,
-      sub: episode.podcastTitle,
-      author: episode.podcastSub,
-      cover,
-      coverUrl: cover,
-      audioUrl,
-      pubDate: episode.pubDate,
-      type: 'podcast'
-    };
-    return `<div class="book-card new-episode-card" data-item-key="${itemKey}" data-title="${escapeAttr(title)}">
-      <div class="book-cover new-episode-cover">
-        ${buildCoverMarkup(cover, title)}
-        <span class="new-episode-badge">NY</span>
-      </div>
-      <div class="book-title">${escapeAttr(title)}</div>
-      <div class="book-author">${escapeAttr(episode.podcastTitle)}</div>
-    </div>`;
-  }).join('');
-  section.hidden = false;
-}
-
-function createCustomPageChrome(page) {
-  const safeSlug = String(page.slug).replace(/[^a-z0-9-]/gi, "").toLowerCase();
-  if (!safeSlug || document.getElementById(safeSlug)) return;
-
-  const pageElement = document.createElement("section");
-  pageElement.id = safeSlug;
-  pageElement.className = "page";
-  pageElement.innerHTML = `<div class="page-intro"><span class="page-kicker"><i class="fa-solid ${escapeAttr(page.icon || "fa-layer-group")}"></i> Tale</span><h1>${escapeAttr(page.title || safeSlug)}</h1><p>${escapeAttr(page.subtitle || "Utforsk innhold på Tale.")}</p></div><div id="${safeSlug}-sections" class="dynamic-container"></div>`;
-  document.querySelector("main")?.appendChild(pageElement);
-
-  const nav = document.querySelector(".bottom-bar");
-  if (nav) {
-    const button = document.createElement("button");
-    button.className = "nav-btn";
-    button.dataset.target = safeSlug;
-    button.innerHTML = `<i class="fa-solid ${escapeAttr(page.icon || "fa-layer-group")}"></i><span class="nav-text">${escapeHtml(page.title || safeSlug)}</span>`;
-    nav.appendChild(button);
+  } catch (err) {
+    console.error("Henting fra Firestore feilet:", err);
   }
 }
 
@@ -768,26 +440,29 @@ async function renderRadioBanner() {
   let bannerHeadline = "NRK P2 Nyheter";
 
   try {
-    const data = await fetchRssFeed('https://www.nrk.no/toppsaker.rss');
-    if (data.items?.length > 0) {
-      const topItem = data.items[0];
-      if (topItem.title) bannerHeadline = topItem.title;
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/toppsaker.rss")}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'ok' && data.items?.length > 0) {
+        const topItem = data.items[0];
+        if (topItem.title) bannerHeadline = topItem.title;
 
-      let fetchedImg = topItem.media?.content?.url
-        || topItem.media?.thumbnail?.url
-        || topItem.thumbnail
-        || topItem.enclosure?.link
-        || topItem.enclosure?.thumbnail;
+        let fetchedImg = topItem.media?.content?.url 
+          || topItem.media?.thumbnail?.url 
+          || topItem.thumbnail 
+          || topItem.enclosure?.link 
+          || topItem.enclosure?.thumbnail;
 
-      if (!fetchedImg) {
-        const contentToSearch = topItem.content || topItem.description || '';
-        const imgMatch = contentToSearch.match(/<img[^>]+src=["']([^"']+)["']/i);
-        if (imgMatch && imgMatch[1]) {
-          fetchedImg = imgMatch[1];
+        if (!fetchedImg) {
+          const contentToSearch = topItem.content || topItem.description || '';
+          const imgMatch = contentToSearch.match(/<img[^>]+src=["']([^"']+)["']/i);
+          if (imgMatch && imgMatch[1]) {
+            fetchedImg = imgMatch[1];
+          }
         }
-      }
 
-      if (fetchedImg) bannerImage = fetchedImg;
+        if (fetchedImg) bannerImage = fetchedImg;
+      }
     }
   } catch (err) {
     console.warn("Kunne ikke hente NRK RSS for banner, bruker standardverdi.", err);
@@ -822,13 +497,17 @@ async function renderRadioBanner() {
 
 async function fetchRSSImageData(rssUrl, cardId, title) {
   try {
-    const data = await fetchRssFeed(rssUrl);
-    const imageUrl = data.feed?.image || data.items?.[0]?.thumbnail || data.items?.[0]?.enclosure?.thumbnail || data.items?.[0]?.media?.thumbnail?.url || data.items?.[0]?.media?.content?.url || "";
-    if (imageUrl) {
-      const cardContainer = document.getElementById(cardId);
-      const coverContainer = document.getElementById(`cover-${cardId}`);
-      if (coverContainer) coverContainer.innerHTML = buildCoverMarkup(imageUrl, title);
-      if (cardContainer) cardContainer.dataset.cover = imageUrl;
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.status === 'ok') {
+      const imageUrl = data.feed?.image || data.items?.[0]?.thumbnail || data.items?.[0]?.enclosure?.thumbnail || "";
+      if (imageUrl) {
+        const cardContainer = document.getElementById(cardId);
+        const coverContainer = document.getElementById(`cover-${cardId}`);
+        if (coverContainer) coverContainer.innerHTML = buildCoverMarkup(imageUrl, title);
+        if (cardContainer) cardContainer.dataset.cover = imageUrl;
+      }
     }
   } catch (err) {
     console.warn("Kunne ikke hente RSS-bilde for:", rssUrl, err);
@@ -837,8 +516,7 @@ async function fetchRSSImageData(rssUrl, cardId, title) {
 
 export function setupSearchListener() {
   const searchInput = document.getElementById("global-search-input");
-  if (!searchInput || searchInput.dataset.bound === "true") return;
-  searchInput.dataset.bound = "true";
+  if (!searchInput) return;
 
   searchInput.addEventListener("input", (e) => {
     const queryTerm = e.target.value.trim();
@@ -962,48 +640,6 @@ function extractCardItemData(card) {
 // ==========================================
 function setupEventListeners() {
   document.addEventListener("click", async (e) => {
-    const favoritesToggle = e.target.closest("#account-favorites-toggle");
-    if (favoritesToggle) {
-      const section = document.getElementById("account-favorites-section");
-      const list = document.getElementById("account-favorites-list");
-      if (!section || !list) return;
-
-      section.hidden = !section.hidden;
-      favoritesToggle.setAttribute("aria-expanded", String(!section.hidden));
-      if (!section.hidden) {
-        list.innerHTML = '<p class="account-empty">Henter favoritter...</p>';
-        try {
-          accountFavorites = await loadUserFavorites();
-          renderAccountFavorites();
-        } catch (error) {
-          console.error("Kunne ikke hente favoritter:", error);
-          list.innerHTML = '<p class="account-empty">Favorittene kunne ikke lastes.</p>';
-        }
-      }
-      return;
-    }
-
-    const favoriteOpen = e.target.closest("[data-favorite-open]");
-    if (favoriteOpen) {
-      const item = accountFavorites[Number(favoriteOpen.dataset.favoriteOpen)];
-      if (item) openDetailsView(item);
-      return;
-    }
-
-    const favoriteRemove = e.target.closest("[data-favorite-remove]");
-    if (favoriteRemove) {
-      favoriteRemove.disabled = true;
-      try {
-        await removeUserFavorite(favoriteRemove.dataset.favoriteRemove);
-        accountFavorites = await loadUserFavorites();
-        renderAccountFavorites();
-      } catch (error) {
-        console.error("Kunne ikke fjerne favoritt:", error);
-        favoriteRemove.disabled = false;
-      }
-      return;
-    }
-
     // 0. Karuseller og Hero Banners -> Direktespilling
     const slide = e.target.closest(".carousel-slide, .hero-banner-card, .featured-banner-card");
     if (slide) {
@@ -1013,23 +649,9 @@ function setupEventListeners() {
       const title = slide.dataset.title || "Tale Highlight";
       const sub = slide.dataset.sub || "";
       const cover = slide.dataset.cover || "";
-      const rssUrl = slide.dataset.rss || "";
 
       if (audioUrl) {
         playAudioTrack(audioUrl, title, sub, cover);
-      } else if (rssUrl) {
-        openDetailsView({
-          id: slide.dataset.id || title,
-          title,
-          sub,
-          subtitle: sub,
-          cover,
-          coverUrl: cover,
-          rssUrl,
-          appleUrl: slide.dataset.appleUrl || "",
-          type: "podcast",
-          description: "En av ukens mest populære podkaster i Norge."
-        });
       }
       return;
     }
@@ -1045,7 +667,7 @@ function setupEventListeners() {
       const cover = radioBtnOrCard.dataset.cover || "";
 
       if (audioUrl) {
-        playAudioTrack(audioUrl, title, sub, cover, 0, true);
+        playAudioTrack(audioUrl, title, sub, cover);
       }
       return;
     }
@@ -1055,13 +677,13 @@ function setupEventListeners() {
     if (continueCard) {
       const item = extractCardItemData(continueCard);
       
-      if (item && isPlayableAudioUrl(item.audioUrl)) {
+      if (item && item.audioUrl) {
         playAudioTrack(
           item.audioUrl,
           item.title,
           item.sub || item.author || item.publisher || '',
           item.coverUrl || item.cover || '',
-          item.currentTime || 0
+          item.progress || 0
         );
       } else if (item && (item.rssUrl || item.id)) {
         openDetailsView(item);
@@ -1074,7 +696,7 @@ function setupEventListeners() {
     if (card) {
       const item = extractCardItemData(card);
 
-      if (item && isPlayableAudioUrl(item.audioUrl)) {
+      if (item && item.audioUrl) {
         playAudioTrack(
           item.audioUrl,
           item.title,
@@ -1140,6 +762,14 @@ function setupEventListeners() {
       return;
     }
 
+    const closeDetails = e.target.closest("#details-close-btn");
+    if (closeDetails) {
+      document.getElementById("details-page")?.classList.remove("active");
+      const lastPage = localStorage.getItem("lastActivePage") || "home";
+      switchPage(lastPage !== "details-page" ? lastPage : "home");
+      return;
+    }
+
     if (e.target.closest("#mini-play-btn")) {
       e.stopPropagation();
       togglePlay();
@@ -1160,11 +790,19 @@ function setupEventListeners() {
     }
 
     if (e.target.closest("#open-full-player")) {
-      openFullscreenPlayer();
+      const fullPlayer = document.getElementById("fullscreen-player");
+      if (fullPlayer) {
+        fullPlayer.style.setProperty('--y-offset', '0px');
+        fullPlayer.classList.add("active");
+      }
+      updateUrlHash("fullscreen-player");
+      updateBottomNavVisibility();
       return;
     }
     if (e.target.closest("#player-close-btn")) {
-      closeFullscreenPlayer();
+      document.getElementById("fullscreen-player")?.classList.remove("active");
+      const lastPage = localStorage.getItem("lastActivePage") || "home";
+      switchPage(lastPage !== "fullscreen-player" ? lastPage : "home");
       return;
     }
   });
@@ -1184,29 +822,4 @@ function setupEventListeners() {
       }
     }
   });
-}
-
-function renderAccountFavorites() {
-  const list = document.getElementById("account-favorites-list");
-  const count = document.getElementById("account-favorites-count");
-  if (!list) return;
-
-  if (count) count.textContent = `${accountFavorites.length} ${accountFavorites.length === 1 ? "tittel" : "titler"}`;
-  if (!accountFavorites.length) {
-    list.innerHTML = '<p class="account-empty">Du har ikke lagret noen favoritter ennå.</p>';
-    return;
-  }
-
-  list.innerHTML = accountFavorites.map((item, index) => `
-    <article class="account-favorite-row">
-      ${item.cover ? `<img class="account-favorite-cover" src="${escapeAttr(item.cover)}" alt="" loading="lazy">` : '<div class="account-favorite-cover" aria-hidden="true"></div>'}
-      <button type="button" class="account-favorite-open" data-favorite-open="${index}">
-        <strong>${escapeAttr(item.title || "Uten tittel")}</strong>
-        <span>${escapeAttr(item.sub || "Tale")}</span>
-      </button>
-      <button type="button" class="account-favorite-remove" data-favorite-remove="${escapeAttr(item.favoriteId)}" aria-label="Fjern ${escapeAttr(item.title || "favoritt")}" title="Fjern fra favoritter">
-        <i class="fa-solid fa-heart-crack" aria-hidden="true"></i>
-      </button>
-    </article>
-  `).join("");
 }
