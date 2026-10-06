@@ -4,6 +4,7 @@ import { showView, switchPage, buildCoverMarkup } from "./ui.js";
 import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
 import { openDetailsView, openFullscreenPlayer, closeFullscreenPlayer, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl, getAudioUrl } from "./player.js";
 import { loadUserFavorites, removeUserFavorite } from "./details.js";
+import { fetchRssFeed } from "./rss-feed.js";
 import { collection, query, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Karusell-tilstand
@@ -677,9 +678,8 @@ async function renderNewEpisodesGallery(sectionsList) {
 
     if (!feedItems.length) {
       try {
-        const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
-        const data = await response.json();
-        if (data.status === 'ok') {
+        const data = await fetchRssFeed(rssUrl);
+        if (data.items?.length) {
           feedItems = data.items || [];
           localStorage.setItem(cacheKey, JSON.stringify({
             expiresAt: Date.now() + 6 * 60 * 60 * 1000,
@@ -768,29 +768,26 @@ async function renderRadioBanner() {
   let bannerHeadline = "NRK P2 Nyheter";
 
   try {
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent("https://www.nrk.no/toppsaker.rss")}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.status === 'ok' && data.items?.length > 0) {
-        const topItem = data.items[0];
-        if (topItem.title) bannerHeadline = topItem.title;
+    const data = await fetchRssFeed('https://www.nrk.no/toppsaker.rss');
+    if (data.items?.length > 0) {
+      const topItem = data.items[0];
+      if (topItem.title) bannerHeadline = topItem.title;
 
-        let fetchedImg = topItem.media?.content?.url 
-          || topItem.media?.thumbnail?.url 
-          || topItem.thumbnail 
-          || topItem.enclosure?.link 
-          || topItem.enclosure?.thumbnail;
+      let fetchedImg = topItem.media?.content?.url
+        || topItem.media?.thumbnail?.url
+        || topItem.thumbnail
+        || topItem.enclosure?.link
+        || topItem.enclosure?.thumbnail;
 
-        if (!fetchedImg) {
-          const contentToSearch = topItem.content || topItem.description || '';
-          const imgMatch = contentToSearch.match(/<img[^>]+src=["']([^"']+)["']/i);
-          if (imgMatch && imgMatch[1]) {
-            fetchedImg = imgMatch[1];
-          }
+      if (!fetchedImg) {
+        const contentToSearch = topItem.content || topItem.description || '';
+        const imgMatch = contentToSearch.match(/<img[^>]+src=["']([^"']+)["']/i);
+        if (imgMatch && imgMatch[1]) {
+          fetchedImg = imgMatch[1];
         }
-
-        if (fetchedImg) bannerImage = fetchedImg;
       }
+
+      if (fetchedImg) bannerImage = fetchedImg;
     }
   } catch (err) {
     console.warn("Kunne ikke hente NRK RSS for banner, bruker standardverdi.", err);
@@ -825,17 +822,13 @@ async function renderRadioBanner() {
 
 async function fetchRSSImageData(rssUrl, cardId, title) {
   try {
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.status === 'ok') {
-      const imageUrl = data.feed?.image || data.items?.[0]?.thumbnail || data.items?.[0]?.enclosure?.thumbnail || "";
-      if (imageUrl) {
-        const cardContainer = document.getElementById(cardId);
-        const coverContainer = document.getElementById(`cover-${cardId}`);
-        if (coverContainer) coverContainer.innerHTML = buildCoverMarkup(imageUrl, title);
-        if (cardContainer) cardContainer.dataset.cover = imageUrl;
-      }
+    const data = await fetchRssFeed(rssUrl);
+    const imageUrl = data.feed?.image || data.items?.[0]?.thumbnail || data.items?.[0]?.enclosure?.thumbnail || data.items?.[0]?.media?.thumbnail?.url || data.items?.[0]?.media?.content?.url || "";
+    if (imageUrl) {
+      const cardContainer = document.getElementById(cardId);
+      const coverContainer = document.getElementById(`cover-${cardId}`);
+      if (coverContainer) coverContainer.innerHTML = buildCoverMarkup(imageUrl, title);
+      if (cardContainer) cardContainer.dataset.cover = imageUrl;
     }
   } catch (err) {
     console.warn("Kunne ikke hente RSS-bilde for:", rssUrl, err);

@@ -1,3 +1,5 @@
+import { fetchRssFeed } from './rss-feed.js';
+
 // Hjelpefunksjon for å hindre XSS når vi setter inn tekst i HTML
 function escapeHtml(str) {
   if (!str) return '';
@@ -86,21 +88,15 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
   if (!banner) return;
 
   try {
-    // Riktig direkte-adresse til NRKs toppsaker
-    const rssUrl = encodeURIComponent('https://www.nrk.no/toppsaker.rss');
-    const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
-    if (!response.ok) throw new Error(`RSS-tjenesten svarte med HTTP ${response.status}.`);
-    const data = await response.json();
+    const data = await fetchRssFeed('https://www.nrk.no/toppsaker.rss');
 
-    if (data.status === 'ok' && data.items && data.items.length > 0) {
+    if (data.items && data.items.length > 0) {
       const topStory = data.items[0];
 
-      // Sett overskriften fra den nyeste nyheten
       if (headlineEl) {
         headlineEl.textContent = topStory.title || 'NRK Nyheter Direct';
       }
 
-      // Omfattende søk etter bilde-URL i RSS-dataene
       let imageUrl = null;
 
       if (topStory.enclosure && topStory.enclosure.link) {
@@ -109,7 +105,6 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
         imageUrl = topStory.thumbnail;
       }
 
-      // Søk etter <img>-tagger i tekstfeltene dersom bildelenke mangler over
       if (!imageUrl) {
         const contentToSearch = (topStory.description || '') + (topStory.content || '');
         const imgMatch = contentToSearch.match(/src=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/i);
@@ -118,7 +113,6 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
         }
       }
 
-      // Oppdater bakgrunnsbildet på banneret
       const finalImage = imageUrl || DEFAULT_RADIO_IMAGE;
       if (bannerBg) {
         bannerBg.style.backgroundImage = `url('${finalImage}')`;
