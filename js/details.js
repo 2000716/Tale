@@ -4,7 +4,6 @@ import { updateBottomNavVisibility, updateUrlHash } from './ui.js';
 import { db } from './firebase-config.js';
 import { deleteDoc, doc, getDoc, getDocs, setDoc, collection } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { shareContent, showActionToast } from './content-actions.js';
-import { fetchRssFeed } from './rss-feed.js';
 
 function escapeAttr(value) {
   return String(value || '')
@@ -93,7 +92,7 @@ export async function openDetailsPage(item) {
   }
 
   currentItem = item;
-  visibleEpisodesCount = Number.MAX_SAFE_INTEGER;
+  visibleEpisodesCount = EPISODES_PER_PAGE;
   fetchedEpisodes = [];
   episodeLoadError = '';
 
@@ -163,10 +162,12 @@ export async function openDetailsPage(item) {
     // RSS-feed (Podkast)
     if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Henter episoder og informasjon...</div>`;
     try {
-      const data = await fetchRssFeed(rssUrl);
+      const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`RSS-tjenesten svarte med HTTP ${response.status}.`);
+      const data = await response.json();
       if (requestId !== detailsRequestId) return;
-      if (!data.feed && (!data.items || data.items.length === 0)) {
-        throw new Error('RSS-feeden returnerte ingen gyldige episoder eller metadata.');
+      if (data.status !== 'ok') {
+        throw new Error(data.message || 'RSS-tjenesten kunne ikke lese denne feeden.');
       }
 
       rssFeedDescription = data.feed?.description || data.feed?.summary || '';
@@ -189,9 +190,9 @@ export async function openDetailsPage(item) {
 
       fetchedEpisodes = (data.items || []).map(ep => ({
         title: ep.title || 'Uten tittel',
-        audioUrl: ep.audioUrl || ep.enclosure?.link || ep.link || '',
-        cover: ep.thumbnail || ep.itunes?.image || ep.enclosure?.thumbnail || ep.image || ep.cover || imageUrl,
-        duration: ep.duration || ep.enclosure?.duration || '',
+        audioUrl: ep.enclosure?.link || ep.link || '',
+        cover: ep.thumbnail || ep.itunes?.image || ep.enclosure?.thumbnail || imageUrl,
+        duration: ep.enclosure?.duration || ep.duration || '',
         pubDate: ep.pubDate || '',
         description: ep.description || ep.summary || ep.content || '',
         season: ep.itunes?.season || ep.season || '',
