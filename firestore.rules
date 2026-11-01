@@ -51,7 +51,18 @@ service cloud.firestore {
       allow delete: if false;
 
       match /profiles/{profileId} {
-        allow read, write: if signedIn() && request.auth.uid == userId;
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create: if signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.get('isDefault', false) == (profileId == 'default');
+        allow update: if signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.get('isDefault', false) == resource.data.get('isDefault', false)
+          && (profileId != 'default' || request.resource.data.get('isDefault', false) == true);
+        allow delete: if signedIn()
+          && request.auth.uid == userId
+          && profileId != 'default'
+          && resource.data.get('isDefault', false) != true;
 
         match /history/{historyId} {
           allow read, write: if signedIn() && request.auth.uid == userId;

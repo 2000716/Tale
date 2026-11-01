@@ -229,7 +229,7 @@
   margin: 0 auto 0.65rem;
   overflow: hidden;
   border-radius: 18px;
-  background: linear-gradient(145deg, #25335e, #111a3a);
+  background: transparent;
   color: #fff;
   font-size: 1.7rem;
   font-weight: 700;
@@ -366,7 +366,8 @@
 }
 
 .profile-editor-actions .btn-secondary,
-.profile-editor-actions .btn-primary {
+.profile-editor-actions .btn-primary,
+.profile-editor-actions .btn-danger {
   padding: 0.75rem;
 }
 

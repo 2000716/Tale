@@ -1,7 +1,7 @@
 import { auth, db } from "./firebase-config.js";
 import { state } from "./state.js";
 import { showView } from "./ui.js";
-import { collection, doc, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, deleteDoc, doc, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 let profileList = [];
 let avatarList = [];
@@ -84,6 +84,7 @@ function setupProfileListeners() {
   });
   document.getElementById("profile-cancel-btn").addEventListener("click", closeProfileEditor);
   document.getElementById("profile-save-btn").addEventListener("click", saveProfile);
+  document.getElementById("profile-delete-btn").addEventListener("click", deleteProfile);
   document.getElementById("profile-picker-logout-btn").addEventListener("click", async () => {
     const { handleLogout } = await import("./auth.js");
     handleLogout();
@@ -114,7 +115,7 @@ function setupProfileListeners() {
 
 function renderProfiles() {
   profileListElement.innerHTML = profileList.map(profile => {
-    const name = escapeHtml(profile.name || "Profil");
+    const name = escapeHtml((profile.name || "Profil").trim().split(/\s+/)[0] || "Profil");
     const image = profile.avatarUrl
       ? `<img src="${escapeHtml(profile.avatarUrl)}" alt="${escapeHtml(name.slice(0, 1).toUpperCase())}">`
       : escapeHtml(name.slice(0, 1).toUpperCase());
@@ -156,14 +157,14 @@ async function selectProfile(profileId) {
 
   state.currentProfile = profile;
   state.userHistory = {};
-  picker.hidden = true;
-  showView("app-view");
   const { updateUserProfileUI, restoreLastPage } = await import("./auth.js");
   updateUserProfileUI(auth.currentUser);
+  restoreLastPage();
+  picker.hidden = true;
+  showView("app-view");
   const { loadUserHistory, renderContinueListening } = await import("./history.js");
   renderContinueListening();
   await loadUserHistory();
-  await restoreLastPage();
 }
 
 async function openProfileEditor(profileId = null) {
@@ -172,7 +173,9 @@ async function openProfileEditor(profileId = null) {
   document.getElementById("profile-editor-title").textContent = profile ? "Endre profil" : "Opprett profil";
   document.getElementById("profile-name-input").value = profile?.name || "";
   document.getElementById("profile-child-input").checked = profile?.isChild === true;
-  document.getElementById("profile-child-input").disabled = profile?.isDefault === true;
+  const isPrimaryProfile = profile?.isDefault === true || profile?.id === "default";
+  document.getElementById("profile-child-input").disabled = isPrimaryProfile;
+  document.getElementById("profile-delete-btn").hidden = !profile || isPrimaryProfile;
   selectedAvatarUrl = profile?.avatarUrl || "";
   editorError.textContent = "";
   editor.hidden = false;
@@ -233,11 +236,12 @@ async function saveProfile() {
   }
 
   const currentProfile = profileList.find(profile => profile.id === editingProfileId);
+  const isPrimaryProfile = currentProfile?.isDefault === true || currentProfile?.id === "default";
   const profile = {
     name,
     avatarUrl: selectedAvatarUrl,
-    isChild: currentProfile?.isDefault ? false : document.getElementById("profile-child-input").checked,
-    isDefault: currentProfile?.isDefault === true,
+    isChild: isPrimaryProfile ? false : document.getElementById("profile-child-input").checked,
+    isDefault: isPrimaryProfile,
     updatedAt: new Date().toISOString()
   };
 
@@ -265,6 +269,31 @@ async function saveProfile() {
   } catch (error) {
     console.error("Kunne ikke lagre profilen:", error);
     editorError.textContent = "Profilen kunne ikke lagres. Kontroller tilkoblingen og prøv igjen.";
+  }
+}
+
+async function deleteProfile() {
+  const profile = profileList.find(item => item.id === editingProfileId);
+  if (!profile) return;
+  if (profile.isDefault === true || profile.id === "default") {
+    editorError.textContent = "Hovedprofilen kan ikke slettes.";
+    return;
+  }
+  if (!confirm(`Vil du slette profilen ${profile.name || "Profil"}? Dette kan ikke angres.`)) return;
+
+  try {
+    await deleteDoc(doc(getProfilesCollection(), profile.id));
+    profileList = profileList.filter(item => item.id !== profile.id);
+    if (state.currentProfile?.id === profile.id) {
+      state.currentProfile = null;
+      returnToAppAfterEditing = false;
+    }
+    renderProfiles();
+    closeProfileEditor();
+    pickerStatus.textContent = `Profilen ${profile.name || "Profil"} er slettet.`;
+  } catch (error) {
+    console.error("Kunne ikke slette profilen:", error);
+    editorError.textContent = "Profilen kunne ikke slettes. Kontroller tilkoblingen og prøv igjen.";
   }
 }
 

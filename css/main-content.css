@@ -458,7 +458,7 @@ main, .content-container {
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
-  touch-action: pan-x pinch-zoom;
+  touch-action: pan-x pan-y pinch-zoom;
 }
 
 .horizontal-scroll::-webkit-scrollbar,
@@ -680,7 +680,7 @@ main, .content-container {
   place-items: center;
   overflow: hidden;
   border-radius: 16px;
-  background: var(--bar-bg, #0b112c);
+  background: transparent;
   color: var(--text-light, #fff);
   font-size: 1.25rem;
   font-weight: 700;
