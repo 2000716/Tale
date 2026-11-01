@@ -9,6 +9,7 @@ let editingProfileId = null;
 let selectedAvatarUrl = "";
 let listenersReady = false;
 let returnToAppAfterEditing = false;
+let profileEditingEnabled = false;
 
 const picker = document.getElementById("profile-picker-view");
 const profileListElement = document.getElementById("profile-picker-list");
@@ -32,6 +33,8 @@ function getProfilesCollection(user = auth.currentUser) {
 
 export async function initializeProfiles(user) {
   setupProfileListeners();
+  profileEditingEnabled = false;
+  returnToAppAfterEditing = false;
   picker.hidden = false;
   profileListElement.replaceChildren();
   pickerStatus.textContent = "Laster profiler...";
@@ -57,6 +60,7 @@ export async function initializeProfiles(user) {
   renderProfiles();
   pickerStatus.textContent = "";
   editor.hidden = true;
+  document.getElementById("profile-delete-confirmation").hidden = true;
   document.querySelector(".profile-picker-actions").hidden = false;
   if (needsInitialProfileSetup) {
     await openProfileEditor("default");
@@ -72,10 +76,15 @@ function setupProfileListeners() {
     if (!state.currentProfile) return;
     returnToAppAfterEditing = true;
     picker.hidden = false;
-    openProfileEditor(state.currentProfile.id);
+    editor.hidden = true;
+    document.querySelector(".profile-picker-actions").hidden = false;
+    profileEditingEnabled = true;
+    pickerStatus.textContent = "Trykk på blyanten ved profilen du vil endre.";
+    renderProfiles();
   });
   document.getElementById("switch-profile-btn").addEventListener("click", () => {
     returnToAppAfterEditing = false;
+    profileEditingEnabled = false;
     picker.hidden = false;
     editor.hidden = true;
     document.querySelector(".profile-picker-actions").hidden = false;
@@ -84,7 +93,15 @@ function setupProfileListeners() {
   });
   document.getElementById("profile-cancel-btn").addEventListener("click", closeProfileEditor);
   document.getElementById("profile-save-btn").addEventListener("click", saveProfile);
-  document.getElementById("profile-delete-btn").addEventListener("click", deleteProfile);
+  document.getElementById("profile-delete-btn").addEventListener("click", () => {
+    document.getElementById("profile-delete-confirmation").hidden = false;
+    document.getElementById("profile-delete-confirm-btn").focus();
+  });
+  document.getElementById("profile-delete-cancel-btn").addEventListener("click", () => {
+    document.getElementById("profile-delete-confirmation").hidden = true;
+    document.getElementById("profile-delete-btn").focus();
+  });
+  document.getElementById("profile-delete-confirm-btn").addEventListener("click", confirmDeleteProfile);
   document.getElementById("profile-picker-logout-btn").addEventListener("click", async () => {
     const { handleLogout } = await import("./auth.js");
     handleLogout();
@@ -93,6 +110,7 @@ function setupProfileListeners() {
   profileListElement.addEventListener("click", async event => {
     const editButton = event.target.closest("[data-edit-profile]");
     if (editButton) {
+      returnToAppAfterEditing = profileEditingEnabled;
       openProfileEditor(editButton.dataset.editProfile);
       return;
     }
@@ -128,9 +146,9 @@ function renderProfiles() {
           <span class="profile-picker-name">${name}</span>
           ${childLabel}
         </button>
-        <button type="button" class="profile-picker-edit" data-edit-profile="${escapeHtml(profile.id)}" aria-label="Endre ${name}">
+        ${profileEditingEnabled ? `<button type="button" class="profile-picker-edit" data-edit-profile="${escapeHtml(profile.id)}" aria-label="Endre ${name}">
           <i class="fa-solid fa-pen" aria-hidden="true"></i>
-        </button>
+        </button>` : ""}
       </div>
     `;
   }).join("");
@@ -156,6 +174,8 @@ async function selectProfile(profileId) {
   }
 
   state.currentProfile = profile;
+  returnToAppAfterEditing = false;
+  profileEditingEnabled = false;
   state.userHistory = {};
   const { updateUserProfileUI, restoreLastPage } = await import("./auth.js");
   updateUserProfileUI(auth.currentUser);
@@ -176,6 +196,7 @@ async function openProfileEditor(profileId = null) {
   const isPrimaryProfile = profile?.isDefault === true || profile?.id === "default";
   document.getElementById("profile-child-input").disabled = isPrimaryProfile;
   document.getElementById("profile-delete-btn").hidden = !profile || isPrimaryProfile;
+  document.getElementById("profile-delete-confirmation").hidden = true;
   selectedAvatarUrl = profile?.avatarUrl || "";
   editorError.textContent = "";
   editor.hidden = false;
@@ -272,15 +293,17 @@ async function saveProfile() {
   }
 }
 
-async function deleteProfile() {
+async function confirmDeleteProfile() {
   const profile = profileList.find(item => item.id === editingProfileId);
   if (!profile) return;
   if (profile.isDefault === true || profile.id === "default") {
     editorError.textContent = "Hovedprofilen kan ikke slettes.";
+    document.getElementById("profile-delete-confirmation").hidden = true;
     return;
   }
-  if (!confirm(`Vil du slette profilen ${profile.name || "Profil"}? Dette kan ikke angres.`)) return;
 
+  const confirmationButton = document.getElementById("profile-delete-confirm-btn");
+  confirmationButton.disabled = true;
   try {
     await deleteDoc(doc(getProfilesCollection(), profile.id));
     profileList = profileList.filter(item => item.id !== profile.id);
@@ -294,6 +317,8 @@ async function deleteProfile() {
   } catch (error) {
     console.error("Kunne ikke slette profilen:", error);
     editorError.textContent = "Profilen kunne ikke slettes. Kontroller tilkoblingen og prøv igjen.";
+  } finally {
+    confirmationButton.disabled = false;
   }
 }
 

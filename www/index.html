@@ -447,6 +447,16 @@
           <button type="button" id="profile-cancel-btn" class="btn-secondary">Avbryt</button>
           <button type="button" id="profile-delete-btn" class="btn-danger" hidden>Slett profil</button>
         </div>
+        <div id="profile-delete-confirmation" class="profile-delete-confirmation" hidden role="alertdialog" aria-modal="true" aria-labelledby="profile-delete-confirm-title">
+          <div class="profile-delete-confirmation-dialog">
+            <h3 id="profile-delete-confirm-title">Slette profilen?</h3>
+            <p>Profilen blir slettet fra Tale. Dette kan ikke angres.</p>
+            <div class="profile-delete-confirmation-actions">
+              <button type="button" id="profile-delete-confirm-btn" class="btn-danger">Ja, slett profil</button>
+              <button type="button" id="profile-delete-cancel-btn" class="btn-secondary">Avbryt</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="profile-picker-actions">
         <button type="button" id="add-profile-btn" class="btn-secondary"><i class="fa-solid fa-plus"></i> Legg til profil</button>

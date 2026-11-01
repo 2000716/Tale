@@ -135,14 +135,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 0.92rem;
+  font-weight: 700;
 }
 
 .profile-avatar {
   background: transparent;
   color: var(--accent-blue);
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   overflow: hidden;
   flex: 0 0 auto;
   display: flex;
