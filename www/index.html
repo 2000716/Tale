@@ -439,8 +439,8 @@
           <input id="profile-child-input" type="checkbox">
           <span>Dette er en barneprofil</span>
         </label>
-        <p class="profile-avatar-label">Velg profilbilde</p>
-        <div id="profile-avatar-options" class="profile-avatar-options"></div>
+        <p id="profile-avatar-label" class="profile-avatar-label">Velg profilbilde (påkrevd)</p>
+        <div id="profile-avatar-options" class="profile-avatar-options" role="group" aria-labelledby="profile-avatar-label" aria-required="true"></div>
         <p id="profile-editor-error" class="profile-editor-error" role="alert"></p>
         <div class="profile-editor-actions">
           <button type="button" id="profile-save-btn" class="btn-primary">Lagre profil</button>

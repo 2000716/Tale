@@ -198,7 +198,7 @@
 
 .profile-picker-card-item {
   position: relative;
-  width: 105px;
+  width: 132px;
 }
 
 .profile-picker-item {
@@ -223,8 +223,8 @@
 .profile-picker-avatar,
 .profile-avatar-option-preview {
   display: grid;
-  width: 72px;
-  height: 90px;
+  width: 100px;
+  height: 125px;
   place-items: center;
   margin: 0 auto 0.65rem;
   overflow: hidden;
@@ -352,8 +352,8 @@
 }
 
 .profile-avatar-option-preview {
-  width: 52px;
-  height: 66px;
+  width: 76px;
+  height: 95px;
   margin-bottom: 0.3rem;
   border-radius: 13px;
   font-size: 1.2rem;

@@ -39,7 +39,8 @@ export async function initializeProfiles(user) {
   const profilesSnapshot = await getDocs(getProfilesCollection(user));
   profileList = profilesSnapshot.docs.map(profile => ({ id: profile.id, ...profile.data() }));
 
-  if (!profileList.length) {
+  const needsInitialProfileSetup = profileList.length === 0;
+  if (needsInitialProfileSetup) {
     const name = (user.displayName || user.email?.split("@")[0] || "Profil").trim();
     const defaultProfile = {
       name,
@@ -57,6 +58,9 @@ export async function initializeProfiles(user) {
   pickerStatus.textContent = "";
   editor.hidden = true;
   document.querySelector(".profile-picker-actions").hidden = false;
+  if (needsInitialProfileSetup) {
+    await openProfileEditor("default");
+  }
 }
 
 function setupProfileListeners() {
@@ -144,6 +148,12 @@ async function selectProfile(profileId) {
     return;
   }
 
+  if (!profile.avatarUrl) {
+    picker.hidden = false;
+    await openProfileEditor(profile.id);
+    return;
+  }
+
   state.currentProfile = profile;
   state.userHistory = {};
   picker.hidden = true;
@@ -181,17 +191,15 @@ async function openProfileEditor(profileId = null) {
 }
 
 function renderAvatarOptions() {
-  const options = [{ id: "", name: "Ingen bilde", url: "" }, ...avatarList.map(image => ({
+  const options = avatarList.filter(image => image.url).map(image => ({
     id: image.id,
     name: image.name || "Profilbilde",
-    url: image.url || ""
-  }))];
+    url: image.url
+  }));
 
   avatarOptions.innerHTML = options.map(image => {
     const selected = image.url === selectedAvatarUrl;
-    const preview = image.url
-      ? `<img src="${escapeHtml(image.url)}" alt="">`
-      : '<i class="fa-regular fa-user" aria-hidden="true"></i>';
+    const preview = `<img src="${escapeHtml(image.url)}" alt="">`;
 
     return `<button type="button" class="profile-avatar-option" data-avatar-url="${escapeHtml(image.url)}" aria-pressed="${selected}">
       <span class="profile-avatar-option-preview">${preview}</span>
@@ -215,6 +223,12 @@ async function saveProfile() {
   if (!name) {
     editorError.textContent = "Skriv inn et profilnavn.";
     nameInput.focus();
+    return;
+  }
+
+  if (!selectedAvatarUrl) {
+    editorError.textContent = "Velg et profilbilde.";
+    avatarOptions.querySelector(".profile-avatar-option")?.focus();
     return;
   }
 
