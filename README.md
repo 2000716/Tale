@@ -27,4 +27,4 @@ Android krever Android Studio og Android SDK. iOS krever macOS, Xcode og en Appl
 
 ## Profilbilder
 
-Publiser `firestore.rules` i Firebase Console under Firestore Database → Rules, og `storage.rules` under Storage → Rules. Profilbilder kan først lastes opp fra adminpanelet når begge regelsettene er publisert.
+Publiser `firestore.rules` i Firebase Console under Firestore Database → Rules. Admin legger til profilbilder med en offentlig HTTPS-bildeadresse; bildet må være tilgjengelig direkte fra nettleseren.

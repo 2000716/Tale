@@ -15,7 +15,6 @@ import {
   arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
 // Global tilstand for seksjoner
 let activeSections = [];
@@ -1047,6 +1046,8 @@ function setupProfileAvatarLibrary() {
   const form = document.getElementById("profile-avatar-upload-form");
   const library = document.getElementById("profile-avatar-library");
   const status = document.getElementById("profile-avatar-upload-status");
+  const urlInput = document.getElementById("profile-avatar-url");
+  const preview = document.getElementById("profile-avatar-preview");
   if (!form || !library || !status || form.dataset.ready === "true") return;
   form.dataset.ready = "true";
 
@@ -1061,10 +1062,17 @@ function setupProfileAvatarLibrary() {
       library.innerHTML = snapshot.docs.map(avatar => {
         const data = avatar.data();
         return `<div class="profile-avatar-library-item">
-          <img src="${escapeHtml(data.url)}" alt="" loading="lazy">
+          <img src="${escapeHtml(data.url)}" alt="${escapeHtml(data.name || "Profilbilde")}" loading="lazy">
           <span>${escapeHtml(data.name || "Profilbilde")}</span>
         </div>`;
       }).join("");
+      library.querySelectorAll("img").forEach(image => {
+        image.addEventListener("error", () => {
+          image.replaceWith(Object.assign(document.createElement("span"), {
+            textContent: "Bildet kunne ikke lastes"
+          }));
+        }, { once: true });
+      });
     } catch (error) {
       console.error("Kunne ikke laste profilbiblioteket:", error);
       library.innerHTML = '<p class="text-error">Profilbildene kunne ikke lastes.</p>';
@@ -1074,44 +1082,74 @@ function setupProfileAvatarLibrary() {
   form.addEventListener("submit", async event => {
     event.preventDefault();
     const name = document.getElementById("profile-avatar-name").value.trim();
-    const file = document.getElementById("profile-avatar-file").files[0];
+    const url = urlInput.value.trim();
     const submitButton = form.querySelector('button[type="submit"]');
 
-    if (!name || !file) {
-      status.textContent = "Skriv inn et navn og velg en bildefil.";
+    if (!name || !url) {
+      status.textContent = "Skriv inn et navn og en lenke til bildet.";
       return;
     }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
-      status.textContent = "Velg JPG, PNG eller WebP på maks 5 MB.";
+    try {
+      if (new URL(url).protocol !== "https:") throw new Error("URL må bruke HTTPS.");
+    } catch (error) {
+      status.textContent = "Skriv inn en gyldig HTTPS-lenke til bildet.";
       return;
     }
 
     submitButton.disabled = true;
-    status.textContent = "Laster opp bildet...";
+    status.textContent = "Kontrollerer at bildet kan lastes...";
     try {
+      await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = resolve;
+        image.onerror = () => reject(new Error("Bildet kunne ikke lastes fra lenken."));
+        image.src = url;
+      });
+
       const avatarDoc = doc(collection(db, "profileAvatars"));
-      const storagePath = `profile-avatars/${avatarDoc.id}`;
-      const storageRef = ref(getStorage(), storagePath);
-      await uploadBytes(storageRef, file, { contentType: file.type });
-      const url = await getDownloadURL(storageRef);
       await setDoc(avatarDoc, {
         name,
         url,
-        storagePath,
-        contentType: file.type,
         createdAt: new Date().toISOString(),
         uploadedBy: auth.currentUser.uid
       });
 
       form.reset();
-      status.textContent = "Profilbildet er lastet opp og tilgjengelig i Tale.";
+      preview.hidden = true;
+      preview.removeAttribute("src");
+      status.textContent = "Profilbildet er lagt til og tilgjengelig i Tale.";
       await loadAvatarLibrary();
     } catch (error) {
-      console.error("Kunne ikke laste opp profilbilde:", error);
-      status.textContent = "Opplasting mislyktes. Kontroller tilgangen og prøv igjen.";
+      console.error("Kunne ikke legge til profilbilde:", error);
+      status.textContent = error.message === "Bildet kunne ikke lastes fra lenken."
+        ? "Bildet kunne ikke lastes fra lenken. Kontroller at den er offentlig tilgjengelig."
+        : "Kunne ikke lagre profilbildet. Kontroller tilgangen og prøv igjen.";
     } finally {
       submitButton.disabled = false;
     }
+  });
+
+  urlInput.addEventListener("input", () => {
+    const url = urlInput.value.trim();
+    preview.hidden = true;
+    preview.removeAttribute("src");
+    if (!url) return;
+
+    try {
+      if (new URL(url).protocol !== "https:") return;
+    } catch {
+      return;
+    }
+
+    preview.onload = () => {
+      preview.hidden = false;
+      status.textContent = "Forhåndsvisning lastet.";
+    };
+    preview.onerror = () => {
+      preview.hidden = true;
+      status.textContent = "Bildet kan ikke lastes fra denne lenken.";
+    };
+    preview.src = url;
   });
 
   loadAvatarLibrary();

@@ -158,6 +158,19 @@ body.admin-body {
   object-fit: cover;
 }
 
+.profile-avatar-upload-preview {
+  display: block;
+  width: 68px;
+  height: 84px;
+  margin: 0 0 14px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.profile-avatar-upload-preview[hidden] {
+  display: none;
+}
+
 .profile-avatar-library-item span {
   display: block;
   overflow: hidden;

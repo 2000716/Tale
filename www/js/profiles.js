@@ -112,7 +112,7 @@ function renderProfiles() {
   profileListElement.innerHTML = profileList.map(profile => {
     const name = escapeHtml(profile.name || "Profil");
     const image = profile.avatarUrl
-      ? `<img src="${escapeHtml(profile.avatarUrl)}" alt="">`
+      ? `<img src="${escapeHtml(profile.avatarUrl)}" alt="${escapeHtml(name.slice(0, 1).toUpperCase())}">`
       : escapeHtml(name.slice(0, 1).toUpperCase());
     const childLabel = profile.isChild ? '<span class="profile-picker-name">Barneprofil</span>' : "";
 
@@ -129,6 +129,12 @@ function renderProfiles() {
       </div>
     `;
   }).join("");
+
+  profileListElement.querySelectorAll(".profile-picker-avatar img").forEach(image => {
+    image.addEventListener("error", () => {
+      image.replaceWith(document.createTextNode(image.alt || "?"));
+    }, { once: true });
+  });
 }
 
 async function selectProfile(profileId) {
@@ -192,6 +198,15 @@ function renderAvatarOptions() {
       <span>${escapeHtml(image.name)}</span>
     </button>`;
   }).join("");
+
+  avatarOptions.querySelectorAll("img").forEach(image => {
+    image.addEventListener("error", () => {
+      image.replaceWith(Object.assign(document.createElement("i"), {
+        className: "fa-solid fa-image",
+        ariaHidden: "true"
+      }));
+    }, { once: true });
+  });
 }
 
 async function saveProfile() {

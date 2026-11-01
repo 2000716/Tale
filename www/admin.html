@@ -513,19 +513,20 @@
         <div class="dashboard-grid">
           <div class="card">
             <div class="card-header">
-              <h3><i class="fa-solid fa-image"></i> Last opp profilbilde</h3>
+              <h3><i class="fa-solid fa-image"></i> Legg til profilbilde</h3>
             </div>
-            <p class="text-muted">Bildene blir tilgjengelige for familieprofilene i Tale. Bruk JPG, PNG eller WebP (maks 5 MB).</p>
+            <p class="text-muted">Lim inn en offentlig HTTPS-bildeadresse. Bildet blir tilgjengelig for familieprofilene i Tale.</p>
             <form id="profile-avatar-upload-form">
               <div class="form-group">
                 <label for="profile-avatar-name">Navn på bildet</label>
                 <input type="text" id="profile-avatar-name" maxlength="60" placeholder="For eksempel Blå rev" required />
               </div>
               <div class="form-group">
-                <label for="profile-avatar-file">Bildefil</label>
-                <input type="file" id="profile-avatar-file" accept="image/jpeg,image/png,image/webp" required />
+                <label for="profile-avatar-url">Lenke til bildet</label>
+                <input type="url" id="profile-avatar-url" placeholder="https://eksempel.no/profilbilde.jpg" required />
               </div>
-              <button type="submit" class="btn-submit"><i class="fa-solid fa-cloud-arrow-up"></i> Last opp profilbilde</button>
+              <img id="profile-avatar-preview" class="profile-avatar-upload-preview" alt="Forhåndsvisning av profilbildet" hidden />
+              <button type="submit" class="btn-submit"><i class="fa-solid fa-plus"></i> Legg til profilbilde</button>
               <p id="profile-avatar-upload-status" class="text-muted" role="status"></p>
             </form>
           </div>
