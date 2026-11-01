@@ -4,6 +4,7 @@ import { updateBottomNavVisibility, updateUrlHash } from './ui.js';
 import { db } from './firebase-config.js';
 import { deleteDoc, doc, getDoc, getDocs, setDoc, collection } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { shareContent, showActionToast } from './content-actions.js';
+import { fetchPodcastFeed, getCachedPodcastFeed } from './podcast-feed.js';
 
 function escapeAttr(value) {
   return String(value || '')
@@ -21,6 +22,7 @@ let currentItem = null;
 let currentSeason = 1;
 let visibleEpisodesCount = EPISODES_PER_PAGE;
 let fetchedEpisodes = [];
+let detailsRequestId = 0;
 
 // DOM-elementer fra index.html
 const detailsPage = document.getElementById('details-page');
@@ -53,6 +55,7 @@ const loadMoreBtn = document.getElementById('load-more-episodes-btn');
 export async function openDetailsPage(item) {
   if (!item) return;
 
+  const requestId = ++detailsRequestId;
   if (detailsPage && !detailsPage.classList.contains('active')) {
     updateUrlHash('details-page');
   }
@@ -79,6 +82,7 @@ export async function openDetailsPage(item) {
   }
 
   const imageUrl = item.cover || item.coverUrl || item.image || item.imageUrl || '';
+  const rssUrl = item.rssUrl || item.rss;
 
   if (sourceLink) {
     const itemSourceUrl = item.sourceUrl || item.studioUrl || item.website || '';
@@ -114,9 +118,39 @@ export async function openDetailsPage(item) {
     readMoreBtn.textContent = 'Se mer';
   }
 
-  // 2. Håndtering basert på type (Radio vs RSS vs Lokale episoder)
-  const rssUrl = item.rssUrl || item.rss;
+  if (detailsPage) {
+    detailsPage.classList.add('active');
+    updateBottomNavVisibility();
+  }
+  renderRecommendations(item);
 
+  if (rssUrl && contentType !== 'radio') {
+    const cachedFeed = getCachedPodcastFeed(rssUrl);
+    if (cachedFeed) {
+      applyPodcastFeed(cachedFeed, item, imageUrl);
+    }
+
+    setupContentTypeUI(item, contentType);
+    if (!cachedFeed && episodeList) {
+      episodeList.innerHTML = `<div class="loading-episodes">Henter episoder og informasjon...</div>`;
+      if (badgeEpisodes) badgeEpisodes.textContent = 'Henter episoder...';
+    }
+
+    fetchPodcastFeed(rssUrl).then(feedData => {
+      if (requestId !== detailsRequestId) return;
+      applyPodcastFeed(feedData, item, imageUrl);
+      setupContentTypeUI(item, contentType);
+    }).catch(error => {
+      if (requestId !== detailsRequestId) return;
+      console.error('Kunne ikke hente podkast-feed:', error);
+      if (episodeList && fetchedEpisodes.length === 0) {
+        episodeList.innerHTML = `<div class="loading-episodes">Kunne ikke laste episoder. Prøv igjen senere.</div>`;
+      }
+    });
+    return;
+  }
+
+  // 2. Håndtering basert på type (Radio vs RSS vs Lokale episoder)
   if (contentType === 'radio' || !rssUrl) {
     // Direkteinnhold / Radio / Lydbok uten RSS
     if (item.episodes && Array.isArray(item.episodes)) {
@@ -128,6 +162,7 @@ export async function openDetailsPage(item) {
         const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(item.archiveIdentifier)}`);
         if (!res.ok) throw new Error(`Internet Archive svarte med ${res.status}`);
         const data = await res.json();
+        if (requestId !== detailsRequestId) return;
         const files = (data.files || [])
           .filter(file => /\.(mp3|m4b)$/i.test(file.name || ''))
           .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
@@ -144,60 +179,47 @@ export async function openDetailsPage(item) {
     } else {
       fetchedEpisodes = [];
     }
-  } else {
-    // RSS-feed (Podkast)
-    if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Henter episoder og informasjon...</div>`;
-    try {
-      const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
-      const data = await res.json();
-      if (data.status === 'ok') {
-
-        // OPPVIKTIG: Oppdaterer hovedbeskrivelsen direkte med den fulle beskrivelsen fra RSS-feeden
-        const rssFeedDescription = data.feed?.description || data.feed?.summary || '';
-        if (rssFeedDescription && descEl) {
-          descEl.innerHTML = cleanHTML(rssFeedDescription);
-        }
-
-        const sourceUrl = item.sourceUrl || item.studioUrl || item.website || data.feed?.link || '';
-        if (sourceUrl && sourceLink) {
-          sourceLink.href = sourceUrl;
-          sourceLink.hidden = false;
-        }
-
-        renderFacts({
-          reader: item.reader || item.narrator || item.readBy || item.author || '',
-          studio: item.studio || item.publisher || data.feed?.author || data.feed?.owner || '',
-          category: item.category || (Array.isArray(item.genres) ? item.genres.join(', ') : '') || data.feed?.category || ''
-        });
-
-        fetchedEpisodes = (data.items || []).map(ep => ({
-          title: ep.title || 'Uten tittel',
-          audioUrl: ep.enclosure?.link || ep.link || '',
-          cover: ep.thumbnail || ep.itunes?.image || ep.enclosure?.thumbnail || imageUrl,
-          duration: ep.enclosure?.duration || ep.duration || '',
-          pubDate: ep.pubDate || '',
-          description: ep.description || ep.summary || ep.content || '',
-          season: ep.itunes?.season || ep.season || '',
-          episode: ep.itunes?.episode || ep.episode || ''
-        }));
-
-        const rssSeasons = [...new Set(fetchedEpisodes.map(ep => Number(ep.season)).filter(Number.isFinite))].sort((a, b) => a - b);
-        if (rssSeasons.length > 1) currentItem.seasons = rssSeasons;
-      }
-    } catch (err) {
-      console.error("Kunne ikke hente RSS:", err);
-      if (episodeList) episodeList.innerHTML = `<div class="loading-episodes">Kunne ikke laste episoder fra RSS.</div>`;
-    }
   }
+
+  if (requestId !== detailsRequestId) return;
 
   // 3. Konfigurer UI etter type
   setupContentTypeUI(item, contentType);
   renderRecommendations(item);
 
-  if (detailsPage) {
-    detailsPage.classList.add('active');
-    updateBottomNavVisibility();
+}
+
+function applyPodcastFeed(data, item, imageUrl) {
+  const rssFeedDescription = data.feed?.description || data.feed?.summary || '';
+  if (rssFeedDescription && descEl) {
+    descEl.innerHTML = cleanHTML(rssFeedDescription);
   }
+
+  const sourceUrl = item.sourceUrl || item.studioUrl || item.website || data.feed?.link || '';
+  if (sourceUrl && sourceLink) {
+    sourceLink.href = sourceUrl;
+    sourceLink.hidden = false;
+  }
+
+  renderFacts({
+    reader: item.reader || item.narrator || item.readBy || item.author || '',
+    studio: item.studio || item.publisher || data.feed?.author || data.feed?.owner || '',
+    category: item.category || (Array.isArray(item.genres) ? item.genres.join(', ') : '') || data.feed?.category || ''
+  });
+
+  fetchedEpisodes = data.items.map(ep => ({
+    title: ep.title || 'Uten tittel',
+    audioUrl: ep.enclosure?.link || ep.link || '',
+    cover: ep.thumbnail || ep.itunes?.image || ep.enclosure?.thumbnail || imageUrl,
+    duration: ep.enclosure?.duration || ep.duration || '',
+    pubDate: ep.pubDate || '',
+    description: ep.description || ep.summary || ep.content || '',
+    season: ep.itunes?.season || ep.season || '',
+    episode: ep.itunes?.episode || ep.episode || ''
+  }));
+
+  const rssSeasons = [...new Set(fetchedEpisodes.map(ep => Number(ep.season)).filter(Number.isFinite))].sort((a, b) => a - b);
+  if (rssSeasons.length > 1) currentItem.seasons = rssSeasons;
 }
 
 function renderFacts(facts) {
@@ -361,19 +383,20 @@ function renderEpisodesOrChapters(items, unitName) {
 
   episodeList.innerHTML = displayedItems.map((ep, index) => {
     const durationText = ep.duration ? parseDuration(ep.duration) : '';
-    const descText = cleanHTML(ep.description || ep.summary || '');
+    const descText = escapeHtml(cleanHTML(ep.description || ep.summary || ''));
     const epCover = ep.cover || fallbackCover;
     const isNew = unitName === 'episoder' && isNewEpisode(ep.pubDate);
+    const episodeTitle = ep.title || `Episode ${index + 1}`;
 
     return `
       <div class="episode-item${isNew ? ' is-new' : ''}" data-index="${index}">
         <div class="episode-thumb">
           ${epCover 
-            ? `<img src="${epCover}" alt="${ep.title}" onerror="this.parentElement.innerHTML='<i class=\\'fa-solid fa-podcast\\'></i>'">` 
+            ? `<img src="${escapeAttr(epCover)}" alt="${escapeAttr(episodeTitle)}" onerror="this.parentElement.innerHTML='<i class=\\'fa-solid fa-podcast\\'></i>'">` 
             : '<i class="fa-solid fa-podcast"></i>'}
         </div>
         <div class="episode-info">
-          <div class="episode-title">${ep.title || `Episode ${index + 1}`} ${isNew ? '<span class="episode-new-badge">NY</span>' : ''}</div>
+          <div class="episode-title">${escapeHtml(episodeTitle)} ${isNew ? '<span class="episode-new-badge">NY</span>' : ''}</div>
           ${descText ? `<div class="ep-desc">${descText}</div>` : ''}
           <div class="episode-footer-meta">
             ${durationText ? `<span><i class="fa-regular fa-clock"></i> ${durationText}</span>` : ''}
