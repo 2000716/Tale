@@ -91,9 +91,24 @@
   gap: 0.35rem;
 }
 
+.auth-card .input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.auth-card .input-icon {
+  position: absolute;
+  top: 50%;
+  left: 1rem;
+  z-index: 1;
+  color: var(--accent-blue);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
 .auth-card input {
   width: 100%;
-  padding: 0.9rem 1rem 0.9rem 2.8rem;
+  padding: 0.9rem 2.8rem 0.9rem 2.8rem;
   margin: 0.4rem 0;
   border-radius: 14px;
   border: 1px solid var(--accent-blue);
@@ -102,6 +117,28 @@
   font-size: 0.95rem;
   transition: border-color 0.2s ease, background-color 0.2s ease;
   box-sizing: border-box;
+}
+
+.auth-card .toggle-password-btn {
+  position: absolute;
+  top: 50%;
+  right: 0.9rem;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-blue);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.auth-card .toggle-password-btn:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 .auth-card input::placeholder {
