@@ -17,6 +17,19 @@ function getItemKey(itemOrId) {
   return rawId ? rawId.replace(/[^a-zA-Z0-9-_]/g, '_') : "";
 }
 
+function getHistoryCollectionPath() {
+  const path = ["users", state.currentUser.uid];
+  if (state.currentProfile?.id && state.currentProfile.id !== "default") {
+    path.push("profiles", state.currentProfile.id);
+  }
+  path.push("history");
+  return path;
+}
+
+function getHistoryCacheKey() {
+  return `userHistory_${state.currentUser.uid}_${state.currentProfile?.id || "default"}`;
+}
+
 function isDirectRadio(item) {
   return !!(item && (
     item.isRadio ||
@@ -35,14 +48,14 @@ function removeRadioFromLocalHistory() {
 
   state.userHistory = filteredHistory;
   if (state.currentUser) {
-    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(filteredHistory));
+    localStorage.setItem(getHistoryCacheKey(), JSON.stringify(filteredHistory));
   }
 }
 
 export async function loadUserHistory() {
   if (!state.currentUser) return;
 
-  const cachedHistory = localStorage.getItem(`userHistory_${state.currentUser.uid}`);
+  const cachedHistory = localStorage.getItem(getHistoryCacheKey());
   if (cachedHistory) {
     try {
       state.userHistory = JSON.parse(cachedHistory);
@@ -55,7 +68,7 @@ export async function loadUserHistory() {
   }
 
   try {
-    const historyRef = collection(db, "users", state.currentUser.uid, "history");
+    const historyRef = collection(db, ...getHistoryCollectionPath());
     const snapshot = await getDocs(historyRef);
     state.userHistory = {};
     snapshot.forEach(docSnap => {
@@ -63,7 +76,7 @@ export async function loadUserHistory() {
       if (!isDirectRadio(item)) state.userHistory[docSnap.id] = item;
     });
 
-    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
+    localStorage.setItem(getHistoryCacheKey(), JSON.stringify(state.userHistory));
     renderContinueListening();
     updateDetailPlayButtonState();
   } catch (err) {
@@ -102,12 +115,12 @@ export async function saveProgressToFirestore(itemId, data) {
 
     if (!state.userHistory) state.userHistory = {};
     state.userHistory[cleanId] = payload;
-    localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
+    localStorage.setItem(getHistoryCacheKey(), JSON.stringify(state.userHistory));
     
     renderContinueListening();
     updateDetailPlayButtonState();
 
-    const historyRef = doc(db, "users", state.currentUser.uid, "history", cleanId);
+    const historyRef = doc(db, ...getHistoryCollectionPath(), cleanId);
     await setDoc(historyRef, payload, { merge: true });
   } catch (err) {
     console.error("Feil ved lagring av fremdrift:", err);
@@ -122,13 +135,13 @@ export async function removeFromFirestoreHistory(itemId) {
     
     if (state.userHistory && state.userHistory[cleanId]) {
       delete state.userHistory[cleanId];
-      localStorage.setItem(`userHistory_${state.currentUser.uid}`, JSON.stringify(state.userHistory));
+      localStorage.setItem(getHistoryCacheKey(), JSON.stringify(state.userHistory));
     }
     
     renderContinueListening();
     updateDetailPlayButtonState();
 
-    const historyRef = doc(db, "users", state.currentUser.uid, "history", cleanId);
+    const historyRef = doc(db, ...getHistoryCollectionPath(), cleanId);
     await deleteDoc(historyRef);
   } catch (err) {
     console.error("Feil ved fjerning fra historikk:", err);

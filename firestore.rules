@@ -38,9 +38,39 @@ service cloud.firestore {
         && request.auth.uid == userId;
     }
 
+    match /users/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.get('role', 'user') == 'user'
+        && request.resource.data.get('isAdmin', false) == false;
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.get('role', '') == resource.data.get('role', '')
+        && request.resource.data.get('isAdmin', false) == resource.data.get('isAdmin', false);
+      allow delete: if false;
+
+      match /profiles/{profileId} {
+        allow read, write: if signedIn() && request.auth.uid == userId;
+
+        match /history/{historyId} {
+          allow read, write: if signedIn() && request.auth.uid == userId;
+        }
+
+        match /favorites/{favoriteId} {
+          allow read, write: if signedIn() && request.auth.uid == userId;
+        }
+      }
+    }
+
     match /users/{userId}/favorites/{favoriteId} {
       allow read, write: if signedIn()
         && request.auth.uid == userId;
+    }
+
+    match /profileAvatars/{avatarId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
     }
 
     match /employeeEmails/{emailId} {

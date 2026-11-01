@@ -63,6 +63,9 @@
         <button class="nav-item" data-tab="tab-manual">
           <i class="fa-solid fa-book-bookmark"></i> Legg til Lydbok / Innhold
         </button>
+        <button class="nav-item" data-tab="tab-profile-avatars">
+          <i class="fa-solid fa-images"></i> Profilbilder
+        </button>
         <button class="nav-item" data-tab="tab-employees">
           <i class="fa-solid fa-user-plus"></i> Ansatte
         </button>
@@ -503,6 +506,37 @@
               <i class="fa-solid fa-plus-circle"></i> Legg til Lydbok i Seksjon
             </button>
           </form>
+        </div>
+      </section>
+
+      <section id="tab-profile-avatars" class="tab-content">
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-image"></i> Last opp profilbilde</h3>
+            </div>
+            <p class="text-muted">Bildene blir tilgjengelige for familieprofilene i Tale. Bruk JPG, PNG eller WebP (maks 5 MB).</p>
+            <form id="profile-avatar-upload-form">
+              <div class="form-group">
+                <label for="profile-avatar-name">Navn på bildet</label>
+                <input type="text" id="profile-avatar-name" maxlength="60" placeholder="For eksempel Blå rev" required />
+              </div>
+              <div class="form-group">
+                <label for="profile-avatar-file">Bildefil</label>
+                <input type="file" id="profile-avatar-file" accept="image/jpeg,image/png,image/webp" required />
+              </div>
+              <button type="submit" class="btn-submit"><i class="fa-solid fa-cloud-arrow-up"></i> Last opp profilbilde</button>
+              <p id="profile-avatar-upload-status" class="text-muted" role="status"></p>
+            </form>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-images"></i> Tilgjengelige profilbilder</h3>
+            </div>
+            <div id="profile-avatar-library" class="profile-avatar-library">
+              <p class="text-muted">Laster profilbilder...</p>
+            </div>
+          </div>
         </div>
       </section>
 

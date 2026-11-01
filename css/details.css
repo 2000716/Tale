@@ -26,7 +26,7 @@
   z-index: 999;
   overflow-y: auto;
   
-  padding: calc(3rem + env(safe-area-inset-top)) 0.5rem calc(env(safe-area-inset-bottom) + 1rem);
+  padding: calc(4rem + env(safe-area-inset-top)) 0.5rem calc(env(safe-area-inset-bottom) + 1rem);
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 
@@ -47,34 +47,25 @@
   pointer-events: auto;
 }
 
-#details-page.is-dragging {
-  transition: none !important;
-}
-
-#details-page .details-drag-handle {
+#details-page .details-close-btn {
   position: absolute;
   z-index: 11;
-  top: calc(8px + env(safe-area-inset-top));
-  left: 50%;
+  top: calc(0.65rem + env(safe-area-inset-top));
+  left: 0.75rem;
   display: grid;
-  width: 64px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   place-items: center;
-  transform: translateX(-50%);
-  cursor: grab;
-  touch-action: none;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--storytel-text-main);
+  font-size: 1.2rem;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-#details-page .details-drag-handle span {
-  display: block;
-  width: 44px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.35);
-}
-
-#details-page .details-drag-handle:focus-visible {
+#details-page .details-close-btn:focus-visible {
   outline: 2px solid var(--accent-blue);
   outline-offset: 2px;
   border-radius: 8px;

@@ -134,6 +134,39 @@ body.admin-body {
   flex: 1;
 }
 
+.profile-avatar-library {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 14px;
+}
+
+.profile-avatar-library-item {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--input-bg);
+  text-align: center;
+}
+
+.profile-avatar-library-item img {
+  display: block;
+  width: 68px;
+  height: 84px;
+  margin: 0 auto 8px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.profile-avatar-library-item span {
+  display: block;
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .nav-item {
   display: flex;
   align-items: center;

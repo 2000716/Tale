@@ -675,14 +675,22 @@ main, .content-container {
 #account .account-avatar-large {
   grid-row: 1 / span 2;
   width: 64px;
-  height: 64px;
+  height: 78px;
   display: grid;
   place-items: center;
-  border-radius: 50%;
+  overflow: hidden;
+  border-radius: 16px;
   background: var(--bar-bg, #0b112c);
   color: var(--text-light, #fff);
   font-size: 1.25rem;
   font-weight: 700;
+}
+
+#account #account-change-avatar-btn,
+#account #switch-profile-btn {
+  grid-column: 2;
+  justify-self: start;
+  margin-top: 0.5rem;
 }
 
 #account .account-header h2 {

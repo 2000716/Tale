@@ -147,6 +147,229 @@
   }
 }
 
+/* PROFILVALG OG FAMILIEPROFILER */
+.profile-picker-view {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: max(1.5rem, env(safe-area-inset-top)) 1rem max(1.5rem, env(safe-area-inset-bottom));
+  background: var(--bg-dark, #070b1e);
+  color: #fff;
+}
+
+.profile-picker-view[hidden],
+.profile-editor[hidden],
+.profile-picker-actions[hidden] {
+  display: none;
+}
+
+.profile-picker-card {
+  width: min(100%, 520px);
+  text-align: center;
+}
+
+.profile-picker-logo {
+  width: 110px;
+  max-height: 46px;
+  margin-bottom: 1.5rem;
+  object-fit: contain;
+}
+
+.profile-picker-header h1 {
+  margin-bottom: 0.45rem;
+  color: #fff;
+  font-size: clamp(1.6rem, 6vw, 2rem);
+}
+
+.profile-picker-header p {
+  color: var(--text-muted, #94a3b8);
+}
+
+.profile-picker-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 2rem 0 1.5rem;
+}
+
+.profile-picker-card-item {
+  position: relative;
+  width: 105px;
+}
+
+.profile-picker-item {
+  display: block;
+  width: 100%;
+  padding: 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+}
+
+.profile-picker-item:hover,
+.profile-picker-item:focus-visible {
+  border-color: var(--accent-blue);
+  background: rgba(255, 255, 255, 0.07);
+  outline: none;
+}
+
+.profile-picker-avatar,
+.profile-avatar-option-preview {
+  display: grid;
+  width: 72px;
+  height: 90px;
+  place-items: center;
+  margin: 0 auto 0.65rem;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #25335e, #111a3a);
+  color: #fff;
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+.profile-picker-avatar img,
+.profile-avatar-option-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-picker-name {
+  display: block;
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-picker-edit {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background: #182246;
+  color: #fff;
+  cursor: pointer;
+}
+
+.profile-picker-status,
+.profile-editor-error {
+  min-height: 1.2em;
+  margin-top: 0.75rem;
+  color: #fca5a5;
+  font-size: 0.9rem;
+}
+
+.profile-picker-actions {
+  display: grid;
+  gap: 0.6rem;
+  width: min(100%, 280px);
+  margin: 0 auto;
+}
+
+.profile-picker-actions .btn-link {
+  margin-top: 0;
+}
+
+.profile-editor {
+  margin: 1rem auto 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(174, 194, 247, 0.3);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  text-align: left;
+}
+
+.profile-editor h2 {
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.profile-editor > label:not(.profile-child-toggle),
+.profile-avatar-label {
+  display: block;
+  margin: 0.9rem 0 0.45rem;
+  color: var(--text-muted, #cbd5e1);
+  font-size: 0.9rem;
+}
+
+.profile-editor > input {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(174, 194, 247, 0.35);
+  border-radius: 10px;
+  background: #0c1230;
+  color: #fff;
+}
+
+.profile-child-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.profile-child-toggle input {
+  accent-color: var(--accent-blue);
+}
+
+.profile-avatar-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.profile-avatar-option {
+  padding: 0.3rem;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.profile-avatar-option[aria-pressed="true"] {
+  border-color: var(--accent-blue);
+  background: rgba(174, 194, 247, 0.12);
+}
+
+.profile-avatar-option-preview {
+  width: 52px;
+  height: 66px;
+  margin-bottom: 0.3rem;
+  border-radius: 13px;
+  font-size: 1.2rem;
+}
+
+.profile-editor-actions {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.profile-editor-actions .btn-secondary,
+.profile-editor-actions .btn-primary {
+  padding: 0.75rem;
+}
+
 /* ==========================================
    FULLSKJERMSPILLER
    ========================================== */

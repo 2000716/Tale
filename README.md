@@ -24,3 +24,7 @@ npm run ios
 ```
 
 Android krever Android Studio og Android SDK. iOS krever macOS, Xcode og en Apple-utviklerkonto for publisering.
+
+## Profilbilder
+
+Publiser `firestore.rules` i Firebase Console under Firestore Database → Rules, og `storage.rules` under Storage → Rules. Profilbilder kan først lastes opp fra adminpanelet når begge regelsettene er publisert.

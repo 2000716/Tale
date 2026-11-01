@@ -15,6 +15,7 @@ import {
   arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
 // Global tilstand for seksjoner
 let activeSections = [];
@@ -71,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setupManualForm();
     setupApiSearch();
     setupEmployeeManagement();
+    setupProfileAvatarLibrary();
   });
 });
 
@@ -199,6 +201,7 @@ function setupTabNavigation() {
     'tab-banners': ['Hero Bannere & Promotering', 'Lag store visuelle bannere i Fabel og Storytel-stil.'],
     'tab-api': ['API Importer (Podkast & Radio)', 'Søk og legg til fra Apple Podcasts eller Radio Browser.'],
     'tab-manual': ['Legg til Lydbok / Innhold', 'Manuell oppretting av lydbøker og enkeltepisotder.'],
+    'tab-profile-avatars': ['Profilbilder', 'Last opp bilder som kan velges av Tale-profiler.'],
     'tab-employees': ['Ansatte', 'Administrer e-postadresser med tilgang til Tale.']
   };
 
@@ -1038,4 +1041,78 @@ function setupManualForm() {
       alert("Feil ved lagring av manuelt innhold: " + err.message);
     }
   });
+}
+
+function setupProfileAvatarLibrary() {
+  const form = document.getElementById("profile-avatar-upload-form");
+  const library = document.getElementById("profile-avatar-library");
+  const status = document.getElementById("profile-avatar-upload-status");
+  if (!form || !library || !status || form.dataset.ready === "true") return;
+  form.dataset.ready = "true";
+
+  const loadAvatarLibrary = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "profileAvatars"));
+      if (snapshot.empty) {
+        library.innerHTML = '<p class="text-muted">Ingen profilbilder er lastet opp ennå.</p>';
+        return;
+      }
+
+      library.innerHTML = snapshot.docs.map(avatar => {
+        const data = avatar.data();
+        return `<div class="profile-avatar-library-item">
+          <img src="${escapeHtml(data.url)}" alt="" loading="lazy">
+          <span>${escapeHtml(data.name || "Profilbilde")}</span>
+        </div>`;
+      }).join("");
+    } catch (error) {
+      console.error("Kunne ikke laste profilbiblioteket:", error);
+      library.innerHTML = '<p class="text-error">Profilbildene kunne ikke lastes.</p>';
+    }
+  };
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const name = document.getElementById("profile-avatar-name").value.trim();
+    const file = document.getElementById("profile-avatar-file").files[0];
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    if (!name || !file) {
+      status.textContent = "Skriv inn et navn og velg en bildefil.";
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      status.textContent = "Velg JPG, PNG eller WebP på maks 5 MB.";
+      return;
+    }
+
+    submitButton.disabled = true;
+    status.textContent = "Laster opp bildet...";
+    try {
+      const avatarDoc = doc(collection(db, "profileAvatars"));
+      const storagePath = `profile-avatars/${avatarDoc.id}`;
+      const storageRef = ref(getStorage(), storagePath);
+      await uploadBytes(storageRef, file, { contentType: file.type });
+      const url = await getDownloadURL(storageRef);
+      await setDoc(avatarDoc, {
+        name,
+        url,
+        storagePath,
+        contentType: file.type,
+        createdAt: new Date().toISOString(),
+        uploadedBy: auth.currentUser.uid
+      });
+
+      form.reset();
+      status.textContent = "Profilbildet er lastet opp og tilgjengelig i Tale.";
+      await loadAvatarLibrary();
+    } catch (error) {
+      console.error("Kunne ikke laste opp profilbilde:", error);
+      status.textContent = "Opplasting mislyktes. Kontroller tilgangen og prøv igjen.";
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+
+  loadAvatarLibrary();
 }

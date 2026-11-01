@@ -1,7 +1,7 @@
 import { auth, db } from "./firebase-config.js"; // La til db her
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, updateBottomNavVisibility } from "./ui.js";
-import { loadUserHistory } from "./history.js";
+import { initializeProfiles, updateCurrentProfileName } from "./profiles.js";
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -39,8 +39,6 @@ export function initAuth() {
         showView("app-view"); // Vanlig app-visning
       }
 
-      updateUserProfileUI(user);
-
       try {
         const appModule = await import("./app.js");
         if (appModule.loadContentFromFirestore) appModule.loadContentFromFirestore();
@@ -49,13 +47,24 @@ export function initAuth() {
         console.error("Feil ved lasting av app-modul:", err);
       }
 
-      loadUserHistory();
-      if (!isAdmin) restoreLastPage();
+      if (!isAdmin) {
+        updateUserProfileUI(user);
+        try {
+          await initializeProfiles(user);
+        } catch (err) {
+          console.error("Kunne ikke laste profiler:", err);
+          const status = document.getElementById("profile-picker-status");
+          if (status) status.textContent = "Profilene kunne ikke lastes. Kontroller tilkoblingen og prøv igjen.";
+        }
+      }
     } else {
       showView("landing-view");
       state.currentUser = null;
+      state.currentProfile = null;
       state.isAdmin = false;
       state.userHistory = {};
+      const profilePicker = document.getElementById("profile-picker-view");
+      if (profilePicker) profilePicker.hidden = true;
 
       document.getElementById("fullscreen-player")?.classList.remove("active");
       document.getElementById("details-page")?.classList.remove("active");
@@ -79,8 +88,8 @@ export function updateUserProfileUI(user) {
   const firstNameInput = document.getElementById("account-firstname-input");
   const lastNameInput = document.getElementById("account-lastname-input");
 
-  const fullName = user.displayName || "";
-  const nameParts = fullName.trim().split(" ");
+  const fullName = state.currentProfile?.name || user.displayName || "";
+  const nameParts = fullName.trim().split(/\s+/);
   const firstName = nameParts[0] || "";
   const lastName = nameParts.slice(1).join(" ") || "";
 
@@ -91,19 +100,20 @@ export function updateUserProfileUI(user) {
   if (firstNameInput) firstNameInput.value = firstName;
   if (lastNameInput) lastNameInput.value = lastName;
 
-  let initials = "";
-  if (firstName && lastName) {
-    initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-  } else if (firstName) {
-    initials = firstName.charAt(0).toUpperCase();
-  } else if (user.email) {
-    initials = user.email.charAt(0).toUpperCase();
-  } else {
-    initials = "U";
-  }
-
-  if (userAvatar) userAvatar.innerText = initials;
-  if (accountAvatarLarge) accountAvatarLarge.innerText = initials;
+  const initials = (firstName || user.email || "U").charAt(0).toUpperCase();
+  const avatarUrl = state.currentProfile?.avatarUrl || "";
+  [userAvatar, accountAvatarLarge].forEach(avatar => {
+    if (!avatar) return;
+    avatar.replaceChildren();
+    if (avatarUrl) {
+      const image = document.createElement("img");
+      image.src = avatarUrl;
+      image.alt = "";
+      avatar.appendChild(image);
+    } else {
+      avatar.textContent = initials;
+    }
+  });
 }
 
 export function setAuthMode(signUp) {
@@ -187,7 +197,15 @@ function setupAuthEventListeners() {
       e.preventDefault();
       const fn = document.getElementById("account-firstname-input").value;
       const ln = document.getElementById("account-lastname-input").value;
-      await saveAccountProfile(fn, ln);
+      const status = document.getElementById("account-profile-status");
+      if (status) status.textContent = "";
+      try {
+        await saveAccountProfile(fn, ln);
+        if (status) status.textContent = "Profilen er oppdatert.";
+      } catch (error) {
+        console.error("Kunne ikke lagre profilinformasjonen:", error);
+        if (status) status.textContent = "Profilen kunne ikke lagres. Prøv igjen.";
+      }
     });
   }
 
@@ -222,8 +240,17 @@ export async function submitAuthForm(email, password, firstName = "", lastName =
 export async function saveAccountProfile(firstName, lastName) {
   if (!auth.currentUser) return;
   const displayName = `${firstName.trim()} ${lastName.trim()}`.trim();
-  
-  await updateProfile(auth.currentUser, { displayName });
+  if (!displayName) throw new Error("Skriv inn et profilnavn.");
+
+  if (state.currentProfile) {
+    await updateCurrentProfileName(displayName);
+    if (state.currentProfile.isDefault) {
+      await updateProfile(auth.currentUser, { displayName });
+      await setDoc(doc(db, "users", auth.currentUser.uid), { displayName }, { merge: true });
+    }
+  } else {
+    await updateProfile(auth.currentUser, { displayName });
+  }
   updateUserProfileUI(auth.currentUser);
 }
 

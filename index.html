@@ -104,6 +104,9 @@
         <div class="search-input-wrapper">
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
           <input type="text" id="global-search-input" placeholder="Søk etter podkaster, bøker, episoder..." autocomplete="off">
+          <button type="button" id="clear-search-btn" class="search-clear-btn" aria-label="Tøm søk" hidden>
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
         </div>
       </div>
 
@@ -188,6 +191,9 @@
           <div class="account-avatar-large" id="account-avatar-large">M</div>
           <h2 id="account-user-fullname">Bruker</h2>
           <p id="account-email-display" class="account-email">bruker@tale.no</p>
+          <button type="button" id="account-change-avatar-btn" class="btn-secondary btn-small">Endre profilbilde</button>
+          <button type="button" id="switch-profile-btn" class="btn-secondary btn-small">Bytt profil</button>
+          <p id="account-profile-status" class="account-empty" role="status"></p>
         </div>
 
         <div class="account-grid">
@@ -232,9 +238,9 @@
     </main>
 
     <div id="details-page" class="modal">
-      <div id="details-drag-handle" class="details-drag-handle" role="button" tabindex="0" aria-label="Dra ned for å lukke infosiden">
-        <span></span>
-      </div>
+      <button type="button" id="details-close-btn" class="details-close-btn" aria-label="Lukk informasjonssiden">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
       <div class="details-content">
         <header class="details-hero">
           <div class="details-hero-backdrop" aria-hidden="true"></div>
@@ -416,6 +422,38 @@
     </nav>
 
   </div>
+
+  <section id="profile-picker-view" class="profile-picker-view" hidden aria-labelledby="profile-picker-title">
+    <div class="profile-picker-card">
+      <header class="profile-picker-header">
+        <img src="https://res.cloudinary.com/ocv4zhpk/image/upload/v1789214311/Tale_Logo_Hvite_edited_edited_edited_edited_edited_edited_edited_edited_rnsrsa.png" alt="Tale" class="profile-picker-logo">
+        <h1 id="profile-picker-title">Hvem lytter på?</h1>
+        <p>Velg profilen som skal lytte.</p>
+      </header>
+      <p id="profile-picker-status" class="profile-picker-status" role="status"></p>
+      <div id="profile-picker-list" class="profile-picker-list"></div>
+      <div id="profile-editor" class="profile-editor" hidden>
+        <h2 id="profile-editor-title">Opprett profil</h2>
+        <label for="profile-name-input">Profilnavn</label>
+        <input id="profile-name-input" type="text" maxlength="40" autocomplete="off" placeholder="Skriv inn et navn">
+        <label class="profile-child-toggle">
+          <input id="profile-child-input" type="checkbox">
+          <span>Dette er en barneprofil</span>
+        </label>
+        <p class="profile-avatar-label">Velg profilbilde</p>
+        <div id="profile-avatar-options" class="profile-avatar-options"></div>
+        <p id="profile-editor-error" class="profile-editor-error" role="alert"></p>
+        <div class="profile-editor-actions">
+          <button type="button" id="profile-save-btn" class="btn-primary">Lagre profil</button>
+          <button type="button" id="profile-cancel-btn" class="btn-secondary">Avbryt</button>
+        </div>
+      </div>
+      <div class="profile-picker-actions">
+        <button type="button" id="add-profile-btn" class="btn-secondary"><i class="fa-solid fa-plus"></i> Legg til profil</button>
+        <button type="button" id="profile-picker-logout-btn" class="btn-link">Logg ut</button>
+      </div>
+    </div>
+  </section>
 
   <script type="module" src="./js/app.js"></script>
 </body>

@@ -141,13 +141,23 @@
 .profile-avatar {
   background: var(--accent-blue);
   color: #0b112c;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  border-radius: 9px;
+  width: 24px;
+  height: 30px;
+  overflow: hidden;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
+}
+
+.profile-avatar img,
+#account .account-avatar-large img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Søkedel plassert i toppbaren */
@@ -167,11 +177,12 @@
   left: 1rem;
   color: var(--text-muted);
   font-size: 0.85rem;
+  z-index: 1;
 }
 
 .search-input-wrapper input {
   width: 100%;
-  padding: 0.7rem 1rem 0.7rem 2.4rem;
+  padding: 0.7rem 2.8rem 0.7rem 2.4rem;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
@@ -181,6 +192,31 @@
   transition: all 0.2s ease;
   box-sizing: border-box;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 0.55rem;
+  z-index: 1;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.search-clear-btn[hidden] {
+  display: none;
+}
+
+.search-clear-btn:hover,
+.search-clear-btn:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 main .page,

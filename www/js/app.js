@@ -1,7 +1,7 @@
 import { db } from "./firebase-config.js";
 import { state, globalAudio } from "./state.js";
 import { showView, switchPage, buildCoverMarkup } from "./ui.js";
-import { initAuth, setAuthMode, handleLogout, submitAuthForm } from "./auth.js";
+import { initAuth, setAuthMode, handleLogout } from "./auth.js";
 import { openDetailsView, openFullscreenPlayer, closeFullscreenPlayer, togglePlay, setupAudioListeners, playSpecificEpisode, skipTime, isPlayableAudioUrl, getAudioUrl } from "./player.js";
 import { loadUserFavorites, removeUserFavorite } from "./details.js";
 import { fetchPodcastFeed } from "./podcast-feed.js";
@@ -819,9 +819,11 @@ export function setupSearchListener() {
   const searchInput = document.getElementById("global-search-input");
   if (!searchInput || searchInput.dataset.bound === "true") return;
   searchInput.dataset.bound = "true";
+  const clearButton = document.getElementById("clear-search-btn");
 
   searchInput.addEventListener("input", (e) => {
     const queryTerm = e.target.value.trim();
+    if (clearButton) clearButton.hidden = e.target.value.length === 0;
     clearTimeout(state.searchTimeout);
 
     if (queryTerm.length === 0) {
@@ -832,6 +834,12 @@ export function setupSearchListener() {
     state.searchTimeout = setTimeout(() => {
       executeAppSearch(queryTerm);
     }, 400);
+  });
+
+  clearButton?.addEventListener("click", () => {
+    searchInput.value = "";
+    searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+    searchInput.focus();
   });
 }
 
@@ -1088,12 +1096,6 @@ function setupEventListeners() {
       return;
     }
 
-    const toggleBtn = e.target.closest("#toggle-auth-mode");
-    if (toggleBtn) {
-      setAuthMode(!state.isSignUp);
-      return;
-    }
-
     const logoutBtn = e.target.closest("#logout-btn");
     if (logoutBtn) {
       handleLogout();
@@ -1149,21 +1151,6 @@ function setupEventListeners() {
     }
   });
 
-  document.addEventListener("submit", async (e) => {
-    if (e.target?.id === "auth-form") {
-      e.preventDefault();
-      const email = document.getElementById("auth-email")?.value;
-      const password = document.getElementById("auth-password")?.value;
-      const errorMsg = document.getElementById("auth-error");
-      if (errorMsg) errorMsg.innerText = "";
-
-      try {
-        await submitAuthForm(email, password);
-      } catch (err) {
-        if (errorMsg) errorMsg.innerText = "Feil ved innlogging eller registrering.";
-      }
-    }
-  });
 }
 
 function renderAccountFavorites() {

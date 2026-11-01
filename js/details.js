@@ -26,7 +26,7 @@ let detailsRequestId = 0;
 
 // DOM-elementer fra index.html
 const detailsPage = document.getElementById('details-page');
-const dragHandle = document.getElementById('details-drag-handle');
+const closeDetailsButton = document.getElementById('details-close-btn');
 const coverContainer = document.getElementById('details-cover-container');
 const badgeType = document.getElementById('details-badge-type');
 const titleEl = document.getElementById('details-title');
@@ -451,12 +451,21 @@ function isNewEpisode(pubDate) {
 export function closeDetailsPage() {
   const shouldReturn = history.state?.route === 'details-page' || window.location.hash === '#details-page';
   if (detailsPage) {
-    detailsPage.classList.remove('active', 'is-dragging');
+    detailsPage.classList.remove('active');
     detailsPage.style.removeProperty('--details-y-offset');
     detailsPage.style.transition = '';
   }
   updateBottomNavVisibility();
   if (shouldReturn && history.length > 1) history.back();
+}
+
+function favoriteCollectionPath() {
+  const path = ['users', state.currentUser.uid];
+  if (state.currentProfile?.id && state.currentProfile.id !== 'default') {
+    path.push('profiles', state.currentProfile.id);
+  }
+  path.push('favorites');
+  return path;
 }
 
 function favoriteRef(item) {
@@ -467,7 +476,7 @@ function favoriteRef(item) {
     hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
   }
   const favoriteId = (hash >>> 0).toString(36);
-  return doc(db, 'users', state.currentUser.uid, 'favorites', favoriteId);
+  return doc(db, ...favoriteCollectionPath(), favoriteId);
 }
 
 function setFavoriteButton(isFavorite) {
@@ -498,76 +507,17 @@ async function syncFavoriteButton(item) {
 
 export async function loadUserFavorites() {
   if (!state.currentUser) return [];
-  const snapshot = await getDocs(collection(db, 'users', state.currentUser.uid, 'favorites'));
+  const snapshot = await getDocs(collection(db, ...favoriteCollectionPath()));
   return snapshot.docs.map(favorite => ({ favoriteId: favorite.id, ...favorite.data() }))
     .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'no'));
 }
 
 export async function removeUserFavorite(favoriteId) {
   if (!state.currentUser || !favoriteId) return;
-  await deleteDoc(doc(db, 'users', state.currentUser.uid, 'favorites', favoriteId));
+  await deleteDoc(doc(db, ...favoriteCollectionPath(), favoriteId));
 }
 
-if (dragHandle && detailsPage) {
-  let startY = 0;
-  let currentY = 0;
-  let dragging = false;
-
-  const startDrag = clientY => {
-    if (!detailsPage.classList.contains('active')) return;
-    startY = clientY;
-    currentY = clientY;
-    dragging = true;
-    detailsPage.style.transition = 'none';
-  };
-
-  const moveDrag = clientY => {
-    if (!dragging) return;
-    currentY = clientY;
-    const offset = Math.max(0, currentY - startY);
-    detailsPage.classList.toggle('is-dragging', offset > 0);
-    detailsPage.style.setProperty('--details-y-offset', `${offset}px`);
-  };
-
-  const endDrag = () => {
-    if (!dragging) return;
-    dragging = false;
-    const offset = currentY - startY;
-    detailsPage.classList.remove('is-dragging');
-    detailsPage.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease';
-
-    if (offset > 100) {
-      closeDetailsPage();
-    } else {
-      detailsPage.style.setProperty('--details-y-offset', '0px');
-      window.setTimeout(() => {
-        if (detailsPage) detailsPage.style.transition = '';
-      }, 300);
-    }
-  };
-
-  dragHandle.addEventListener('touchstart', event => startDrag(event.touches[0].clientY), { passive: true });
-  dragHandle.addEventListener('touchmove', event => moveDrag(event.touches[0].clientY), { passive: true });
-  dragHandle.addEventListener('touchend', endDrag);
-  dragHandle.addEventListener('touchcancel', endDrag);
-  dragHandle.addEventListener('mousedown', event => {
-    startDrag(event.clientY);
-    const onMouseMove = moveEvent => moveDrag(moveEvent.clientY);
-    const onMouseUp = () => {
-      endDrag();
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-  });
-  dragHandle.addEventListener('keydown', event => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      closeDetailsPage();
-    }
-  });
-}
+closeDetailsButton?.addEventListener('click', closeDetailsPage);
 
 if (likeBtn) {
   likeBtn.addEventListener('click', async () => {
