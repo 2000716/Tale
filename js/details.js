@@ -145,6 +145,7 @@ export async function openDetailsPage(item) {
       console.error('Kunne ikke hente podkast-feed:', error);
       if (episodeList && fetchedEpisodes.length === 0) {
         episodeList.innerHTML = `<div class="loading-episodes">Kunne ikke laste episoder. Prøv igjen senere.</div>`;
+        if (badgeEpisodes) badgeEpisodes.textContent = 'Episoder utilgjengelige';
       }
     });
     return;

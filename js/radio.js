@@ -1,3 +1,5 @@
+import { fetchPodcastFeed } from './podcast-feed.js';
+
 // Hjelpefunksjon for å hindre XSS når vi setter inn tekst i HTML
 function escapeHtml(str) {
   if (!str) return '';
@@ -87,11 +89,9 @@ export async function loadNrkNewsBanner(nrkNewsChannel, playAudioCallback) {
 
   try {
     // Riktig direkte-adresse til NRKs toppsaker
-    const rssUrl = encodeURIComponent('https://www.nrk.no/toppsaker.rss');
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
-    const data = await res.json();
+    const data = await fetchPodcastFeed('https://www.nrk.no/toppsaker.rss');
 
-    if (data.status === 'ok' && data.items && data.items.length > 0) {
+    if (data.items.length > 0) {
       const topStory = data.items[0];
 
       // Sett overskriften fra den nyeste nyheten

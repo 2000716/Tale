@@ -8,7 +8,7 @@ export function getCachedPodcastFeed(rssUrl) {
   const cacheKey = getCacheKey(rssUrl);
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
-    return cached?.feed && Array.isArray(cached.items) ? cached : null;
+    return Array.isArray(cached?.items) ? { ...cached, feed: cached.feed || {} } : null;
   } catch (error) {
     console.warn("Kunne ikke lese bufret podkast-feed:", error);
     try {
@@ -37,13 +37,11 @@ export function fetchPodcastFeed(rssUrl) {
 
 async function loadPodcastFeed(rssUrl, staleCache) {
   try {
-    let response;
     try {
-      response = await fetchWithTimeout(
-        `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`
+      const data = await fetchWithTimeout(
+        `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`,
+        response => response.json()
       );
-      if (!response.ok) throw new Error(`RSS-tjenesten svarte med ${response.status}`);
-      const data = await response.json();
       if (data.status !== "ok") {
         throw new Error(data.message || "RSS-tjenesten kunne ikke lese feeden.");
       }
@@ -56,11 +54,12 @@ async function loadPodcastFeed(rssUrl, staleCache) {
       });
     } catch (primaryError) {
       console.warn("RSS-tjenesten kunne ikke hente feeden, prøver direkte RSS-lesing:", primaryError);
-      response = await fetchWithTimeout(
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`
+      const xmlText = await fetchWithTimeout(
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`,
+        response => response.text(),
+        "RSS-reserven"
       );
-      if (!response.ok) throw new Error(`RSS-reserven svarte med ${response.status}`);
-      const xml = new DOMParser().parseFromString(await response.text(), "text/xml");
+      const xml = new DOMParser().parseFromString(xmlText, "text/xml");
       if (xml.querySelector("parsererror")) throw new Error("RSS-feedens XML kunne ikke leses.");
       return saveFeed(rssUrl, parseXmlFeed(xml));
     }
@@ -73,11 +72,13 @@ async function loadPodcastFeed(rssUrl, staleCache) {
   }
 }
 
-async function fetchWithTimeout(url) {
+async function fetchWithTimeout(url, readBody, serviceName = "RSS-tjenesten") {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   try {
-    return await fetch(url, { signal: controller.signal });
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`${serviceName} svarte med ${response.status}`);
+    return await readBody(response);
   } finally {
     clearTimeout(timeoutId);
   }
