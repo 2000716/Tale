@@ -31,6 +31,7 @@
 
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), 
               opacity 0.3s ease,
+              bottom 0.35s cubic-bezier(0.22, 1, 0.36, 1),
               visibility 0.35s;
   opacity: 1;
   visibility: visible;
@@ -42,6 +43,16 @@
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
+}
+
+body:has(#details-page.active) .player {
+  bottom: calc(env(safe-area-inset-bottom) + 12px) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player {
+    transition: none;
+  }
 }
 
 .player-left {
@@ -317,14 +328,20 @@ button.skip-btn,
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
 }
 
-body:has(#fullscreen-player.active) .player {
-  transform: translateY(160px) !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
+.bottom-bar.is-hidden {
+  transform: translate(-50%, 100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
-body:has(#fullscreen-player.active) .bottom-bar {
-  transform: translateY(120px) !important;
+@media (prefers-reduced-motion: reduce) {
+  .bottom-bar {
+    transition: none;
+  }
+}
+
+body:has(#fullscreen-player.active) .player {
+  transform: translateY(160px) !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }

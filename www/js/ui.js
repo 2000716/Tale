@@ -12,7 +12,9 @@ export function updateBottomNavVisibility() {
 
   if (topBar) topBar.style.display = isOverlayActive ? "none" : "flex";
   if (bottomNav) {
-    bottomNav.style.display = isOverlayActive ? "none" : "flex";
+    bottomNav.classList.toggle("is-hidden", isOverlayActive);
+    bottomNav.setAttribute("aria-hidden", String(isOverlayActive));
+    bottomNav.inert = isOverlayActive;
   }
 }
 

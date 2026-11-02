@@ -69,11 +69,6 @@
   color: var(--text-muted, #94a3b8);
 }
 
-/* Skjul bunnmeny når fullskjermspiller er aktiv */
-body:has(#fullscreen-player.active) .bottom-bar {
-  display: none !important;
-}
-
 body:has(#fullscreen-player.active) .player {
   transform: translateY(100px) !important;
   opacity: 0 !important;
