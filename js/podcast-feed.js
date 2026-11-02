@@ -1,5 +1,6 @@
 const FEED_CACHE_TTL = 15 * 60 * 1000;
 const REQUEST_TIMEOUT = 8000;
+const MAX_FEED_ITEMS = 1000;
 const inFlightRequests = new Map();
 
 export function getCachedPodcastFeed(rssUrl) {
@@ -39,7 +40,7 @@ async function loadPodcastFeed(rssUrl, staleCache) {
   try {
     try {
       const data = await fetchWithTimeout(
-        `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`,
+        `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&count=${MAX_FEED_ITEMS}`,
         response => response.json()
       );
       if (data.status !== "ok") {
@@ -61,7 +62,9 @@ async function loadPodcastFeed(rssUrl, staleCache) {
       );
       const xml = new DOMParser().parseFromString(xmlText, "text/xml");
       if (xml.querySelector("parsererror")) throw new Error("RSS-feedens XML kunne ikke leses.");
-      return saveFeed(rssUrl, parseXmlFeed(xml));
+      const feedData = parseXmlFeed(xml);
+      if (!feedData.items.length) throw new Error("RSS-feeden inneholder ingen episoder.");
+      return saveFeed(rssUrl, feedData);
     }
   } catch (error) {
     if (staleCache) {

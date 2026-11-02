@@ -144,7 +144,10 @@ export async function openDetailsPage(item) {
       if (requestId !== detailsRequestId) return;
       console.error('Kunne ikke hente podkast-feed:', error);
       if (episodeList && fetchedEpisodes.length === 0) {
-        episodeList.innerHTML = `<div class="loading-episodes">Kunne ikke laste episoder. Prøv igjen senere.</div>`;
+        episodeList.innerHTML = `<div class="loading-episodes">Kunne ikke laste episoder.<br><button class="btn-secondary" type="button" data-retry-podcast-feed>Prøv på nytt</button></div>`;
+        episodeList.querySelector('[data-retry-podcast-feed]')?.addEventListener('click', () => {
+          openDetailsPage(item);
+        });
         if (badgeEpisodes) badgeEpisodes.textContent = 'Episoder utilgjengelige';
       }
     });
