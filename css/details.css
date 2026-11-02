@@ -652,6 +652,7 @@
 #details-page .recommendation-card {
   display: flex;
   flex: 0 0 116px;
+  min-width: 0;
   flex-direction: column;
   gap: 0.35rem;
   padding: 0;
@@ -683,6 +684,8 @@
 }
 
 #details-page .recommendation-card strong { 
+  width: 100%;
+  min-width: 0;
   color: var(--storytel-text-main);
   overflow: hidden; 
   font-size: 0.82rem; 
@@ -691,9 +694,14 @@
   white-space: nowrap; 
 }
 
-#details-page .recommendation-card span {
+#details-page .recommendation-card > span:not(.recommendation-cover) {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
   color: var(--storytel-text-muted);
   font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #details-page .recommendation-card:hover .recommendation-cover { 
