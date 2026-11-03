@@ -22,6 +22,7 @@ let currentItem = null;
 let currentSeason = 1;
 let visibleEpisodesCount = EPISODES_PER_PAGE;
 let fetchedEpisodes = [];
+let fetchedSeasons = [];
 let detailsRequestId = 0;
 
 // DOM-elementer fra index.html
@@ -63,6 +64,7 @@ export async function openDetailsPage(item) {
   currentItem = item;
   visibleEpisodesCount = EPISODES_PER_PAGE;
   fetchedEpisodes = [];
+  fetchedSeasons = [];
   syncFavoriteButton(item);
 
   const contentType = item.type || (item.rssUrl || item.rss ? 'podcast' : 'audiobook');
@@ -199,6 +201,17 @@ function applyPodcastFeed(data, item, imageUrl) {
     descEl.innerHTML = cleanHTML(rssFeedDescription);
   }
 
+  const feedTitle = typeof data.feed?.title === 'string' ? data.feed.title.trim() : '';
+  if (!(item.title || item.name) && feedTitle && titleEl) titleEl.textContent = feedTitle;
+  const feedAuthor = data.feed?.author || data.feed?.owner || '';
+  if (!(item.sub || item.subtitle || item.author || item.publisher || item.host) && feedAuthor && subEl) {
+    subEl.textContent = feedAuthor;
+  }
+  const feedImage = data.feed?.image || '';
+  if (!imageUrl && feedImage && coverContainer) {
+    coverContainer.innerHTML = `<img src="${escapeAttr(feedImage)}" alt="${escapeAttr(feedTitle || item.title || 'Podkast')}" class="details-cover-img" onerror="this.style.display='none'">`;
+  }
+
   const sourceUrl = item.sourceUrl || item.studioUrl || item.website || data.feed?.link || '';
   if (sourceUrl && sourceLink) {
     sourceLink.href = sourceUrl;
@@ -214,16 +227,36 @@ function applyPodcastFeed(data, item, imageUrl) {
   fetchedEpisodes = data.items.map(ep => ({
     title: ep.title || 'Uten tittel',
     audioUrl: ep.enclosure?.link || ep.link || '',
-    cover: ep.thumbnail || ep.itunes?.image || ep.enclosure?.thumbnail || imageUrl,
+    cover: ep.thumbnail || ep.itunes?.image || ep.enclosure?.thumbnail || imageUrl || feedImage,
     duration: ep.enclosure?.duration || ep.duration || '',
     pubDate: ep.pubDate || '',
     description: ep.description || ep.summary || ep.content || '',
-    season: ep.itunes?.season || ep.season || '',
+    season: normalizeSeason(ep.itunes?.season ?? ep.season),
     episode: ep.itunes?.episode || ep.episode || ''
-  }));
+  })).map((episode, index) => ({ ...episode, sourceIndex: index }))
+    .sort((left, right) => {
+      const leftDate = Date.parse(left.pubDate);
+      const rightDate = Date.parse(right.pubDate);
+      const hasLeftDate = Number.isFinite(leftDate);
+      const hasRightDate = Number.isFinite(rightDate);
+      if (hasLeftDate && hasRightDate) return rightDate - leftDate || left.sourceIndex - right.sourceIndex;
+      if (hasLeftDate) return -1;
+      if (hasRightDate) return 1;
+      return left.sourceIndex - right.sourceIndex;
+    })
+    .map(({ sourceIndex, ...episode }) => episode);
 
-  const rssSeasons = [...new Set(fetchedEpisodes.map(ep => Number(ep.season)).filter(Number.isFinite))].sort((a, b) => a - b);
-  if (rssSeasons.length > 1) currentItem.seasons = rssSeasons;
+  fetchedSeasons = [...new Set(fetchedEpisodes.map(ep => ep.season).filter(Number.isInteger))]
+    .sort((a, b) => a - b);
+  if (!fetchedSeasons.includes(currentSeason)) {
+    currentSeason = fetchedSeasons[fetchedSeasons.length - 1] ?? 1;
+  }
+}
+
+function normalizeSeason(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  const season = Number(String(value).trim());
+  return Number.isInteger(season) && season >= 0 ? season : null;
 }
 
 function renderFacts(facts) {
@@ -322,11 +355,10 @@ function setupContentTypeUI(item, type) {
     if (badgeType) badgeType.textContent = 'Podkast';
     if (episodeListContainer) episodeListContainer.style.display = 'flex';
 
-    if (item.seasons && Array.isArray(item.seasons) && item.seasons.length > 0) {
+    if (fetchedSeasons.length > 1) {
       if (seasonWrapper) seasonWrapper.style.display = 'block';
       if (seasonSelect) {
-        seasonSelect.innerHTML = item.seasons.map(s => `<option value="${s}">Sesong ${s}</option>`).join('');
-        currentSeason = item.seasons[0];
+        seasonSelect.innerHTML = fetchedSeasons.map(s => `<option value="${s}">Sesong ${s}</option>`).join('');
         seasonSelect.value = currentSeason;
         seasonSelect.onchange = (e) => {
           currentSeason = Number(e.target.value);
@@ -357,8 +389,8 @@ function setupContentTypeUI(item, type) {
 
 function getFilteredEpisodes() {
   if (!fetchedEpisodes || fetchedEpisodes.length === 0) return [];
-  if (currentItem?.seasons && currentItem.seasons.length > 0) {
-    return fetchedEpisodes.filter(ep => Number(ep.season) === currentSeason);
+  if (fetchedSeasons.length > 1) {
+    return fetchedEpisodes.filter(ep => ep.season === currentSeason);
   }
   return fetchedEpisodes;
 }

@@ -2,14 +2,23 @@ const FEED_CACHE_TTL = 15 * 60 * 1000;
 const REQUEST_TIMEOUT = 8000;
 const MAX_FEED_ITEMS = 1000;
 const inFlightRequests = new Map();
+const FEED_PROXIES = [
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`
+];
 
 export function getCachedPodcastFeed(rssUrl) {
-  if (!rssUrl) return null;
+  if (typeof rssUrl !== "string" || !rssUrl.trim()) return null;
 
-  const cacheKey = getCacheKey(rssUrl);
+  const cacheKey = getCacheKey(rssUrl.trim());
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
-    return Array.isArray(cached?.items) ? { ...cached, feed: cached.feed || {} } : null;
+    return cached
+      && Array.isArray(cached.items)
+      && cached.feed
+      && typeof cached.feed === "object"
+      ? cached
+      : null;
   } catch (error) {
     console.warn("Kunne ikke lese bufret podkast-feed:", error);
     try {
@@ -22,7 +31,10 @@ export function getCachedPodcastFeed(rssUrl) {
 }
 
 export function fetchPodcastFeed(rssUrl) {
-  if (!rssUrl) return Promise.reject(new Error("Podkasten mangler en RSS-adresse."));
+  if (typeof rssUrl !== "string" || !rssUrl.trim()) {
+    return Promise.reject(new Error("Podkasten mangler en RSS-adresse."));
+  }
+  rssUrl = rssUrl.trim();
 
   const cached = getCachedPodcastFeed(rssUrl);
   if (cached?.expiresAt > Date.now()) return Promise.resolve(cached);
@@ -38,40 +50,41 @@ export function fetchPodcastFeed(rssUrl) {
 
 async function loadPodcastFeed(rssUrl, staleCache) {
   try {
-    try {
-      const data = await fetchWithTimeout(
-        `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&count=${MAX_FEED_ITEMS}`,
-        response => response.json()
-      );
-      if (data.status !== "ok") {
-        throw new Error(data.message || "RSS-tjenesten kunne ikke lese feeden.");
-      }
-      if (!Array.isArray(data.items) || data.items.length === 0) {
-        throw new Error("RSS-tjenesten fant ingen episoder i feeden.");
-      }
+    const data = await fetchWithTimeout(
+      `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&count=${MAX_FEED_ITEMS}`,
+      response => response.json()
+    );
+    if (data?.status === "ok" && Array.isArray(data.items)) {
       return saveFeed(rssUrl, {
-        feed: data.feed || {},
-        items: data.items
+        feed: normalizeFeed(data.feed),
+        items: data.items.slice(0, MAX_FEED_ITEMS).map(normalizeJsonItem)
       });
-    } catch (primaryError) {
-      console.warn("RSS-tjenesten kunne ikke hente feeden, prøver direkte RSS-lesing:", primaryError);
-      const xmlText = await fetchWithTimeout(
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`,
-        response => response.text(),
-        "RSS-reserven"
-      );
-      const xml = new DOMParser().parseFromString(xmlText, "text/xml");
-      if (xml.querySelector("parsererror")) throw new Error("RSS-feedens XML kunne ikke leses.");
-      const feedData = parseXmlFeed(xml);
-      if (!feedData.items.length) throw new Error("RSS-feeden inneholder ingen episoder.");
-      return saveFeed(rssUrl, feedData);
     }
+
+    throw new Error(data?.message || "RSS-tjenesten returnerte ugyldige data.");
   } catch (error) {
+    const errors = [error];
+    for (const createProxyUrl of FEED_PROXIES) {
+      try {
+        const xmlText = await fetchWithTimeout(
+          createProxyUrl(rssUrl),
+          response => response.text(),
+          "RSS-reserven"
+        );
+        const xml = new DOMParser().parseFromString(xmlText, "text/xml");
+        const feedData = parseXmlFeed(xml);
+        return saveFeed(rssUrl, feedData);
+      } catch (proxyError) {
+        errors.push(proxyError);
+      }
+    }
+
     if (staleCache) {
-      console.warn("Bruker bufret podkast-feed fordi oppdatering feilet:", error);
+      console.warn("Bruker bufret podkast-feed fordi oppdatering feilet:", errors);
       return staleCache;
     }
-    throw error;
+
+    throw new Error(`Kunne ikke hente RSS-feeden: ${errors.map(item => item.message).join("; ")}`);
   }
 }
 
@@ -88,20 +101,26 @@ async function fetchWithTimeout(url, readBody, serviceName = "RSS-tjenesten") {
 }
 
 function parseXmlFeed(xml) {
-  const channel = xml.querySelector("channel") || xml.documentElement;
-  const feedLink = findElement(channel, "link");
+  if (xml.querySelector("parsererror")) throw new Error("RSS-feedens XML kunne ikke leses.");
+
+  const channel = findDescendant(xml.documentElement, "channel")
+    || (xml.documentElement?.localName === "feed" ? xml.documentElement : null);
+  if (!channel) throw new Error("RSS-reserven returnerte ikke en gyldig RSS- eller Atom-feed.");
+
+  const feedLink = childElements(channel, "link")
+    .find(element => element.getAttribute("rel") !== "enclosure") || null;
   const feedImage = findElement(channel, "image");
   const feed = {
     title: childText(channel, "title"),
     description: childText(channel, "description") || childText(channel, "summary") || childText(channel, "subtitle"),
     link: feedLink?.getAttribute("href") || feedLink?.textContent?.trim() || "",
-    image: childText(feedImage, "url") || feedImage?.getAttribute("href") || "",
-    author: childText(channel, "author") || childText(channel, "creator"),
+    image: childText(feedImage, "url") || feedImage?.getAttribute("href") || childText(channel, "logo"),
+    author: childText(channel, "author") || childText(channel, "creator") || childText(channel, "name"),
     category: childText(channel, "category")
   };
-  const items = Array.from(xml.getElementsByTagName("*"))
-    .filter(element => element.localName === "item" || element.localName === "entry")
-    .map(element => parseXmlItem(element));
+  const items = [...childElements(channel, "item"), ...childElements(channel, "entry")]
+    .slice(0, MAX_FEED_ITEMS)
+    .map(parseXmlItem);
 
   return { feed, items };
 }
@@ -119,17 +138,20 @@ function parseXmlItem(element) {
     child.localName === "thumbnail"
     || (child.localName === "content" && child.getAttribute("type")?.startsWith("image/"))
   );
+  const links = childElements(element, "link");
+  const pageLink = links.find(child => child.getAttribute("rel") !== "enclosure");
   const description = childText(element, "encoded")
     || childText(element, "description")
     || childText(element, "summary")
     || childText(element, "content");
-  const link = findElement(element, "link");
+  const season = childText(element, "season");
+  const episode = childText(element, "episode");
 
   return {
     title: childText(element, "title"),
-    link: link?.getAttribute("href") || link?.textContent?.trim() || "",
+    link: pageLink?.getAttribute("href") || pageLink?.textContent?.trim() || "",
     description,
-    pubDate: childText(element, "pubDate") || childText(element, "published") || childText(element, "updated"),
+    pubDate: childText(element, "pubDate") || childText(element, "published") || childText(element, "updated") || childText(element, "date"),
     thumbnail: image?.getAttribute("href")
       || image?.textContent?.trim()
       || mediaImage?.getAttribute("url")
@@ -142,17 +164,67 @@ function parseXmlItem(element) {
     },
     itunes: {
       image: findElement(element, "image")?.getAttribute("href") || "",
-      season: childText(element, "season"),
-      episode: childText(element, "episode")
+      season,
+      episode
     },
-    season: childText(element, "season"),
-    episode: childText(element, "episode")
+    season,
+    episode
+  };
+}
+
+function normalizeFeed(feed = {}) {
+  if (!feed || typeof feed !== "object") feed = {};
+  return {
+    ...feed,
+    title: feed.title || "",
+    description: feed.description || feed.summary || "",
+    link: feed.link || "",
+    image: feed.image || "",
+    author: feed.author || feed.owner || "",
+    category: feed.category || ""
+  };
+}
+
+function normalizeJsonItem(item = {}) {
+  if (!item || typeof item !== "object") item = {};
+  const enclosure = typeof item.enclosure === "string"
+    ? { link: item.enclosure }
+    : item.enclosure || {};
+  const itunes = item.itunes || {};
+  const season = itunes.season ?? item.season ?? "";
+  const episode = itunes.episode ?? item.episode ?? "";
+
+  return {
+    ...item,
+    title: item.title || "",
+    link: item.link || "",
+    pubDate: item.pubDate || item.published || item.updated || "",
+    description: item.description || item.content || item.summary || "",
+    thumbnail: item.thumbnail || itunes.image || "",
+    enclosure: {
+      ...enclosure,
+      link: enclosure.link || item.enclosureUrl || "",
+      duration: enclosure.duration || item.duration || "",
+      thumbnail: enclosure.thumbnail || ""
+    },
+    itunes: { ...itunes, image: itunes.image || "", season, episode },
+    season,
+    episode
   };
 }
 
 function findElement(parent, localName) {
   if (!parent) return null;
   return Array.from(parent.children || []).find(element => element.localName === localName) || null;
+}
+
+function childElements(parent, localName) {
+  return Array.from(parent?.children || []).filter(element => element.localName === localName);
+}
+
+function findDescendant(parent, localName) {
+  return Array.from(parent?.getElementsByTagName("*") || [])
+    .find(element => element.localName === localName) || null;
 }
 
 function childText(parent, localName) {
