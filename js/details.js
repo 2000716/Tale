@@ -103,7 +103,7 @@ export async function openDetailsPage(item) {
 
   if (titleEl) titleEl.textContent = itemTitle;
   if (subEl) subEl.textContent = itemSub;
-  if (descEl) descEl.innerHTML = cleanHTML(rawDesc || 'Ingen beskrivelse tilgjengelig.');
+  if (descEl) descEl.innerHTML = cleanHTML(rawDesc || 'Laster beskrivelse...');
 
   if (coverContainer) {
     if (imageUrl) {
@@ -157,6 +157,9 @@ export async function openDetailsPage(item) {
       .catch(error => {
         if (requestId !== detailsRequestId) return;
         console.error('Kunne ikke hente podkast-feed:', error);
+        if (descEl && descEl.textContent === 'Laster beskrivelse...') {
+          descEl.textContent = 'Ingen beskrivelse tilgjengelig.';
+        }
         if (episodeList && fetchedEpisodes.length === 0) {
           episodeList.innerHTML = `<div class="loading-episodes">Kunne ikke laste episoder.<br><button class="btn-secondary" type="button" data-retry-podcast-feed>Prøv på nytt</button></div>`;
           episodeList.querySelector('[data-retry-podcast-feed]')?.addEventListener('click', () => {
@@ -166,6 +169,11 @@ export async function openDetailsPage(item) {
         }
       });
     return;
+  }
+
+  // Hvis ikke podkast, sett standardtekst hvis beskrivelse mangler
+  if (descEl && !rawDesc) {
+    descEl.textContent = 'Ingen beskrivelse tilgjengelig.';
   }
 
   // 2. Håndtering basert på type (Radio vs Lokale episoder vs Internet Archive)
@@ -206,8 +214,8 @@ export async function openDetailsPage(item) {
 }
 
 /**
- * Henter podkast-info og opptil 200 episoder ferdig tolket fra Apple Lookup API.
- * Formaterer svaret slik at det passer rett inn i applyPodcastFeed().
+ * Henter podkast-info og opptil 200 episoder ferdig tolket fra Apple Lookup API,
+ * samt henter hovedbeskrivelsen fra RSS-feeden (siden Apple utelater den).
  */
 async function fetchApplePodcastData(item) {
   try {
@@ -243,12 +251,36 @@ async function fetchApplePodcastData(item) {
 
     const podcastInfo = lookupData.results[0];
     const rawEpisodes = lookupData.results.slice(1);
+    const activeFeedUrl = podcastInfo.feedUrl || searchMatch?.feedUrl || item.rssUrl || item.rss || '';
+
+    // 3. Hent hovedbeskrivelsen for podkasten direkte fra RSS-feeden
+    let channelDescription = podcastInfo.description || searchMatch?.description || '';
+    if (!channelDescription && activeFeedUrl) {
+      try {
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(activeFeedUrl)}`;
+        const rssRes = await fetch(proxyUrl);
+        if (rssRes.ok) {
+          const xmlText = await rssRes.text();
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(xmlText, 'text/xml');
+          const channel = xml.querySelector('channel');
+          if (channel) {
+            channelDescription =
+              channel.querySelector(':scope > description')?.textContent ||
+              channel.getElementsByTagName('itunes:summary')[0]?.textContent ||
+              '';
+          }
+        }
+      } catch (e) {
+        console.warn('Kunne ikke hente hovedbeskrivelse fra RSS:', e);
+      }
+    }
 
     return {
       feed: {
         title: podcastInfo.collectionName || searchMatch?.collectionName || '',
         author: podcastInfo.artistName || searchMatch?.artistName || '',
-        description: podcastInfo.description || searchMatch?.description || '',
+        description: channelDescription,
         image: podcastInfo.artworkUrl600 || searchMatch?.artworkUrl600 || '',
         category: Array.isArray(podcastInfo.genres) ? podcastInfo.genres.join(', ') : '',
         link: podcastInfo.collectionViewUrl || ''
@@ -272,8 +304,12 @@ async function fetchApplePodcastData(item) {
 
 function applyPodcastFeed(data, item, imageUrl) {
   const rssFeedDescription = data.feed?.description || data.feed?.summary || '';
-  if (rssFeedDescription && descEl) {
-    descEl.innerHTML = cleanHTML(rssFeedDescription);
+  if (descEl) {
+    if (rssFeedDescription) {
+      descEl.innerHTML = cleanHTML(rssFeedDescription);
+    } else if (descEl.textContent === 'Laster beskrivelse...') {
+      descEl.textContent = 'Ingen beskrivelse tilgjengelig.';
+    }
   }
 
   const feedTitle = typeof data.feed?.title === 'string' ? data.feed.title.trim() : '';
