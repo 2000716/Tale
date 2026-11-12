@@ -126,8 +126,9 @@ export async function openDetailsPage(item) {
   }
   renderRecommendations(item);
 
-  if (rssUrl && contentType !== 'radio') {
-    const cachedFeed = getCachedPodcastFeed(rssUrl);
+  // Podkast-innhenting: Bruker Apple Lookup API først (raskt og stabilt), og faller tilbake på RSS-feed
+  if ((rssUrl || item.itunesId || contentType === 'podcast') && contentType !== 'radio') {
+    const cachedFeed = rssUrl ? getCachedPodcastFeed(rssUrl) : null;
     if (cachedFeed) {
       applyPodcastFeed(cachedFeed, item, imageUrl);
     }
@@ -138,27 +139,37 @@ export async function openDetailsPage(item) {
       if (badgeEpisodes) badgeEpisodes.textContent = 'Henter episoder...';
     }
 
-    fetchPodcastFeed(rssUrl).then(feedData => {
-      if (requestId !== detailsRequestId) return;
-      applyPodcastFeed(feedData, item, imageUrl);
-      setupContentTypeUI(item, contentType);
-    }).catch(error => {
-      if (requestId !== detailsRequestId) return;
-      console.error('Kunne ikke hente podkast-feed:', error);
-      if (episodeList && fetchedEpisodes.length === 0) {
-        episodeList.innerHTML = `<div class="loading-episodes">Kunne ikke laste episoder.<br><button class="btn-secondary" type="button" data-retry-podcast-feed>Prøv på nytt</button></div>`;
-        episodeList.querySelector('[data-retry-podcast-feed]')?.addEventListener('click', () => {
-          openDetailsPage(item);
-        });
-        if (badgeEpisodes) badgeEpisodes.textContent = 'Episoder utilgjengelige';
-      }
-    });
+    fetchApplePodcastData(item)
+      .then(appleData => {
+        if (appleData && appleData.items.length > 0) {
+          return appleData;
+        }
+        if (rssUrl) {
+          return fetchPodcastFeed(rssUrl);
+        }
+        throw new Error('Fant verken Apple-data eller RSS-feed');
+      })
+      .then(feedData => {
+        if (requestId !== detailsRequestId) return;
+        applyPodcastFeed(feedData, item, imageUrl);
+        setupContentTypeUI(item, contentType);
+      })
+      .catch(error => {
+        if (requestId !== detailsRequestId) return;
+        console.error('Kunne ikke hente podkast-feed:', error);
+        if (episodeList && fetchedEpisodes.length === 0) {
+          episodeList.innerHTML = `<div class="loading-episodes">Kunne ikke laste episoder.<br><button class="btn-secondary" type="button" data-retry-podcast-feed>Prøv på nytt</button></div>`;
+          episodeList.querySelector('[data-retry-podcast-feed]')?.addEventListener('click', () => {
+            openDetailsPage(item);
+          });
+          if (badgeEpisodes) badgeEpisodes.textContent = 'Episoder utilgjengelige';
+        }
+      });
     return;
   }
 
-  // 2. Håndtering basert på type (Radio vs RSS vs Lokale episoder)
+  // 2. Håndtering basert på type (Radio vs Lokale episoder vs Internet Archive)
   if (contentType === 'radio' || !rssUrl) {
-    // Direkteinnhold / Radio / Lydbok uten RSS
     if (item.episodes && Array.isArray(item.episodes)) {
       fetchedEpisodes = item.episodes;
     } else if (item.chapters && Array.isArray(item.chapters)) {
@@ -192,7 +203,71 @@ export async function openDetailsPage(item) {
   // 3. Konfigurer UI etter type
   setupContentTypeUI(item, contentType);
   renderRecommendations(item);
+}
 
+/**
+ * Henter podkast-info og opptil 200 episoder ferdig tolket fra Apple Lookup API.
+ * Formaterer svaret slik at det passer rett inn i applyPodcastFeed().
+ */
+async function fetchApplePodcastData(item) {
+  try {
+    let itunesId = item.itunesId || item.collectionId;
+    let searchMatch = null;
+
+    // 1. Finn iTunes ID automatisk via RSS-lenke eller tittel hvis den ikke ligger på kortet
+    if (!itunesId && (item.rssUrl || item.rss || item.title || item.name)) {
+      const queryTerm = encodeURIComponent(item.title || item.name || '');
+      if (queryTerm) {
+        const searchRes = await fetch(`https://itunes.apple.com/search?term=${queryTerm}&media=podcast&country=NO&limit=10`);
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          const targetRss = (item.rssUrl || item.rss || '').trim().toLowerCase();
+
+          searchMatch = searchData.results?.find(p => p.feedUrl && p.feedUrl.trim().toLowerCase() === targetRss)
+                        || searchData.results?.[0];
+          if (searchMatch) {
+            itunesId = searchMatch.collectionId;
+          }
+        }
+      }
+    }
+
+    if (!itunesId) return null;
+
+    // 2. Hent podkast + opptil 200 episoder ferdig som JSON fra Apple
+    const lookupRes = await fetch(`https://itunes.apple.com/lookup?id=${itunesId}&media=podcast&entity=podcastEpisode&limit=200`);
+    if (!lookupRes.ok) return null;
+
+    const lookupData = await lookupRes.json();
+    if (!lookupData.results || lookupData.results.length <= 1) return null;
+
+    const podcastInfo = lookupData.results[0];
+    const rawEpisodes = lookupData.results.slice(1);
+
+    return {
+      feed: {
+        title: podcastInfo.collectionName || searchMatch?.collectionName || '',
+        author: podcastInfo.artistName || searchMatch?.artistName || '',
+        description: podcastInfo.description || searchMatch?.description || '',
+        image: podcastInfo.artworkUrl600 || searchMatch?.artworkUrl600 || '',
+        category: Array.isArray(podcastInfo.genres) ? podcastInfo.genres.join(', ') : '',
+        link: podcastInfo.collectionViewUrl || ''
+      },
+      items: rawEpisodes.map(ep => ({
+        title: ep.trackName || 'Uten tittel',
+        description: ep.description || ep.shortDescription || '',
+        pubDate: ep.releaseDate || '',
+        enclosure: {
+          link: ep.episodeUrl || '',
+          duration: ep.trackTimeMillis ? Math.floor(ep.trackTimeMillis / 1000) : ''
+        },
+        thumbnail: ep.artworkUrl600 || podcastInfo.artworkUrl600 || ''
+      })).filter(ep => ep.enclosure.link)
+    };
+  } catch (err) {
+    console.warn('Apple Lookup API feilet, prøver RSS-fallback:', err);
+    return null;
+  }
 }
 
 function applyPodcastFeed(data, item, imageUrl) {
