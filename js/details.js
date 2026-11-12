@@ -51,7 +51,7 @@ const seasonSelect = document.getElementById('season-select');
 const loadMoreBtn = document.getElementById('load-more-episodes-btn');
 
 /**
- * Åpner detaljsiden og tilpasser grensesnittet
+ * Åpner detaljsiden og fyller ut data umiddelbart
  */
 export async function openDetailsPage(item) {
   if (!item) return;
@@ -73,12 +73,11 @@ export async function openDetailsPage(item) {
     detailsPage.setAttribute('data-type', contentType);
   }
 
-  // 1. Fleksibel innhenting av tittel, undertittel, beskrivelse og cover
+  // 1. Vis tittel, bilde og beskrivelse med en gang fra kortet
   const itemTitle = item.title || item.name || 'Uten tittel';
   const itemSub = item.sub || item.subtitle || item.author || item.publisher || item.host || '';
-  
-  // Filtrer ut generiske Apple API-meldinger dersom de har kommet inn som desc
   let rawDesc = item.desc || item.description || item.summary || item.about || '';
+  
   if (rawDesc.includes('Hentet via Apple Podcast API')) {
     rawDesc = '';
   }
@@ -103,7 +102,7 @@ export async function openDetailsPage(item) {
 
   if (titleEl) titleEl.textContent = itemTitle;
   if (subEl) subEl.textContent = itemSub;
-  if (descEl) descEl.innerHTML = cleanHTML(rawDesc || 'Laster beskrivelse...');
+  if (descEl) descEl.innerHTML = cleanHTML(rawDesc || 'Henter informasjon...');
 
   if (coverContainer) {
     if (imageUrl) {
@@ -113,7 +112,6 @@ export async function openDetailsPage(item) {
     }
   }
 
-  // Tilbakestill beskrivelsesboks og les mer-knapp
   if (descEl && readMoreBtn) {
     descEl.style.maxHeight = '80px';
     readMoreBtn.style.display = 'block';
@@ -126,7 +124,7 @@ export async function openDetailsPage(item) {
   }
   renderRecommendations(item);
 
-  // Podkast-innhenting: Bruker Apple Lookup API først (raskt og stabilt), og faller tilbake på RSS-feed
+  // 2. Hent data fra Apple Lookup API i bakgrunnen
   if ((rssUrl || item.itunesId || contentType === 'podcast') && contentType !== 'radio') {
     const cachedFeed = rssUrl ? getCachedPodcastFeed(rssUrl) : null;
     if (cachedFeed) {
@@ -135,8 +133,8 @@ export async function openDetailsPage(item) {
 
     setupContentTypeUI(item, contentType);
     if (!cachedFeed && episodeList) {
-      episodeList.innerHTML = `<div class="loading-episodes">Henter episoder og informasjon...</div>`;
-      if (badgeEpisodes) badgeEpisodes.textContent = 'Henter episoder...';
+      episodeList.innerHTML = `<div class="loading-episodes">Henter episoder...</div>`;
+      if (badgeEpisodes) badgeEpisodes.textContent = 'Henter...';
     }
 
     fetchApplePodcastData(item)
@@ -157,7 +155,7 @@ export async function openDetailsPage(item) {
       .catch(error => {
         if (requestId !== detailsRequestId) return;
         console.error('Kunne ikke hente podkast-feed:', error);
-        if (descEl && descEl.textContent === 'Laster beskrivelse...') {
+        if (descEl && descEl.textContent === 'Henter informasjon...') {
           descEl.textContent = 'Ingen beskrivelse tilgjengelig.';
         }
         if (episodeList && fetchedEpisodes.length === 0) {
@@ -165,18 +163,16 @@ export async function openDetailsPage(item) {
           episodeList.querySelector('[data-retry-podcast-feed]')?.addEventListener('click', () => {
             openDetailsPage(item);
           });
-          if (badgeEpisodes) badgeEpisodes.textContent = 'Episoder utilgjengelige';
+          if (badgeEpisodes) badgeEpisodes.textContent = 'Feil ved lasting';
         }
       });
     return;
   }
 
-  // Hvis ikke podkast, sett standardtekst hvis beskrivelse mangler
   if (descEl && !rawDesc) {
     descEl.textContent = 'Ingen beskrivelse tilgjengelig.';
   }
 
-  // 2. Håndtering basert på type (Radio vs Lokale episoder vs Internet Archive)
   if (contentType === 'radio' || !rssUrl) {
     if (item.episodes && Array.isArray(item.episodes)) {
       fetchedEpisodes = item.episodes;
@@ -208,25 +204,22 @@ export async function openDetailsPage(item) {
 
   if (requestId !== detailsRequestId) return;
 
-  // 3. Konfigurer UI etter type
   setupContentTypeUI(item, contentType);
   renderRecommendations(item);
 }
 
 /**
- * Henter podkast-info og opptil 200 episoder ferdig tolket fra Apple Lookup API,
- * samt henter hovedbeskrivelsen fra RSS-feeden (siden Apple utelater den).
+ * Henter podkast-info og episoder lynraskt fra Apple Lookup API
  */
 async function fetchApplePodcastData(item) {
   try {
     let itunesId = item.itunesId || item.collectionId;
     let searchMatch = null;
 
-    // 1. Finn iTunes ID automatisk via RSS-lenke eller tittel hvis den ikke ligger på kortet
     if (!itunesId && (item.rssUrl || item.rss || item.title || item.name)) {
       const queryTerm = encodeURIComponent(item.title || item.name || '');
       if (queryTerm) {
-        const searchRes = await fetch(`https://itunes.apple.com/search?term=${queryTerm}&media=podcast&country=NO&limit=10`);
+        const searchRes = await fetch(`https://itunes.apple.com/search?term=${queryTerm}&media=podcast&country=NO&limit=5`);
         if (searchRes.ok) {
           const searchData = await searchRes.json();
           const targetRss = (item.rssUrl || item.rss || '').trim().toLowerCase();
@@ -242,7 +235,6 @@ async function fetchApplePodcastData(item) {
 
     if (!itunesId) return null;
 
-    // 2. Hent podkast + opptil 200 episoder ferdig som JSON fra Apple
     const lookupRes = await fetch(`https://itunes.apple.com/lookup?id=${itunesId}&media=podcast&entity=podcastEpisode&limit=200`);
     if (!lookupRes.ok) return null;
 
@@ -251,36 +243,12 @@ async function fetchApplePodcastData(item) {
 
     const podcastInfo = lookupData.results[0];
     const rawEpisodes = lookupData.results.slice(1);
-    const activeFeedUrl = podcastInfo.feedUrl || searchMatch?.feedUrl || item.rssUrl || item.rss || '';
-
-    // 3. Hent hovedbeskrivelsen for podkasten direkte fra RSS-feeden
-    let channelDescription = podcastInfo.description || searchMatch?.description || '';
-    if (!channelDescription && activeFeedUrl) {
-      try {
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(activeFeedUrl)}`;
-        const rssRes = await fetch(proxyUrl);
-        if (rssRes.ok) {
-          const xmlText = await rssRes.text();
-          const parser = new DOMParser();
-          const xml = parser.parseFromString(xmlText, 'text/xml');
-          const channel = xml.querySelector('channel');
-          if (channel) {
-            channelDescription =
-              channel.querySelector(':scope > description')?.textContent ||
-              channel.getElementsByTagName('itunes:summary')[0]?.textContent ||
-              '';
-          }
-        }
-      } catch (e) {
-        console.warn('Kunne ikke hente hovedbeskrivelse fra RSS:', e);
-      }
-    }
 
     return {
       feed: {
         title: podcastInfo.collectionName || searchMatch?.collectionName || '',
         author: podcastInfo.artistName || searchMatch?.artistName || '',
-        description: channelDescription,
+        description: podcastInfo.description || searchMatch?.description || searchMatch?.summary || '',
         image: podcastInfo.artworkUrl600 || searchMatch?.artworkUrl600 || '',
         category: Array.isArray(podcastInfo.genres) ? podcastInfo.genres.join(', ') : '',
         link: podcastInfo.collectionViewUrl || ''
@@ -297,7 +265,7 @@ async function fetchApplePodcastData(item) {
       })).filter(ep => ep.enclosure.link)
     };
   } catch (err) {
-    console.warn('Apple Lookup API feilet, prøver RSS-fallback:', err);
+    console.warn('Apple Lookup API feilet:', err);
     return null;
   }
 }
@@ -307,7 +275,7 @@ function applyPodcastFeed(data, item, imageUrl) {
   if (descEl) {
     if (rssFeedDescription) {
       descEl.innerHTML = cleanHTML(rssFeedDescription);
-    } else if (descEl.textContent === 'Laster beskrivelse...') {
+    } else if (descEl.textContent === 'Henter informasjon...') {
       descEl.textContent = 'Ingen beskrivelse tilgjengelig.';
     }
   }
@@ -420,7 +388,6 @@ function renderRecommendations(item) {
   recommendationsContainer.hidden = false;
 }
 
-// Alias for bakoverkompatibilitet
 export const openDetailsView = openDetailsPage;
 
 function setupContentTypeUI(item, type) {
